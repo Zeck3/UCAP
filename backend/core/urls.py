@@ -1,9 +1,7 @@
-from django.urls import path
-from django.http import JsonResponse
-
-def api_hello(request):
-    return JsonResponse({'message': 'Hello from Django!'})
+#from django.contrib import admin
+from django.urls import path, include
 
 urlpatterns = [
-    path('api/hello/', api_hello),
+#   path('admin/', admin.site.urls),
+    path('api/', include('ucap_backend.urls')),  # Add this line
 ]
