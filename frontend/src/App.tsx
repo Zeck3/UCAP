@@ -1,6 +1,6 @@
 export default function App() {
 
   return (
-    <div> Tangina mo </div>
+    <div className="text-3xl font-bold underline"> Tangina mo </div>
   )
 }
