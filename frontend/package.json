@@ -14,14 +14,6 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tailwindcss": "^4.1.5"
-    "@reduxjs/toolkit": "^1.9.1",
-    "autoprefixer": "^10.4.21",
-    "next": "latest",
-    "postcss": "^8.5.3",
-    "react": "latest",
-    "react-dom": "latest",
-    "react-redux": "^8.0.5",
-    "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
