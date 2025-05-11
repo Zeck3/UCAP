@@ -34,7 +34,7 @@ function App() {
       <Route path="/course_dashboard/section/course_outcome_assessment" element={<ResultSheetPage />} />
 
       {/* Catch-all route for unknown pages */}
-      <Route path="*" element={<UnknownPage />} />
+      <Route path="sample" element={<UnknownPage />} />
     </Routes>
   );
 }

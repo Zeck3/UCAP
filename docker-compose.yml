@@ -10,6 +10,8 @@ services:
       - backend
 
   backend:
+    image: ucap_backend
+    container_name: ucap_backend
     build: ./backend
     command: >
       sh -c "python manage.py migrate &&
@@ -19,7 +21,9 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+        restart: true
     environment:
       - DEBUG=1
       - DB_NAME=ucap_db
@@ -29,13 +33,20 @@ services:
       - DB_PORT=5432
 
   db:
-    image: postgres:17.4
+    image: postgres:17
+    container_name: ucap_db
     ports:
       - "5432:5432"
     environment:
       POSTGRES_DB: ucap_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "ucap_db"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
     volumes:
       - postgres_data:/var/lib/postgresql/data/
 volumes:
