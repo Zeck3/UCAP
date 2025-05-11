@@ -15,6 +15,7 @@ const CourseDashboard = () => {
         <div className="flex items-center space-x-4">
           <img src="/ucap-logo.svg" alt="uCAP Logo" className="h-20 w-auto ml-12" />
 
+          {/* Breadcrumbs */}
           <div className="flex flex-col ml-20">
             <nav className="text-sm text-gray-500 space-x-2 flex items-center">
               <img src="/dashboard-breadcrumb.svg" alt="Dashboard Icon" className="h-4 w-4 inline-block" />

@@ -28,7 +28,6 @@ const ClassRecordPage: React.FC = () => {
               <Link to="/course_dashboard/section/class_record" className="hover:underline cursor-pointer">Section</Link>
             </nav>
 
-
             <div className="flex items-center space-x-2 mt-2">
               <button onClick={goBack} className="text-gray-600 hover:text-gray-800">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
