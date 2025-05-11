@@ -1,75 +1,14 @@
 <!doctype html>
 <html lang="en">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>uCAP</title>
-
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-  <link rel="stylesheet" href="/src/styles.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-</head>
-
-<body class="font-inter bg-gray-50 text-gray-700">
-  <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
-
-  <header class="flex items-center justify-between bg-white px-4 py-8 shadow-md">
-    <div class="flex items-center space-x-4">
-      <img src="/ucap-logo.svg" alt="uCAP Logo" class="h-20 w-auto ml-12" />
-
-      <div class="flex flex-col ml-20">
-        <nav class="text-sm text-gray-500 space-x-2 flex items-center">
-          <img src="/dashboard-breadcrumb.svg" alt="Dashboard Icon" class="h-4 w-4 inline-block" />
-          <span class="hover:underline cursor-pointer">Dashboard</span>
-          <span>&gt;</span>
-          <span class="hover:underline cursor-pointer">Course</span>
-          <span>&gt;</span>
-          <span class="hover:underline cursor-pointer">Section</span>
-        </nav>
-
-        <div class="flex items-center space-x-2 mt-2">
-          <button class="text-gray-600 hover:text-gray-800">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M25 12H7M12 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h1 class="text-2xl text-gray-700 ml-8">Course | Section Class Record</h1>
-        </div>
-      </div>
-    </div>
-
-    <div class="flex items-center space-x-2 mr-10">
-      <img src="/user.png" alt="User Image" class="w-10 h-10 rounded-full bg-gray-300 object-cover" />
-      <span class="text-base font-medium text-gray-700 ml-2 mr-2">LeBron James</span>
-      <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-      </svg>
-    </div>
-  </header>
-
-  <footer class="flex items-center justify-between px-6 py-12 bg-white shadow-inner mt-170">
-    <div class="flex items-center space-x-6 text-base text-gray-600 ml-12">
-      <button class="flex items-center space-x-2 hover:underline cursor-pointer">
-        <img src="/import.svg" alt="Import" class="w-4 h-4" />
-        <span>Import Master List</span>
-      </button>
-      <button class="flex items-center space-x-2 hover:underline cursor-pointer ml-6">
-        <img src="/customize.svg" alt="Customize" class="w-4 h-4" />
-        <span>Customize Class Record</span>
-      </button>
-      <button class="flex items-center space-x-2 hover:underline cursor-pointer ml-6">
-        <img src="/export.svg" alt="Export" class="w-4 h-4" />
-        <span>Export Class Record</span>
-      </button>
-    </div>
-
-    <button class="flex items-center space-x-2 bg-yellow-400 hover:bg-yellow-500 text-white font-semibold py-2 px-4 rounded-full shadow transition-all duration-200 mr-10">
-      <img src="/generate.svg" alt="Generate" class="w-4 h-4" />
-      <span>Generate COA Result Sheet</span>
-    </button>
-  </footer>
-</body>
-
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="/src/styles.css" rel="stylesheet">
+    <title>UCAP</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
