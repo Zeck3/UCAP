@@ -1,9 +1,8 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import '/src/styles.css';
 
-const ClassRecordPage: React.FC = () => {
+const ClassRecordPage = () => {
   const navigate = useNavigate();
 
   const goBack = () => {
@@ -42,7 +41,7 @@ const ClassRecordPage: React.FC = () => {
         <div className="flex items-center space-x-2 mr-10">
           <img src="/user.png" alt="User" className="w-10 h-10 rounded-full bg-gray-300 object-cover" />
           <span className="text-base font-medium text-gray-700 ml-2 mr-2">LeBron James</span>
-          <img src="/down.svg" alt="Custom Icon" className="w-3 h-3" />
+          <img src="/down.svg" alt="Dropdown Arrow" className="w-3 h-3" />
         </div>
       </header>
 
@@ -63,7 +62,7 @@ const ClassRecordPage: React.FC = () => {
           </button>
         </div>
 
-        <button className="flex items-center space-x-2 bg-yellow-400 hover:bg-yellow-500 text-white font-semibold py-2 px-4 rounded-full shadow transition-all duration-200 mr-10">
+        <button className="flex items-center space-x-2 bg-ucap-yellow bg-ucap-yellow-hover text-white font-semibold py-2 px-4 rounded-full shadow transition-all duration-200 mr-10">
           <img src="/generate.svg" alt="Generate" className="w-4 h-4" />
           <span>Generate COA Result Sheet</span>
         </button>

@@ -31,7 +31,7 @@ const CourseDashboard = () => {
         <div className="flex items-center space-x-2 mr-10">
           <img src="/user.png" alt="User" className="w-10 h-10 rounded-full bg-gray-300 object-cover" />
           <span className="text-base font-medium text-gray-700 ml-2 mr-2">LeBron James</span>
-          <img src="/down.svg" alt="Custom Icon" className="w-3 h-3" />
+          <img src="/down.svg" alt="Dropdown Arrow" className="w-3 h-3" />
         </div>
       </header>
 
@@ -54,7 +54,7 @@ const CourseDashboard = () => {
 
             {/* Sort */}
             <div className="relative inline-block">
-              <img src="/sort.svg" alt="Ascending Icon" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
+              <img src="/sort.svg" alt="Sort Icon" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
               <select className="appearance-none py-1.5 pl-8 pr-10 border border-gray-300 rounded-lg shadow-sm text-gray-700 bg-white">
                 <option>Ascending</option>
                 <option>Descending</option>
@@ -83,12 +83,15 @@ const CourseDashboard = () => {
 
         {/* Courses */}
         <div className="flex justify-center items-center h-96">
-          <img src="/empty-courses.svg" alt="Placeholder Icon" className="h-50 w-50" />
+          <img src="/empty-courses.svg" alt="Empty Courses" className="h-50 w-50" />
         </div>
 
         {/* Temp Button */}
         <div className="flex items-center justify-center mt-8">
-          <button onClick={goToSectionPage} className="bg-yellow-400 text-white px-6 py-3 rounded-lg shadow hover:bg-yellow-500 transition">
+          <button
+            onClick={goToSectionPage}
+            className="bg-ucap-yellow bg-ucap-yellow-hover text-white px-6 py-3 rounded-lg shadow transition"
+          >
             Go to Section Page
           </button>
         </div>
