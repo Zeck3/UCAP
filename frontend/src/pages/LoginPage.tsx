@@ -25,9 +25,9 @@ const LoginPage = () => {
       </header>
 
       {/* Body */}
-      <main className="flex flex-col md:flex-row flex-1 px-4 md:px-24 pt-2 pb-35">
+      <main className="flex flex-col md:flex-row flex-1 px-4 md:px-2 pt-2 pb-35">
         {/* Login Form */}
-        <section className="w-full md:w-1/2 flex items-center justify-center">
+        <section className="w-full md:w-1/2 flex items-center justify-end pr-25">
           <div className="w-full max-w-md p-8 border border-gray-200 rounded-2xl shadow">
             <h2 className="text-2xl font-medium mb-6 text-center text-gray-800">
               Log In to uCAP
@@ -74,7 +74,7 @@ const LoginPage = () => {
         </section>
 
         {/* Welcome */}
-        <section className="w-full md:w-1/2 flex flex-col items-start justify-center mt-10 md:mt-0 md:pl-20">
+        <section className="w-full md:w-1/2 flex flex-col items-start justify-center mt-10 md:mt-0 md:pl-2">
           <img
             src="/login-welcome.svg"
             alt="Login Welcome"
