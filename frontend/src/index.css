@@ -1,1 +1,32 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+:root {
+  --ucap-yellow: #FCB315;
+  --ucap-blue: #1A1851;
+}
+
+.bg-ucap-yellow {
+  background-color: var(--ucap-yellow);
+}
+
+.bg-ucap-yellow-hover:hover {
+  background-color: #e6a400;
+}
+
+.text-ucap-yellow {
+  color: var(--ucap-yellow);
+}
+
+.text-ucap-blue {
+  color: var(--ucap-blue);
+}
+
+.focus-ring-ucap-blue:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ucap-blue);
+}
