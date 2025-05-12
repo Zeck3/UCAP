@@ -57,9 +57,10 @@ const SectionPage = () => {
       {/* Body */}
       <main className="px-24 py-10 flex-1 mt-5">
         <div className="flex items-center justify-start mb-8 space-y-2 sm:space-y-0 sm:flex-nowrap">
-          <h2 className="text-2xl font-base ml-55 mr-129">Sections</h2>
+          <h2 className="text-xl font-base ml-55 mr-106.5">Sections</h2>
 
           <div className="flex items-center gap-6 justify-start">
+
             {/* Search */}
             <div className="relative flex-1">
               <img src="/search.svg" alt="Search Icon" className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-auto" />
@@ -95,8 +96,8 @@ const SectionPage = () => {
         </div>
 
         {/* Divider line */}
-        <div className="pl-55.5">
-          <div className="border-t border-gray-300 my-8 w-[1185px]"></div>
+        <div className="pl-55">
+          <div className="border-t border-gray-300 my-8 w-[1079px]"></div>
         </div>
 
         {/* Courses */}
