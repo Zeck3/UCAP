@@ -28,110 +28,107 @@ class User(models.Model):
         return f"{self.first_name} {self.last_name}"
 
 class Campus(models.Model):
-    campus_id = models.IntegerField(primary_key=True)
+    campus_id = models.AutoField(serialize=True, primary_key=True)
     campus_name = models.CharField(max_length=225)
 
 class College(models.Model):
-    college_id = models.IntegerField(primary_key=True)
-    campus = models.ForeignKey(Campus, on_delete=models.CASCADE)
+    college_id = models.AutoField(serialize=True, primary_key=True)
+    campus_id = models.ForeignKey(Campus, on_delete=models.CASCADE)
     college_name = models.CharField(max_length=225)
 
 class Department(models.Model):
-    department_id = models.IntegerField(primary_key=True)
-    college = models.ForeignKey(College, on_delete=models.CASCADE)
-    campus = models.ForeignKey(Campus, on_delete=models.CASCADE)
+    department_id = models.AutoField(serialize=True, primary_key=True)
+    college_id = models.ForeignKey(College, on_delete=models.CASCADE)
+    campus_id = models.ForeignKey(Campus, on_delete=models.CASCADE)
     department_name = models.CharField(max_length=255)
 
 class Program(models.Model):
-    program_id = models.IntegerField(primary_key=True)
-    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    program_id = models.AutoField(serialize=True, primary_key=True)
+    department_id = models.ForeignKey(Department, on_delete=models.CASCADE)
     program_name = models.CharField(max_length=255)
 
 class AcademicYear(models.Model):
-    academic_year_id = models.IntegerField(primary_key=True)
+    academic_year_id = models.AutoField(serialize=True, primary_key=True)
     academic_year_start = models.IntegerField()
     academic_year_end = models.IntegerField()
 
 class Credit(models.Model):
-    credit_id = models.IntegerField(primary_key=True)
+    credit_id = models.AutoField(serialize=True, primary_key=True)
     lecture_unit = models.IntegerField()
     laboratory_unit = models.IntegerField()
 
 class Semester(models.Model):
-    semester_id = models.IntegerField(primary_key=True)
+    semester_id = models.AutoField(serialize=True, primary_key=True)
     semester_type = models.CharField(max_length=255)
 
 class Course(models.Model):
     course_code = models.IntegerField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    credit = models.ForeignKey(Credit, on_delete=models.CASCADE)
-    program = models.ForeignKey(Program, on_delete=models.CASCADE)
-    acad_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
-    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    credit_id = models.ForeignKey(Credit, on_delete=models.CASCADE)
+    program_id = models.ForeignKey(Program, on_delete=models.CASCADE)
+    acad_year_id = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
+    semester_id = models.ForeignKey(Semester, on_delete=models.CASCADE)
     course_title = models.CharField(max_length=255)
 
 class RoomAndSchedule(models.Model):
-    room_and_schedule_id = models.IntegerField(primary_key=True)
+    room_and_schedule_id = models.AutoField(serialize=True, primary_key=True)
     day_of_the_week = models.CharField(max_length=225)
     time_starts = models.TimeField()
     time_ends = models.TimeField()
     building_and_room = models.CharField(max_length=225)
 
 class Section(models.Model):
-    section_id = models.IntegerField(primary_key=True)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    instructor_assigned = models.ForeignKey(User, on_delete=models.CASCADE, related_name='instructor_sections')
-    room_and_schedule = models.ForeignKey(RoomAndSchedule, on_delete=models.CASCADE, null=True, blank=True)
+    section_id = models.AutoField(serialize=True, primary_key=True)
+    course_id = models.ForeignKey(Course, on_delete=models.CASCADE)
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    room_and_schedule_id = models.ForeignKey(RoomAndSchedule, on_delete=models.CASCADE, null=True, blank=True)
     year_and_section = models.CharField(max_length=225)
 
 class Student(models.Model):
     student_id = models.IntegerField(primary_key=True)
-    section = models.ForeignKey(Section, on_delete=models.CASCADE)
+    section_id = models.ForeignKey(Section, on_delete=models.CASCADE)
     student_name = models.CharField(max_length=225)
 
 class CourseTerm(models.Model):
-    course_term_id = models.IntegerField(primary_key=True)
+    course_term_id = models.AutoField(serialize=True, primary_key=True)
     course_term = models.CharField(max_length=225)
 
 class CourseUnit(models.Model):
-    course_unit_id = models.IntegerField(primary_key=True)
-    course_term = models.ForeignKey(CourseTerm, on_delete=models.CASCADE)
+    course_unit_id = models.AutoField(serialize=True, primary_key=True)
+    course_term_id = models.ForeignKey(CourseTerm, on_delete=models.CASCADE)
     course_unit = models.CharField(max_length=225)
     course_unit_percentage = models.IntegerField()
 
 class Component(models.Model):
-    component_id = models.IntegerField(primary_key=True)
-    course_unit = models.ForeignKey(CourseUnit, on_delete=models.CASCADE)
+    component_id = models.AutoField(serialize=True, primary_key=True)
+    course_unit_id = models.ForeignKey(CourseUnit, on_delete=models.CASCADE)
     component_name = models.CharField(max_length=225)
     component_percentage = models.IntegerField()
 
 class Assessment(models.Model):
-    assessment_id = models.IntegerField(primary_key=True)
-    section = models.ForeignKey(Section, on_delete=models.CASCADE)
-    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    assessment_id = models.AutoField(serialize=True, primary_key=True)
+    component_id = models.ForeignKey(Component, on_delete=models.CASCADE)
     assessment_title = models.CharField(max_length=225)
     highest_score = models.IntegerField()
 
 class CourseOutcome(models.Model):
-    course_outcome_id = models.IntegerField(primary_key=True)
-    assessment = models.ForeignKey(Assessment, on_delete=models.CASCADE)
+    course_outcome_id = models.AutoField(primary_key=True)
+    assessment_id = models.ForeignKey(Assessment, on_delete=models.CASCADE)
     course_outcome = models.CharField(max_length=225)
 
 class ProgramOutcome(models.Model):
-    program_outcome_id = models.IntegerField(primary_key=True)
-    course_outcome = models.ForeignKey(CourseOutcome, on_delete=models.CASCADE)
+    program_outcome_id = models.AutoField(serialize=True, primary_key=True)
+    course_outcome_id = models.ForeignKey(CourseOutcome, on_delete=models.CASCADE)
     program_outcome = models.CharField(max_length=255)
 
 class AssessmentClassification(models.Model):
-    assessment_classification_id = models.IntegerField(primary_key=True)
-    assessment = models.ForeignKey(Assessment, on_delete=models.CASCADE)
+    assessment_classification_id = models.AutoField(serialize=True, primary_key=True)
+    assessment_id = models.ForeignKey(Assessment, on_delete=models.CASCADE)
     assessment_classification = models.CharField(max_length=255)
 
 class RawScore(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    assessment = models.ForeignKey(Assessment, on_delete=models.CASCADE)
-    score = models.IntegerField()
-
-    class Meta:
-        unique_together = (('student', 'assessment'),)
+    raw_score_id = models.AutoField(serialize=True, primary_key=True)
+    student_id = models.ForeignKey(Student, on_delete=models.CASCADE)
+    assessment_id = models.ForeignKey(Assessment, on_delete=models.CASCADE)
+    score = models.IntegerField(null=True, blank=True)
 
