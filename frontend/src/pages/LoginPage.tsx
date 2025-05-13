@@ -41,7 +41,7 @@ interface LoginResponse {
       localStorage.setItem("token", data.token);
       setSuccess("Login successful!");
 
-      navigate("/dashboard");
+      navigate("/course_dashboard");
     } catch (err: unknown) {
       setError("Invalid user_id or password");
       console.error(err);

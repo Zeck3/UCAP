@@ -7,6 +7,16 @@ class RoleSerializer(serializers.ModelSerializer):
         model = Role
         fields = ['role_id', 'role_type']  # Use 'role_type', not 'role_name'
 
+class InsturctorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['user_id', 'first_name', 'middle_name', 'last_name', 'suffix', 'email']
+
+class CampusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Campus
+        fields = ['campus_name']
+
 class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -45,4 +55,9 @@ class LoginValidator:
         except:
             self.errors["message"] = "Invalid user_id or password."
             return False
+        
 
+class SectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Section
+        fields = '__all__'

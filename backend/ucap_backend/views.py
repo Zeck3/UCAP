@@ -4,7 +4,7 @@ import json
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
-from .serializers import RoleSerializer, UserRegisterSerializer, LoginValidator
+from .serializers import *
 
 @api_view(["GET"])
 def hello_view(request):
@@ -18,7 +18,25 @@ def get_roles(request):
         return JsonResponse(serializer.data, safe=False)
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["GET"])
+def get_intructors(request):
+    try:
+        instructors = User.objects.filter(role_id__role_type="Instructor")
+        serializer = InsturctorSerializer(instructors, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500) 
 
+@api_view(["GET"])
+def get_campus(request):
+    try:
+        campus = Campus.objects.all()
+        serializer = CampusSerializer(campus, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
 def user_registration(request):
     if request.method == "POST":
         try:
@@ -57,3 +75,15 @@ def login_view(request):
             return Response(validator.errors, status=status.HTTP_401_UNAUTHORIZED)
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["POST"])
+def create_section(request):
+    try:
+        data = request.data
+        serializer = SectionSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
