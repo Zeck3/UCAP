@@ -1,5 +1,6 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Tilt+Warp&display=swap');
+@import "tailwindcss";
 
 /* Main Font */
 body {
@@ -31,6 +32,10 @@ body {
 .focus-ring-ucap-blue:focus {
   outline: none;
   box-shadow: 0 0 0 2px var(--ucap-blue);
+}
+
+.font-tilt-warp {
+  font-family: "Tilt Warp", sans-serif;
 }
 
 /* Class Record Colors */
