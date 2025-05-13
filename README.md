@@ -3,6 +3,7 @@
 ## Start the app
 
 ```bash
+docker-compose down -v #Avoid this to not delete data on database
 docker-compose up --build
 docker-compose up -d
 docker-compose exec backend python manage.py makemigrations
