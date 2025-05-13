@@ -14,7 +14,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="font-inter text-[#3E3E3E] min-h-screen flex flex-col">
+    <div className="text-[#3E3E3E] min-h-screen flex flex-col">
       {/* Header */}
       <header className="flex px-16 py-6.5">
         <div className="flex flex-start w-screen">
@@ -26,7 +26,7 @@ const LoginPage = () => {
       <main className="w-screen flex flex-1">
         <div className="flex flex-col-reverse lg:flex-row flex-1">
           {/* Login */}
-          <div className="flex lg:w-1/2 justify-center items-center flex-1">
+          <div className="flex lg:w-1/2 justify-center lg:justify-end items-center flex-1 lg:mr-8">
             <div className="flex flex-col w-full max-w-md px-10 py-9 gap-6 border border-[#E9E6E6] rounded-2xl">
               <h2 className="text-2xl font-medium text-center">
                 Log In to uCAP
@@ -60,9 +60,6 @@ const LoginPage = () => {
               </div>
 
               <button
-                /*onClick={handleLogin}
-              className="w-full py-2 bg-ustpYellow text-white font-semibold rounded hover:bg-ustpYellow/90 transition"
-              >*/
                 onClick={goToCourseDashboard}
                 className="w-full py-2 bg-ucap-yellow bg-ucap-yellow-hover text-white rounded-md text-sm transition cursor-pointer"
               >
@@ -72,7 +69,7 @@ const LoginPage = () => {
           </div>
 
           {/* Welcome */}
-          <div className="hidden lg:flex lg:w-1/2 flex-col-reverse items-center justify-start lg:items-start lg:justify-center">
+          <div className="hidden lg:flex lg:w-1/2 flex-col-reverse items-center justify-start lg:items-start lg:justify-center ml-8">
             <div className="flex flex-col">
               <img
                 src="/login-welcome.svg"
@@ -81,10 +78,10 @@ const LoginPage = () => {
               />
               <p className="text-xl font-light leading-relaxed">
                 Welcome to the <br />
-                <span className="text-ucap-yellow font-bold text-xl lg:text-2xl">
+                <span className="font-tilt-warp text-ucap-yellow text-2xl lg:text-3xl">
                   University{" "}
                 </span>
-                <span className="text-ucap-blue font-bold text-xl lg:text-2xl">
+                <span className="font-tilt-warp text-ucap-blue text-2xl lg:text-3xl">
                   Course Assessment Portal
                 </span>
               </p>
