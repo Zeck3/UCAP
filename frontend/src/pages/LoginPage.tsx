@@ -2,19 +2,50 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 
 const LoginPage = () => {
-  const [showError, setShowError] = useState(false);
+  const [user_id, setUserID] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
     document.title = "uCAP";
   }, []);
 
-  /*const handleLogin = () => {
-    setShowError(true); // Simulate login error
-  };*/
+interface LoginResponse {
+    token: string;
+    [key: string]: any;
+  }
 
-  const goToCourseDashboard = () => {
-    navigate('/course_dashboard');
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    try {
+      const response: Response = await fetch("http://localhost:8000/api/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_id, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Invalid user_id or password");
+      }
+
+      const data: LoginResponse = await response.json();
+      console.log("Login success:", data);
+
+      localStorage.setItem("token", data.token);
+      setSuccess("Login successful!");
+
+      navigate("/dashboard");
+    } catch (err: unknown) {
+      setError("Invalid user_id or password");
+      console.error(err);
+    }
   };
 
   return (
@@ -32,44 +63,47 @@ const LoginPage = () => {
             <h2 className="text-2xl font-medium mb-6 text-center text-gray-800">
               Log In to uCAP
             </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="mb-4">
+                <label htmlFor="user-id" className="block text-sm font-medium text-gray-700 mb-1">
+                  User ID
+                </label>
+                <input
+                  name="user_id"
+                  id="user-id"
+                  type="text"
+                  autoComplete="username"
+                  value={user_id}
+                  onChange={(e) => setUserID(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus-ring-ucap-blue"
+                />
+              </div>
 
-            <div className="mb-4">
-              <label htmlFor="user-id" className="block text-sm font-medium text-gray-700 mb-1">
-                User ID
-              </label>
-              <input
-                id="user-id"
-                type="text"
-                autoComplete="username"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus-ring-ucap-blue"
-              />
-            </div>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  name="password"
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus-ring-ucap-blue"
+                />
+              </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus-ring-ucap-blue"
-              />
-            </div>
+              {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+              {success && <div className="text-green-500 text-sm text-center">{success}</div>}
 
-            <div className="h-5 mb-6 text-red-500 text-sm text-center">
-              {showError && <p>Invalid User ID or Password</p>}
-            </div>
-
-            <button
-              /*onClick={handleLogin}
-              className="w-full py-2 bg-ustpYellow text-white font-semibold rounded hover:bg-ustpYellow/90 transition"
-              >*/
-              onClick={goToCourseDashboard}
-              className="w-full py-2 bg-ucap-yellow bg-ucap-yellow-hover text-white font-semibold rounded-md transition"
-            >
-              Log In
-            </button>
+              <button
+                type="submit"
+                className="w-full py-2 bg-ucap-yellow bg-ucap-yellow-hover text-white font-semibold rounded-md transition"
+              >
+                Log In
+              </button>
+            </form>
           </div>
         </section>
 
