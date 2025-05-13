@@ -1,67 +1,119 @@
-  import React, { useState } from "react";
+import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import '/src/styles.css';
 
-  export default function RegisterPage() {
-    const [formData, setFormData] = useState({
-      user_id: "",
-      role_id: "",
-      first_name: "",
-      middle_name: "",
-      last_name: "",
-      suffix: "",
-      email: "",
-      password: "",
-    });
+const SectionPage = () => {
+  const navigate = useNavigate();
 
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
+  const goBack = () => {
+    navigate(-1);
+  };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const { name, value } = e.target;
-      setFormData(prev => ({ ...prev, [name]: value }));
-    };
+  const goToClassRecordPage = () => {
+    navigate('/course_dashboard/section/class_record');
+  };
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      setError("");
-      setSuccess("");
+  return (
+    <div className="font-inter bg-gray-50 text-gray-700 min-h-screen flex flex-col">
 
-      try {
-        const response = await fetch("http://localhost:8000/api/register/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        });
+      {/* Header */}
+      <header className="flex items-center justify-between bg-white px-4 py-8 shadow-md">
+        <div className="flex items-center space-x-4">
+          <img src="/ucap-logo.svg" alt="uCAP Logo" className="h-20 w-auto ml-12" />
 
-        const data = await response.json();
+          {/* Breadcrumbs */}
+          <div className="flex flex-col ml-20">
+            <nav className="text-sm text-gray-500 space-x-2 flex items-center">
+              <img src="/dashboard-breadcrumb.svg" alt="Dashboard Icon" className="h-4 w-4 inline-block" />
+              <Link to="/course_dashboard" className="hover:underline cursor-pointer">Dashboard</Link>
+              <span>&gt;</span>
+              <Link to="/course_dashboard/section/" className="hover:underline cursor-pointer">Course</Link>
+            </nav>
 
-        if (!response.ok) {
-          throw new Error(data.message || "Registration failed");
-        }
+            <div className="flex items-center space-x-2 mt-2">
+              <button onClick={goBack} className="text-gray-600 hover:text-gray-800">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M25 12H7M12 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h1 className="text-2xl text-gray-700 ml-8">Section</h1>
+            </div>
+          </div>
+        </div>
 
-        setSuccess("Registration successful!");
-      } catch (err: any) {
-        setError(err.message);
-      }
-    };
+        <div className="flex items-center space-x-2 mr-10">
+          <img src="/user.png" alt="User" className="w-10 h-10 rounded-full bg-gray-300 object-cover" />
+          <span className="text-base font-medium text-gray-700 ml-2 mr-2">LeBron James</span>
+          <img src="/down.svg" alt="Dropdown Arrow" className="w-3 h-3" />
+        </div>
+      </header>
 
-    return (
-      <div>
-        <h2>Register</h2>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        {success && <p style={{ color: "green" }}>{success}</p>}
-        <form onSubmit={handleSubmit}>
-          <input name="user_id" placeholder="User ID" onChange={handleChange} required />
-          <input name="role_id" placeholder="Role ID" onChange={handleChange} required />
-          <input name="first_name" placeholder="First Name" onChange={handleChange} required />
-          <input name="middle_name" placeholder="Middle Name" onChange={handleChange} />
-          <input name="last_name" placeholder="Last Name" onChange={handleChange} required />
-          <input name="suffix" placeholder="Suffix" onChange={handleChange} />
-          <input type="email" name="email" placeholder="Email" onChange={handleChange} required />
-          <input type="password" name="password" placeholder="Password" onChange={handleChange} required />
-          <button type="submit">Register</button>
-        </form>
+      <div className="mt-10 ml-79">
+        <h2 className="text-3xl font-base text-gray-800">Communication System Analysis and Design</h2>
+        <p className="mt-2 text-xl text-gray-600">Semester</p>
+        <p className="mt-2 text-sm text-gray-500">Department | College | Campus</p>
       </div>
-    );
-  }
+
+      {/* Body */}
+      <main className="px-24 py-10 flex-1 mt-5">
+        <div className="flex items-center justify-start mb-8 space-y-2 sm:space-y-0 sm:flex-nowrap">
+          <h2 className="text-xl font-base ml-55 mr-106.5">Sections</h2>
+
+          <div className="flex items-center gap-6 justify-start">
+
+            {/* Search */}
+            <div className="relative flex-1">
+              <img src="/search.svg" alt="Search Icon" className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-auto" />
+              <input
+                type="text"
+                placeholder="Search"
+                className="pl-10 pr-4 py-1.5 border border-gray-300 rounded-full shadow-sm w-full bg-white"
+              />
+            </div>
+
+            {/* Sort */}
+            <div className="relative inline-block">
+              <img src="/sort.svg" alt="Sort Icon" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
+              <select className="appearance-none py-1.5 pl-8 pr-10 border border-gray-300 rounded-lg shadow-sm text-gray-700 bg-white">
+                <option>Ascending</option>
+                <option>Descending</option>
+              </select>
+              <div className="pointer-events-none absolute right-8 top-1/2 transform -translate-y-1/2 w-px h-6 bg-gray-300" />
+              <img src="/down.svg" alt="Dropdown Arrow" className="pointer-events-none absolute right-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4" />
+            </div>
+
+            {/* View */}
+            <div className="relative inline-block">
+              <img src="/cards.svg" alt="Cards Icon" className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-3 h-3" />
+              <select className="appearance-none py-1.5 pl-8 pr-10 border border-gray-300 rounded-lg shadow-sm text-gray-700 bg-white">
+                <option>Cards</option>
+                <option>List</option>
+              </select>
+              <div className="pointer-events-none absolute right-8 top-1/2 transform -translate-y-1/2 w-px h-6 bg-gray-300" />
+              <img src="/down.svg" alt="Dropdown Arrow" className="pointer-events-none absolute right-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4" />
+            </div>
+          </div>
+        </div>
+
+        {/* Divider line */}
+        <div className="pl-55">
+          <div className="border-t border-gray-300 my-8 w-[1079px]"></div>
+        </div>
+
+        {/* Courses */}
+        <div className="flex justify-center items-center h-96">
+          <img src="/empty-section.svg" alt="Empty Section" className="h-50 w-50 mb-30" />
+        </div>
+
+        {/* Temp Button */}
+        <div className="flex items-center justify-center">
+          <button onClick={goToClassRecordPage} className="bg-ucap-yellow bg-ucap-yellow-hover text-white px-6 py-3 rounded-lg shadow transition">
+            Go to Class Record Page
+          </button>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default SectionPage;
