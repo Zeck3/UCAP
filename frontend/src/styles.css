@@ -1,10 +1,12 @@
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+/* Main Font */
 body {
   font-family: 'Inter', sans-serif;
 }
 
+/* Main Colors */
 :root {
   --ucap-yellow: #FCB315;
   --ucap-blue: #1A1851;
@@ -29,4 +31,35 @@ body {
 .focus-ring-ucap-blue:focus {
   outline: none;
   box-shadow: 0 0 0 2px var(--ucap-blue);
+}
+
+/* Class Record Colors */
+.bg-light-blue {
+  background-color: #99CCFF;
+}
+
+.bg-dark-blue {
+  background-color: #1F3864;
+}
+
+.bg-bright-yellow {
+  background-color: #FCF305;
+}
+
+/* Remove Input Spinners */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Default Cell Width */
+.table-cell-default {
+  min-width: 50px;
+  padding: 5px;
+  text-align: center;
 }
