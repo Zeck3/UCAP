@@ -144,7 +144,7 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange }) => {
                             const probSetStart = columnGroups.slice(0, 7).reduce((acc, curr) => acc + curr.length, 0);
                             const probSetTotalIndex = probSetStart + 3;
 
-                            //@ts-ignore
+                            //@ts-expect-error try ke
                             const probSetSum = scoreHeaders.slice(probSetStart, probSetStart + 3).reduce((sum, val) => sum + (Number(val) || 0), 0);
                             //@ts-ignore
                             const probSetMax = scoreHeaders.slice(probSetStart, probSetStart + 3).reduce((sum, val) => sum + (Number(val) || 0), 0);
