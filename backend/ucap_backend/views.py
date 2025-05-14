@@ -37,27 +37,80 @@ def get_campus(request):
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500)
     
+@api_view(["GET"])
+def get_colleges(request):
+    try:
+        colleges = College.objects.all()
+        serializer = CollegeSerializer(colleges, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["GET"])
+def get_departments(request):
+    try:
+        departments = Department.objects.all()
+        serializer = DepartmentSerializer(departments, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+
+@api_view(["GET"])
+def get_programs(request):
+    try:
+        programs = Program.objects.all()
+        serializer = ProgramSerializer(programs, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["GET"])
+def get_academic_years(request):
+    try:
+        academic_years = AcademicYear.objects.all()
+        serializer = AcademicYearSerializer(academic_years, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+
+@api_view(["GET"])
+def get_credits(request):
+    try:
+        credits = Credit.objects.all()
+        serializer = CreditSerializer(credits, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["GET"])
+def get_semesters(request):
+    try:
+        semesters = Semester.objects.all()
+        serializer = SemesterSerializer(semesters, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+
+@api_view(["POST"])
 def user_registration(request):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            serializer = UserRegisterSerializer(data=data)
+    try:
+        data = json.loads(request.body)
+        serializer = UserRegisterSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse({
+                "message": "User registered successfully",
+                "user": serializer.data
+            }, status=201)
+        else:
+            print(serializer.errors)
+            return JsonResponse({
+                "message": "Validation failed",
+                "errors": serializer.errors
+            }, status=400)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
 
-            if serializer.is_valid():
-                serializer.save()
-                return JsonResponse({
-                    "message": "User registered successfully",
-                    "user": serializer.data
-                }, status=201)
-            else:
-                return JsonResponse({
-                    "message": "Validation failed",
-                    "errors": serializer.errors
-                }, status=400)
-        except Exception as e:
-            return JsonResponse({"message": str(e)}, status=500)
-
-    return JsonResponse({"message": "Only POST method is allowed"}, status=405)
 
 @api_view(["POST"])
 def login_view(request):

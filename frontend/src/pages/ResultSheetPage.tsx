@@ -35,7 +35,7 @@ export default function RegisterPage() {
     setSuccess("");
 
     try {
-      const response = await fetch("http://localhost:8000/api/register/", {
+      const response = await fetch("http://localhost:8000/api/admin/user_management/create_user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

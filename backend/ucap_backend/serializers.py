@@ -17,6 +17,38 @@ class CampusSerializer(serializers.ModelSerializer):
         model = Campus
         fields = ['campus_name']
 
+class CollegeSerializer(serializers.ModelSerializer):
+    campus_id = CampusSerializer()
+
+    class Meta:
+        model = College
+        fields = ['college_name']
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Department
+        fields = ['department_name']
+
+class ProgramSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Program
+        fields = ['program_name']
+
+class AcademicYearSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AcademicYear
+        fields = ['academic_year_start', 'academic_year_end']
+
+class CreditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Credit
+        fields = ['lecture_unit', 'laboratory_unit']
+
+class SemesterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Semester
+        fields = ['semester_name']
+
 class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
