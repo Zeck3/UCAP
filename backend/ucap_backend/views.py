@@ -90,7 +90,40 @@ def get_semesters(request):
         return JsonResponse(serializer.data, safe=False)
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["GET"])
+def get_courses(request):
+    try:
+        courses = Course.objects.all()
+        serializer = ViewCourseSerializer(courses, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["POST"])
+def create_course(request):
+    try:
+        data = json.loads(request.body)
+        serializer = CourseSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=201)
+        else:
+            return JsonResponse(serializer.errors, status=400)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
 
+@api_view(["GET"])
+def get_course(request, course_code):
+    try:
+        course = Course.objects.get(course_code=course_code)
+        serializer = ViewCourseSerializer(course)
+        return JsonResponse(serializer.data, status=200)
+    except Course.DoesNotExist:
+        return JsonResponse({"message": "Course not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
 @api_view(["POST"])
 def user_registration(request):
     try:
@@ -111,7 +144,6 @@ def user_registration(request):
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500)
 
-
 @api_view(["POST"])
 def login_view(request):
     try:
@@ -130,13 +162,16 @@ def login_view(request):
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(["POST"])
-def create_section(request):
+def get_instructor_courses(request):
+    user_id = request.data.get('user_id')
+
+    if not user_id:
+        return Response({"message": "Instructor ID is required"}, status=400)
+
     try:
-        data = request.data
-        serializer = SectionSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
-        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        instructor = User.objects.get(user_id=user_id)
+        courses = Course.objects.filter(user_id=instructor)
+        serializer = ViewCourseSerializer(courses, many=True)
+        return Response(serializer.data, status=200)
+    except User.DoesNotExist:
+        return Response({"message": "Instructor not found"}, status=404)

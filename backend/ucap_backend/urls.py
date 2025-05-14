@@ -14,5 +14,7 @@ urlpatterns = [
     path('admin/course_management/academic_years/', get_academic_years),  # Academic Year list
     path('admin/course_management/credits/', get_credits),  # Credit list
     path('admin/course_management/semesters/', get_semesters),  # Semester list
-
+    path('admin/course_management/display_course_list/', get_courses),  # Course list
+    path('admin/course_management/create_course/', create_course),  # Create Course
+    path('instructor/course_dashboard/display_course_list/', get_instructor_courses)
 ]   

@@ -7,7 +7,7 @@ class RoleSerializer(serializers.ModelSerializer):
         model = Role
         fields = ['role_id', 'role_type']  # Use 'role_type', not 'role_name'
 
-class InsturctorSerializer(serializers.ModelSerializer):
+class InstructorSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['user_id', 'first_name', 'middle_name', 'last_name', 'suffix', 'email']
@@ -88,9 +88,38 @@ class LoginValidator:
             self.errors["message"] = "Invalid user_id or password."
             return False
         
-
-class SectionSerializer(serializers.ModelSerializer):
+class CourseSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Section
+        model = Course
         fields = '__all__'
+        
+class ViewCourseSerializer(serializers.ModelSerializer):
+    course_code = serializers.CharField(read_only=True)
+    course_title = serializers.CharField(read_only=True)
+    department = serializers.SerializerMethodField()
+    program = ProgramSerializer(source='program_id', read_only=True)
+    academic_year = serializers.SerializerMethodField()
+    semester = serializers.CharField(source='semester_id.semester_name', read_only=True)
+
+    class Meta:
+        model = Course
+        fields = [
+            'course_code',
+            'course_title',
+            'department',
+            'program',
+            'academic_year',
+            'semester',
+        ]
+
+    def get_department(self, obj):
+        # Assumes: Course → Program → Department
+        if obj.program_id and obj.program_id.department_id:
+            return obj.program_id.department_id.department_name
+        return None
+
+    def get_academic_year(self, obj):
+        if obj.acad_year_id:
+            return f"{obj.acad_year_id.academic_year_start}-{obj.acad_year_id.academic_year_end}"
+        return None
 
