@@ -47,7 +47,7 @@ class CreditSerializer(serializers.ModelSerializer):
 class SemesterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Semester
-        fields = ['semester_name']
+        fields = ['semester_type']
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -93,3 +93,4 @@ class SectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Section
         fields = '__all__'
+
