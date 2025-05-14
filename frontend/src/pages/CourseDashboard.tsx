@@ -7,6 +7,105 @@ const CourseDashboard = () => {
     navigate('/course_dashboard/section/');
   };
 
+   const sections = [
+    {
+      id: 1,
+      code: 'CS101',
+      name: 'Introduction to Computer Science',
+      academicYear: '2024-2025',
+      semester: '1st Semester',
+      department: 'Computer Science'
+    },
+     {
+      id: 2,
+      code: 'ENG202',
+      name: 'Advanced English Composition',
+      academicYear: '2024-2025',
+      semester: '2nd Semester',
+      department: 'English'
+    },
+    {
+      id: 3,
+      code: 'MATH302',
+      name: 'Calculus II',
+      academicYear: '2024-2025',
+      semester: '1st Semester',
+      department: 'Mathematics'
+    },
+    {
+      id: 3,
+      code: 'MATH302',
+      name: 'Calculus II',
+      academicYear: '2024-2025',
+      semester: '1st Semester',
+      department: 'Mathematics'
+    },
+    {
+      id: 3,
+      code: 'MATH302',
+      name: 'Calculus II',
+      academicYear: '2024-2025',
+      semester: '1st Semester',
+      department: 'Mathematics'
+    },
+    {
+      id: 3,
+      code: 'MATH302',
+      name: 'Calculus II',
+      academicYear: '2024-2025',
+      semester: '1st Semester',
+      department: 'Mathematics'
+    },
+    {
+      id: 3,
+      code: 'MATH302',
+      name: 'Calculus II',
+      academicYear: '2024-2025',
+      semester: '1st Semester',
+      department: 'Mathematics'
+    },
+    {
+      id: 3,
+      code: 'MATH302',
+      name: 'Calculus II',
+      academicYear: '2024-2025',
+      semester: '1st Semester',
+      department: 'Mathematics'
+    },
+    {
+      id: 3,
+      code: 'MATH302',
+      name: 'Calculus II',
+      academicYear: '2024-2025',
+      semester: '1st Semester',
+      department: 'Mathematics'
+    },
+    {
+      id: 3,
+      code: 'MATH302',
+      name: 'Calculus II',
+      academicYear: '2024-2025',
+      semester: '1st Semester',
+      department: 'Mathematics'
+    },
+    {
+      id: 3,
+      code: 'MATH302',
+      name: 'Calculus II',
+      academicYear: '2024-2025',
+      semester: '1st Semester',
+      department: 'Mathematics'
+    },
+    {
+      id: 3,
+      code: 'MATH302',
+      name: 'Calculus II',
+      academicYear: '2024-2025',
+      semester: '1st Semester',
+      department: 'Mathematics'
+    }
+  ];
+
   return (
     <div className="font-inter bg-gray-50 text-gray-700 min-h-screen flex flex-col">
 
@@ -41,7 +140,6 @@ const CourseDashboard = () => {
           <h2 className="text-xl font-base ml-55 mr-99">My Courses</h2>
 
           <div className="flex items-center gap-6 justify-start">
-
             {/* Search */}
             <div className="relative flex-1">
               <img src="/search.svg" alt="Search Icon" className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-auto" />
@@ -81,20 +179,40 @@ const CourseDashboard = () => {
           <div className="border-t border-gray-300 my-8 w-[1079px]"></div>
         </div>
 
-        {/* Courses */}
-        <div className="flex justify-center items-center h-96">
-          <img src="/empty-courses.svg" alt="Empty Courses" className="h-50 w-50" />
-        </div>
+        {/* If No Courses */}
+        {sections.length === 0 && (
+          <div className="flex justify-center items-center h-96">
+            <img src="/empty-courses.svg" alt="Empty Courses" className="h-50 w-50" />
+          </div>
+        )}
 
-        {/* Temp Button */}
-        <div className="flex items-center justify-center mt-8">
-          <button
-            onClick={goToSectionPage}
-            className="bg-ucap-yellow bg-ucap-yellow-hover text-white px-6 py-3 rounded-lg shadow transition"
-          >
-            Go to Section Page
-          </button>
-        </div>
+        {/* If Courses Exist */}
+        {sections.length > 0 && (
+          <div className="pl-55">
+            <div className="grid grid-cols-3 gap-6 mt-8 w-[1079px]">
+              {sections.map((section, index) => (
+                <div
+                  key={index}
+                  onClick={goToSectionPage}
+                  className="bg-white rounded-lg shadow-md p-6 flex flex-col justify-start cursor-pointer transition-transform transform hover:scale-105"
+                >
+                  {/* Course Code */}
+                  <h3 className="text-2xl font-bold text-gray-700 mb-2">{section.code}</h3>
+
+                  {/* Course Name */}
+                  <p className="text-lg text-gray-600 mb-4">{section.name}</p>
+
+                  {/* Academic Year, Semester, and Department */}
+                  <div className="text-sm text-gray-500 space-y-1">
+                    <p><span className="font-medium">Year:</span> {section.academicYear}</p>
+                    <p><span className="font-medium">Semester:</span> {section.semester}</p>
+                    <p><span className="font-medium">Department:</span> {section.department}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
