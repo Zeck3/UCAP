@@ -23,7 +23,7 @@ def get_roles(request):
 def get_intructors(request):
     try:
         instructors = User.objects.filter(role_id__role_type="Instructor")
-        serializer = InsturctorSerializer(instructors, many=True)
+        serializer = InstructorSerializer(instructors, many=True)
         return JsonResponse(serializer.data, safe=False)
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500) 
