@@ -10,7 +10,7 @@ class Role(models.Model):
         return self.role_type
 
 class User(models.Model):
-    user_id = models.CharField(max_length=10, primary_key=True)
+    user_id = models.IntegerField(primary_key=True)
     role_id = models.ForeignKey(Role, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=255)
     middle_name = models.CharField(max_length=255, blank=True, null=True)
@@ -58,7 +58,7 @@ class Credit(models.Model):
     laboratory_unit = models.IntegerField()
 
 class Semester(models.Model):
-    semester_id = models.AutoField(serialize=True, primary_key=True)
+    semester_id = models.AutoField(serialize=True, primary_key=True) 
     semester_type = models.CharField(max_length=255)
 
 class Course(models.Model):
