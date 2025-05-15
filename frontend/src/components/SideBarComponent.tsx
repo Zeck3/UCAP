@@ -20,7 +20,7 @@ export default function SideBarComponent() {
         <Link to="/admin/user_dashboard" className="flex gap-5 items-center">
           <div
             className={`w-4 mr-2 h-full rounded-r ${
-              isActive("/admin/user_dashboard") ? "bg-[#FCB315]" : "bg-white"
+              isActive("/admin/user_dashboard") ? "bg-[#FCB315]" : "bg-transparent"
             }`}
           />
           <img src="/users.svg" alt="Generate" className="w-8 h-8" />
@@ -30,7 +30,7 @@ export default function SideBarComponent() {
         <Link to="/admin/course_dashboard" className="flex gap-5 items-center">
           <div
             className={`w-4 mr-2 h-full rounded-r ${
-              isActive("/admin/course_dashboard") ? "bg-[#FCB315]" : "bg-white"
+              isActive("/admin/course_dashboard") ? "bg-[#FCB315]" : "bg-transparent"
             }`}
           />
           <img src="/courses.svg" alt="Generate" className="w-8 h-8" />

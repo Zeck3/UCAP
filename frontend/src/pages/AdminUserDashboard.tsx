@@ -1,8 +1,6 @@
-import { useNavigate } from "react-router-dom";
 import HeaderComponent from "../components/HeaderComponent";
 import ToolBarComponent from "../components/ToolBarComponent";
 import MainWrapper from "../components/MainWrapper";
-import { courses } from "../data/dummy_data";
 import SidePanel from "../components/SidePanelComponent";
 import { useState } from "react";
 import UserInputComponent from "../components/UserInputComponent";
