@@ -100,6 +100,8 @@ class ViewCourseSerializer(serializers.ModelSerializer):
     program = ProgramSerializer(source='program_id', read_only=True)
     academic_year = serializers.SerializerMethodField()
     semester = serializers.CharField(source='semester_id.semester_name', read_only=True)
+    college = serializers.SerializerMethodField()
+    campus = serializers.CharField(source='program_id.department_id.campus_id.campus_name', read_only=True)
 
     class Meta:
         model = Course
@@ -110,8 +112,16 @@ class ViewCourseSerializer(serializers.ModelSerializer):
             'program',
             'academic_year',
             'semester',
+            'college',
+            'campus',
         ]
 
+    def get_college(self, obj):
+        # Assumes: Course → Program → Department → College
+        if obj.program_id and obj.program_id.department_id and obj.program_id.department_id.college_id:
+            return obj.program_id.department_id.college_id.college_name
+        return None
+    
     def get_department(self, obj):
         # Assumes: Course → Program → Department
         if obj.program_id and obj.program_id.department_id:
@@ -123,3 +133,7 @@ class ViewCourseSerializer(serializers.ModelSerializer):
             return f"{obj.acad_year_id.academic_year_start}-{obj.acad_year_id.academic_year_end}"
         return None
 
+class SectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Section
+        fields = '__all__'

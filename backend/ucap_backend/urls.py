@@ -16,5 +16,7 @@ urlpatterns = [
     path('admin/course_management/semesters/', get_semesters),  # Semester list
     path('admin/course_management/display_course_list/', get_courses),  # Course list
     path('admin/course_management/create_course/', create_course),  # Create Course
-    path('instructor/course_dashboard/display_course_list/', get_instructor_courses)
+    path('admin/course_management/section/create_section/', create_section),  # Create Section
+    path('instructor/course_dashboard/display_course_list/', get_instructor_courses),  # Instructor Course list
+    
 ]   

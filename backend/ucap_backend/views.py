@@ -112,6 +112,7 @@ def create_course(request):
             return JsonResponse(serializer.errors, status=400)
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500)
+    
 
 @api_view(["GET"])
 def get_course(request, course_code):
@@ -121,6 +122,19 @@ def get_course(request, course_code):
         return JsonResponse(serializer.data, status=200)
     except Course.DoesNotExist:
         return JsonResponse({"message": "Course not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["POST"])
+def create_section(request):
+    try:
+        data = json.loads(request.body)
+        serializer = SectionSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=201)
+        else:
+            return JsonResponse(serializer.errors, status=400)
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500)
     
@@ -172,6 +186,21 @@ def get_instructor_courses(request):
         instructor = User.objects.get(user_id=user_id)
         courses = Course.objects.filter(user_id=instructor)
         serializer = ViewCourseSerializer(courses, many=True)
+        return Response(serializer.data, status=200)
+    except User.DoesNotExist:
+        return Response({"message": "Instructor not found"}, status=404)
+    
+@api_view(["POST"])
+def get_intructor_sections(request):
+    user_id = request.data.get('user_id')
+
+    if not user_id:
+        return Response({"message": "Instructor ID is required"}, status=400)
+
+    try:
+        instructor = User.objects.get(user_id=user_id)
+        sections = Section.objects.filter(instructor=instructor)
+        serializer = SectionSerializer(sections, many=True)
         return Response(serializer.data, status=200)
     except User.DoesNotExist:
         return Response({"message": "Instructor not found"}, status=404)

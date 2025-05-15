@@ -80,7 +80,7 @@ class RoomAndSchedule(models.Model):
 class Section(models.Model):
     section_id = models.AutoField(serialize=True, primary_key=True)
     course_id = models.ForeignKey(Course, on_delete=models.CASCADE)
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    instructor_assigned_id = models.ForeignKey(User, on_delete=models.CASCADE)
     room_and_schedule_id = models.ForeignKey(RoomAndSchedule, on_delete=models.CASCADE, null=True, blank=True)
     year_and_section = models.CharField(max_length=225)
 
