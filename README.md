@@ -3,7 +3,14 @@
 ## Start the app
 
 ```bash
+docker-compose down -v #Avoid this to not delete data on database
 docker-compose up --build
+docker-compose up -d
+docker-compose exec backend python manage.py makemigrations
+docker-compose exec backend python manage.py migrate
+
+#POSTGRES TERMINAL
+docker exec -ti ucap_db psql -U postgres -d ucap_db 
 ```
 
 - Frontend: http://localhost:3000  

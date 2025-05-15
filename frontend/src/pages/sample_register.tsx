@@ -18,7 +18,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     // Fetch roles from API
-    fetch("http://localhost:8000/api/roles/")
+    fetch("http://localhost:8000/api/admin/course_management/roles/")
       .then((res) => res.json())
       .then((data) => setRoles(data))
       .catch((err) => setError("Failed to fetch roles"));
