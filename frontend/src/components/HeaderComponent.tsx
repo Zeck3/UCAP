@@ -1,15 +1,18 @@
 import { useLocation, Link, useNavigate } from "react-router-dom";
 
-type HeaderProps = {
+interface HeaderComponentProps {
   pageTitle: string;
-};
+  isAdmin?: boolean;
+}
 
-export default function HeaderComponent({ pageTitle }: HeaderProps) {
+export default function HeaderComponent({
+  pageTitle,
+  isAdmin = false,
+}: HeaderComponentProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
   const crumbs = getBreadcrumbs(location.pathname);
-
   const previousPath = crumbs.length > 1 ? crumbs[crumbs.length - 2].path : "/";
 
   function goBack() {
@@ -17,16 +20,19 @@ export default function HeaderComponent({ pageTitle }: HeaderProps) {
   }
 
   return (
-    <header className="flex px-12 py-6.5 border-b border-[#E9E6E6]">
-      <div className="flex w-[250px]">
-        <Link to="/course_dashboard">
-          <img
-            src="/ucap-logo.svg"
-            alt="uCAP Logo"
-            className="h-22.5 cursor-pointer"
-          />
-        </Link>
-      </div>
+    <header className="flex px-12 py-6.5 border-b border-[#E9E6E6] h-35.5">
+      {/* Hide logo if user is admin */}
+      {!isAdmin && (
+        <div className="flex w-[250px]">
+          <Link to="/course_dashboard">
+            <img
+              src="/ucap-logo.svg"
+              alt="uCAP Logo"
+              className="h-22.5 cursor-pointer"
+            />
+          </Link>
+        </div>
+      )}
 
       <div className="flex flex-1">
         <div className="flex flex-col justify-center">
@@ -51,11 +57,8 @@ export default function HeaderComponent({ pageTitle }: HeaderProps) {
           </nav>
 
           <div className="flex items-center space-x-2 mt-2">
-            {crumbs.length > 1 && (
-              <button
-                onClick={goBack}
-                className=" mr-8"
-              >
+            {(isAdmin ? crumbs.length > 2 : crumbs.length > 1) && (
+              <button onClick={goBack} className=" mr-8">
                 <img
                   src="/back-arrow.svg"
                   alt="Back Icon"
@@ -63,6 +66,7 @@ export default function HeaderComponent({ pageTitle }: HeaderProps) {
                 />
               </button>
             )}
+
             <h1 className="text-3xl">{pageTitle}</h1>
           </div>
         </div>

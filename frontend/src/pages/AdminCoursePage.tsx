@@ -9,6 +9,7 @@ import UserInputComponent from "../components/UserInputComponent";
 import SidePanel from "../components/SidePanelComponent";
 import { useState } from "react";
 import ScheduleComponent from "../components/ScheduleComponent";
+import SideBarComponent from "../components/SideBarComponent";
 
 export default function AdminCoursePage() {
   const navigate = useNavigate();
@@ -21,65 +22,67 @@ export default function AdminCoursePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      {course ? <HeaderComponent pageTitle={course.code} /> : null}
+    <div className="min-h-screen flex flex-row">
+      <SideBarComponent />
+      <div className="flex flex-1 flex-col">
+        {course ? <HeaderComponent pageTitle={course.code} isAdmin /> : null}
 
-      {/* Body */}
-      <MainWrapper>
-        {course ? (
-          <CourseInfoComponent
-            name={course.name}
-            academicYear={course.academicYear}
-            semester={course.semester}
-            department={course.department}
-            college={course.college}
-            campus={course.campus}
-          />
-        ) : null}
-        <ToolBarComponent
-          title="My Sections"
-          isAdmin={true}
-          onCreateClick={() => setIsPanelOpen(true)}
-          buttonText="Add Section"
-        />
-        <div className="border-t border-[#E9E6E6] w-full"></div>
-        {course && course.sections.length === 0 && (
-          <div className="flex justify-center items-center h-96">
-            <img
-              src="/empty-section.svg"
-              alt="Empty Section"
-              className="h-50 w-50"
+        <MainWrapper isAdmin={true}>
+          {course ? (
+            <CourseInfoComponent
+              name={course.name}
+              academicYear={course.academicYear}
+              semester={course.semester}
+              department={course.department}
+              college={course.college}
+              campus={course.campus}
             />
-          </div>
-        )}
-        {course && course.sections.length > 0 && (
-          <div className="grid grid-cols-2 gap-8 mt-8 w-full">
-            {course.sections.map((section, index) => (
-              <div
-                key={section.id || index}
-                onClick={goToClassRecordPage}
-                className="bg-white rounded-lg border border-[#E9E6E6] flex flex-col justify-start cursor-pointer transition-transform transform hover:scale-105"
-              >
-                <div className="flex items-end h-[200px] bg-gradient-to-b from-[#1A1851] to-[#3B36B7] rounded-t-lg">
-                  <span className="text-3xl text-white mx-4 mb-2">
-                    {section.yearAndSection}
-                  </span>
+          ) : null}
+          <ToolBarComponent
+            title="Sections"
+            isAdmin={true}
+            onCreateClick={() => setIsPanelOpen(true)}
+            buttonText="Add Section"
+          />
+          <div className="border-t border-[#E9E6E6] w-full"></div>
+          {course && course.sections.length === 0 && (
+            <div className="flex justify-center items-center h-96">
+              <img
+                src="/empty-section.svg"
+                alt="Empty Section"
+                className="h-50 w-50"
+              />
+            </div>
+          )}
+          {course && course.sections.length > 0 && (
+            <div className="grid grid-cols-2 gap-8 mt-8 w-full">
+              {course.sections.map((section, index) => (
+                <div
+                  key={section.id || index}
+                  onClick={goToClassRecordPage}
+                  className="bg-white rounded-lg border border-[#E9E6E6] flex flex-col justify-start cursor-pointer transition-transform transform hover:scale-105"
+                >
+                  <div className="flex items-end h-[200px] bg-gradient-to-b from-[#1A1851] to-[#3B36B7] rounded-t-lg">
+                    <span className="text-3xl text-white mx-4 mb-2">
+                      {section.yearAndSection}
+                    </span>
+                  </div>
+                  <div className="border-t border-[#E9E6E6] w-full"></div>
+                  <div className="flex flex-col m-4">
+                    <h4 className="w-full text-lg truncate">
+                      {formatSchedules(section.schedule)}
+                    </h4>
+                    <h5 className="text-sm text-[#767676] truncate">
+                      LeBron James | {course.department}
+                    </h5>
+                  </div>
                 </div>
-                <div className="border-t border-[#E9E6E6] w-full"></div>
-                <div className="flex flex-col m-4">
-                  <h4 className="w-full text-lg truncate">
-                    {formatSchedules(section.schedule)}
-                  </h4>
-                  <h5 className="text-sm text-[#767676] truncate">
-                    LeBron James | {course.department}
-                  </h5>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </MainWrapper>
+              ))}
+            </div>
+          )}
+        </MainWrapper>
+      </div>
+
       <SidePanel
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}

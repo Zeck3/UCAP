@@ -19,7 +19,7 @@ export default function DropdownComponent({
         name={name}
         className="w-full px-4 py-2.5 border border-[#E9E6E6] rounded-md focus-ring-ucap-blue"
       >
-        <option value="">Select {label}</option>
+        <option value=""></option>
         {options.map((option, index) => (
           <option key={index} value={option}>
             {option}
