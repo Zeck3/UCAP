@@ -1,103 +1,61 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
+import HeaderComponent from "../components/HeaderComponent";
+import ToolBarComponent from "../components/ToolBarComponent";
+import MainWrapper from "../components/MainWrapper";
+import { courses } from "../data/dummy_data";
 
-const CourseDashboard = () => {
+export default function CourseDashboard() {
   const navigate = useNavigate();
-
   const goToSectionPage = () => {
-    navigate('/course_dashboard/section/');
+    navigate("/course_dashboard/section");
   };
 
   return (
-    <div className="font-inter bg-gray-50 text-gray-700 min-h-screen flex flex-col">
-
-      {/* Header */}
-      <header className="flex items-center justify-between bg-white px-4 py-8 shadow-md">
-        <div className="flex items-center space-x-4">
-          <img src="/ucap-logo.svg" alt="uCAP Logo" className="h-20 w-auto ml-12" />
-
-          {/* Breadcrumbs */}
-          <div className="flex flex-col ml-20">
-            <nav className="text-sm text-gray-500 space-x-2 flex items-center">
-              <img src="/dashboard-breadcrumb.svg" alt="Dashboard Icon" className="h-4 w-4 inline-block" />
-              <span className="hover:underline cursor-pointer">Dashboard</span>
-            </nav>
-
-            <div className="flex items-center space-x-2 mt-2">
-              <h1 className="text-2xl text-gray-700">Course Dashboard</h1>
-            </div>
+    <div className="min-h-screen flex flex-col">
+      <HeaderComponent pageTitle="Course Dashboard" />
+      <MainWrapper>
+        <ToolBarComponent
+          title="My Courses"
+          isAdmin={false}
+          onCreateClick={() => console.log("Create clicked!")}
+          buttonText="N/A"
+        />
+        <div className="border-t border-[#E9E6E6] w-full"></div>
+        {courses.length === 0 && (
+          <div className="flex justify-center items-center h-96">
+            <img
+              src="/empty-courses.svg"
+              alt="Empty Courses"
+              className="h-50 w-50"
+            />
           </div>
-        </div>
-
-        <div className="flex items-center space-x-2 mr-10">
-          <img src="/user.png" alt="User" className="w-10 h-10 rounded-full bg-gray-300 object-cover" />
-          <span className="text-base font-medium text-gray-700 ml-2 mr-2">LeBron James</span>
-          <img src="/down.svg" alt="Dropdown Arrow" className="w-3 h-3" />
-        </div>
-      </header>
-
-      {/* Body */}
-      <main className="px-24 py-10 flex-1">
-        <div className="flex items-center justify-start mb-8 space-y-2 sm:space-y-0 sm:flex-nowrap">
-          <h2 className="text-xl font-base ml-55 mr-99">My Courses</h2>
-
-          <div className="flex items-center gap-6 justify-start">
-
-            {/* Search */}
-            <div className="relative flex-1">
-              <img src="/search.svg" alt="Search Icon" className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-auto" />
-              <input
-                type="text"
-                placeholder="Search"
-                className="pl-10 pr-4 py-1.5 border border-gray-300 rounded-full shadow-sm w-full bg-white"
-              />
-            </div>
-
-            {/* Sort */}
-            <div className="relative inline-block">
-              <img src="/sort.svg" alt="Sort Icon" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
-              <select className="appearance-none py-1.5 pl-8 pr-10 border border-gray-300 rounded-lg shadow-sm text-gray-700 bg-white">
-                <option>Ascending</option>
-                <option>Descending</option>
-              </select>
-              <div className="pointer-events-none absolute right-8 top-1/2 transform -translate-y-1/2 w-px h-6 bg-gray-300" />
-              <img src="/down.svg" alt="Dropdown Arrow" className="pointer-events-none absolute right-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4" />
-            </div>
-
-            {/* View */}
-            <div className="relative inline-block">
-              <img src="/cards.svg" alt="Cards Icon" className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-3 h-3" />
-              <select className="appearance-none py-1.5 pl-8 pr-10 border border-gray-300 rounded-lg shadow-sm text-gray-700 bg-white">
-                <option>Cards</option>
-                <option>List</option>
-              </select>
-              <div className="pointer-events-none absolute right-8 top-1/2 transform -translate-y-1/2 w-px h-6 bg-gray-300" />
-              <img src="/down.svg" alt="Dropdown Arrow" className="pointer-events-none absolute right-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4" />
-            </div>
+        )}
+        {courses.length > 0 && (
+          <div className="grid grid-cols-2 gap-8 mt-8 w-full">
+            {courses.map((courses, index) => (
+              <div
+                key={index}
+                onClick={goToSectionPage}
+                className="bg-white rounded-lg border border-[#E9E6E6] flex flex-col justify-start cursor-pointer transition-transform transform hover:scale-105"
+              >
+                <div className="flex items-end h-[200px] bg-gradient-to-b from-[#1A1851] to-[#3B36B7] rounded-t-lg">
+                  <span className="text-3xl text-white mx-4 mb-2">
+                    {courses.code}
+                  </span>
+                </div>
+                <div className="border-t border-[#E9E6E6] w-full"></div>
+                <div className="flex flex-col m-4">
+                  <h4 className="w-full text-lg truncate">{courses.name}</h4>
+                  <h5 className="text-sm text-[#767676] truncate">
+                    {courses.academicYear} {courses.semester} |{" "}
+                    {courses.department}{" "}
+                  </h5>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-
-        {/* Divider line */}
-        <div className="pl-55">
-          <div className="border-t border-gray-300 my-8 w-[1079px]"></div>
-        </div>
-
-        {/* Courses */}
-        <div className="flex justify-center items-center h-96">
-          <img src="/empty-courses.svg" alt="Empty Courses" className="h-50 w-50" />
-        </div>
-
-        {/* Temp Button */}
-        <div className="flex items-center justify-center mt-8">
-          <button
-            onClick={goToSectionPage}
-            className="bg-ucap-yellow bg-ucap-yellow-hover text-white px-6 py-3 rounded-lg shadow transition"
-          >
-            Go to Section Page
-          </button>
-        </div>
-      </main>
+        )}
+      </MainWrapper>
     </div>
   );
 };
-
-export default CourseDashboard;

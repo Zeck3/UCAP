@@ -1,10 +1,19 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Tilt+Warp&display=swap');
+@import "tailwindcss";
 
-body {
-  font-family: 'Inter', sans-serif;
+html{
+  font-size: 13px;
 }
 
+/* Main Font */
+body {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  color: #3E3E3E;
+}
+
+/* Main Colors */
 :root {
   --ucap-yellow: #FCB315;
   --ucap-blue: #1A1851;
@@ -29,4 +38,39 @@ body {
 .focus-ring-ucap-blue:focus {
   outline: none;
   box-shadow: 0 0 0 2px var(--ucap-blue);
+}
+
+.font-tilt-warp {
+  font-family: "Tilt Warp", sans-serif;
+}
+
+/* Class Record Colors */
+.bg-light-blue {
+  background-color: #99CCFF;
+}
+
+.bg-dark-blue {
+  background-color: #1F3864;
+}
+
+.bg-bright-yellow {
+  background-color: #FCF305;
+}
+
+/* Remove Input Spinners */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Default Cell Width */
+.table-cell-default {
+  min-width: 50px;
+  padding: 5px;
+  text-align: center;
 }

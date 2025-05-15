@@ -7,10 +7,13 @@ import {
 // import { ProtectedRoute } from "./components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import CourseDashboard from "./pages/CourseDashboard";
-import UserDashboard from "./pages/UserDashboard";
 import ResultSheetPage from "./pages/ResultSheetPage";
-import SectionPage from "./pages/SectionPage";
+import SectionPage from "./pages/CoursePage";
 import ClassRecordPage from "./pages/ClassRecordPage";
+import NotFoundPage from "./pages/NotFoundPage";
+import AdminCourseDashboard from "./pages/AdminCourseDashboard";
+import AdminUserDashboard from "./pages/AdminUserDashboard";
+import AdminCoursePage from "./pages/AdminCoursePage";
 import UnknownPage from "./pages/UnknownPage";
 import Sample from  "./pages/sample_register";
 
@@ -27,9 +30,9 @@ function App() {
       <Route path="/course_dashboard/section/class_record" element={<ClassRecordPage />} />
 
       {/* Admin routes */}
-      <Route path="/admin/user_dashboard" element={<UserDashboard />} />
-      <Route path="/admin/course_dashboard" element={<CourseDashboard />} />
-      <Route path="/admin/course_dashboard/section" element={<UserDashboard />} />
+      <Route path="/admin/user_dashboard" element={<AdminUserDashboard />} />
+      <Route path="/admin/course_dashboard" element={<AdminCourseDashboard />} />
+      <Route path="/admin/course_dashboard/section" element={<AdminCoursePage />} />
 
       {/* Shared route */}
       <Route path="/course_dashboard/section/course_outcome_assessment" element={<ResultSheetPage />} />
@@ -37,6 +40,7 @@ function App() {
       {/* Catch-all route for unknown pages */}
       <Route path="/unknown" element={<UnknownPage />} />
       <Route path="/sample" element={<Sample />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

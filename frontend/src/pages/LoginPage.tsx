@@ -1,35 +1,42 @@
-import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import LoginComponent from "../components/LoginComponent";
+import WelcomeComponent from "../components/WelcomeComponent";
 
-const LoginPage = () => {
+export default function LoginPage() {
+  const navigate = useNavigate();
   const [user_id, setUserID] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const navigate = useNavigate();
 
   useEffect(() => {
     document.title = "uCAP";
   }, []);
 
-interface LoginResponse {
+  interface LoginResponse {
     token: string;
     [key: string]: any;
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
     try {
-      const response: Response = await fetch("http://localhost:8000/api/login/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ user_id, password }),
-      });
+      const response: Response = await fetch(
+        "http://localhost:8000/api/login/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ user_id, password }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Invalid user_id or password");
@@ -46,13 +53,17 @@ interface LoginResponse {
       setError("Invalid user_id or password");
       console.error(err);
     }
+    const goToCourseDashboard = () => {
+      navigate("/course_dashboard");
+    };
   };
 
   return (
-    <div className="font-inter bg-white text-gray-700 min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between bg-white px-4 py-6">
-        <img src="/ucap-logo.svg" alt="uCAP Logo" className="h-20 w-auto ml-12 mt-2" />
+    <div className="min-h-screen flex flex-col">
+      <header className="flex px-12 py-6.5">
+        <div className="flex flex-start w-screen">
+          <img src="/ucap-logo.svg" alt="uCAP Logo" className="h-22.5" />
+        </div>
       </header>
 
       {/* Body */}
@@ -65,7 +76,10 @@ interface LoginResponse {
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="mb-4">
-                <label htmlFor="user-id" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="user-id"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   User ID
                 </label>
                 <input
@@ -80,7 +94,10 @@ interface LoginResponse {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Password
                 </label>
                 <input
@@ -94,8 +111,14 @@ interface LoginResponse {
                 />
               </div>
 
-              {error && <div className="text-red-500 text-sm text-center">{error}</div>}
-              {success && <div className="text-green-500 text-sm text-center">{success}</div>}
+              {error && (
+                <div className="text-red-500 text-sm text-center">{error}</div>
+              )}
+              {success && (
+                <div className="text-green-500 text-sm text-center">
+                  {success}
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -116,13 +139,15 @@ interface LoginResponse {
           />
           <p className="text-xl font-light leading-relaxed">
             Welcome to the <br />
-            <span className="text-ucap-yellow font-bold text-3xl">University </span>
-            <span className="text-ucap-blue font-bold text-3xl">Course Assessment Portal</span>
+            <span className="text-ucap-yellow font-bold text-3xl">
+              University{" "}
+            </span>
+            <span className="text-ucap-blue font-bold text-3xl">
+              Course Assessment Portal
+            </span>
           </p>
         </section>
       </main>
     </div>
   );
-};
-
-export default LoginPage;
+}
