@@ -194,6 +194,14 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange }) => {
                                 ((midLecGradePoint * 0.67) + (midLabGradePoint * 0.33)).toFixed(3)
                             );
 
+                            function getClosestGrade(value: number): number {
+                                const validGrades: number[] = [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0];
+                                return validGrades.reduce((prev: number, curr: number) =>
+                                    Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
+                                );
+                            }
+                            const midtermGrade = getClosestGrade(midGradePoint);
+
                             if (actualIndex === csTotalIndex)
                                 return (<th key={index} className="border border-gray-300 bg-gray-100 font-bold table-cell-default">{csSum}</th>);
                             if (actualIndex === csTotalIndex + 1)
@@ -228,6 +236,8 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange }) => {
                                 return (<th key={index} className="border border-gray-300 bg-gray-100 font-bold table-cell-default">{midLabGradePoint.toFixed(3)}</th>);
                             if (actualIndex === midLabExamIndex + 4)
                                 return (<th key={index} className="border border-gray-300 bg-gray-100 font-bold table-cell-default">{midGradePoint.toFixed(3)}</th>);
+                            if (actualIndex === midLabExamIndex + 5)
+                                return (<td key={index} className="border border-gray-300 bg-gray-100 font-bold table-cell-default">{midtermGrade.toFixed(2)}</td>);
 
                             return (
                                 <th key={index} className="border border-gray-300 table-cell-default">
@@ -332,6 +342,14 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange }) => {
                             ((midLecGradePoint * 0.67) + (midLabGradePoint * 0.33)).toFixed(3)
                         );
 
+                        function getClosestGrade(value: number): number {
+                            const validGrades: number[] = [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0];
+                            return validGrades.reduce((prev: number, curr: number) =>
+                                Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
+                            );
+                        }
+                        const midtermGrade = getClosestGrade(midGradePoint);
+
                         return (
                             <tr key={studentIndex}>
                                 <td className="border border-gray-300 table-cell-default">{studentIndex + 1}</td>
@@ -376,6 +394,8 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange }) => {
                                         return <td key={actualIndex} className="border border-gray-300 font-bold bg-gray-100 table-cell-default">{midLabGradePoint.toFixed(3)}</td>;
                                     if (actualIndex === midLabExamIndex + 4)
                                         return <td key={actualIndex} className="border border-gray-300 font-bold bg-gray-100 table-cell-default">{midGradePoint.toFixed(3)}</td>;
+                                    if (actualIndex === midLabExamIndex + 5)
+                                        return <td key={actualIndex} className="border border-gray-300 bg-gray-100 font-bold table-cell-default">{midtermGrade.toFixed(2)}</td>;
 
                                     return (
                                         <td key={actualIndex} className="border border-gray-300 table-cell-default">
