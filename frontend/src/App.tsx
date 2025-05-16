@@ -14,7 +14,6 @@ import NotFoundPage from "./pages/NotFoundPage";
 import AdminCourseDashboard from "./pages/AdminCourseDashboard";
 import AdminUserDashboard from "./pages/AdminUserDashboard";
 import AdminCoursePage from "./pages/AdminCoursePage";
-import UnknownPage from "./pages/UnknownPage";
 import Sample from  "./pages/sample_register";
 
 // mga commented out lines kay ayha ra i implement pag naa nay mga user roles and authentication
@@ -38,7 +37,6 @@ function App() {
       <Route path="/course_dashboard/section/course_outcome_assessment" element={<ResultSheetPage />} />
 
       {/* Catch-all route for unknown pages */}
-      <Route path="/unknown" element={<UnknownPage />} />
       <Route path="/sample" element={<Sample />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
