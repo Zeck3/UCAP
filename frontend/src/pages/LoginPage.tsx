@@ -13,50 +13,33 @@ export default function LoginPage() {
   useEffect(() => {
     document.title = "uCAP";
   }, []);
-
-  interface LoginResponse {
-    token: string;
-    [key: string]: any;
-  }
-
-  const handleSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
-  ): Promise<void> => {
+  
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-    setSuccess("");
 
     try {
-      const response: Response = await fetch(
-        "http://localhost:8000/api/login/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ user_id, password }),
-        }
-      );
+      const response = await fetch("http://localhost:8000/api/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_id, password }),
+      });
 
       if (!response.ok) {
-        throw new Error("Invalid user_id or password");
+        throw new Error("Invalid credentials");
       }
 
-      const data: LoginResponse = await response.json();
-      console.log("Login success:", data);
-
+      const data = await response.json();
       localStorage.setItem("token", data.token);
-      setSuccess("Login successful!");
-
       navigate("/course_dashboard");
-    } catch (err: unknown) {
-      setError("Invalid user_id or password");
+    } catch (err) {
       console.error(err);
+      setError("Invalid user ID or password.");
     }
   };
-  const goToCourseDashboard = () => {
-    navigate("/course_dashboard");
-  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="flex px-12 py-6.5">
@@ -67,7 +50,11 @@ export default function LoginPage() {
       <main className="w-screen flex flex-1">
         <div className="flex flex-col-reverse lg:flex-row flex-1">
           <LoginComponent
-            onLoginClick={() => goToCourseDashboard()}
+            user_id={user_id}
+            setUserId={setUserID}
+            password={password}
+            setPassword={setPassword}
+            onLoginClick={handleLogin}
             showError={false}
           />
           <WelcomeComponent />

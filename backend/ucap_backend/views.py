@@ -178,10 +178,8 @@ def login_view(request):
 @api_view(["POST"])
 def get_instructor_courses(request):
     user_id = request.data.get('user_id')
-
     if not user_id:
         return Response({"message": "Instructor ID is required"}, status=400)
-
     try:
         instructor = User.objects.get(user_id=user_id)
         courses = Course.objects.filter(user_id=instructor)
@@ -193,14 +191,12 @@ def get_instructor_courses(request):
 @api_view(["POST"])
 def get_intructor_sections(request):
     user_id = request.data.get('user_id')
-
     if not user_id:
         return Response({"message": "Instructor ID is required"}, status=400)
-
     try:
         instructor = User.objects.get(user_id=user_id)
-        sections = Section.objects.filter(instructor=instructor)
-        serializer = SectionSerializer(sections, many=True)
+        sections = Section.objects.filter(instructor_assigned_id=instructor)
+        serializer = ViewSectionSerializer(sections, many=True)
         return Response(serializer.data, status=200)
     except User.DoesNotExist:
         return Response({"message": "Instructor not found"}, status=404)
