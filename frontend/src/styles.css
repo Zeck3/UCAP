@@ -57,6 +57,10 @@ body {
   background-color: #FCF305;
 }
 
+.bg-green {
+  background-color: #70AD47;
+}
+
 /* Remove Input Spinners */
 input[type='number']::-webkit-outer-spin-button,
 input[type='number']::-webkit-inner-spin-button {
