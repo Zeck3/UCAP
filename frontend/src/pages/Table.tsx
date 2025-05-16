@@ -474,19 +474,41 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange, handleFina
 
                             );
                         })}
-                        {finCompGrades.map((_, index) => (
-                            <th
-                                key={`final-comp-header-${index}`}
-                                className={`border border-gray-300 table-cell-default ${index === 0 ? 'border-l-[30px] border-l-[#1F3864]' : ''}`}
-                            >
-                                <input
-                                    type="text"
-                                    value={finalCompGradeHeaders[index] ?? ''}
-                                    onChange={(e) => handleFinalCompGradeHeaderChange(index, e.target.value)}
-                                    className="w-24 text-center outline-none"
-                                />
-                            </th>
-                        ))}
+                        {finCompGrades.map((_, index) => {
+                            if (index === 0) {
+                                return (
+                                    <th
+                                        key={`final-comp-header-${index}`}
+                                        className={`border border-gray-300 table-cell-default ${index === 0 ? 'border-l-[30px] border-l-[#1F3864]' : ''}`}
+                                    >
+                                        1.00
+                                    </th>
+                                );
+                            }
+                            if (index === 4) {
+                                return (
+                                    <th
+                                        key={`final-comp-header-${index}`}
+                                        className={`border border-gray-300 table-cell-default`}
+                                    >
+                                        1.00
+                                    </th>
+                                );
+                            }
+                            return (
+                                <th
+                                    key={`final-comp-header-${index}`}
+                                    className={`border border-gray-300 table-cell-default ${index === 0 ? 'border-l-[30px] border-l-[#1F3864]' : ''}`}
+                                >
+                                    <input
+                                        type="text"
+                                        value={finalCompGradeHeaders[index] ?? ''}
+                                        onChange={(e) => handleFinalCompGradeHeaderChange(index, e.target.value)}
+                                        className="w-24 text-center outline-none"
+                                    />
+                                </th>
+                            );
+                        })}
                     </tr>
                 </thead>
 
