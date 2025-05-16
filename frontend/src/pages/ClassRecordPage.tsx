@@ -10,6 +10,7 @@ interface Student {
   name: string;
   scores: (number | undefined)[];
   finalScores: (number | '')[];
+  finalCompGrades: (number | undefined)[];
 }
 
 const ClassRecordPage = () => {
@@ -22,6 +23,7 @@ const ClassRecordPage = () => {
       name: 'Jane Doe',
       scores: Array(22).fill(undefined),
       finalScores: Array(22).fill(undefined),
+      finalCompGrades: Array(22).fill(undefined),
     }
   ]);
 
@@ -40,6 +42,15 @@ const ClassRecordPage = () => {
     const parsed = parseFloat(value);
 
     updatedStudents[studentIndex].finalScores[scoreIndex] = value === '' ? '' : isNaN(parsed) ? 0 : parsed;
+
+    setStudents(updatedStudents);
+  };
+
+  const handleFinalCompGradeChange = (studentIndex: number, gradeIndex: number, value: string) => {
+    const updatedStudents = [...students];
+    const parsed = parseFloat(value);
+
+    updatedStudents[studentIndex].finalCompGrades[gradeIndex] = value === '' ? undefined : isNaN(parsed) ? 0 : parsed;
 
     setStudents(updatedStudents);
   };
@@ -93,6 +104,7 @@ const ClassRecordPage = () => {
           students={students}
           handleScoreChange={handleScoreChange}
           handleFinalScoreChange={handleFinalScoreChange}
+          handleFinalCompGradeChange={handleFinalCompGradeChange}
         />
       </main>
 

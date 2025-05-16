@@ -6,6 +6,7 @@ interface Student {
     name: string;
     scores: (number | undefined)[];
     finalScores: (number | '')[];
+    finalCompGrades: (number | undefined)[];
 }
 
 // Defining Props
@@ -13,9 +14,10 @@ interface Props {
     students: Student[];
     handleScoreChange: (studentIndex: number, scoreIndex: number, value: string) => void;
     handleFinalScoreChange: (studentIndex: number, finalScoreIndex: number, value: string) => void;
+    handleFinalCompGradeChange: (studentIndex: number, gradeIndex: number, value: string) => void;
 }
 
-const MidtermTable: React.FC<Props> = ({ students, handleScoreChange, handleFinalScoreChange }) => {
+const MidtermTable: React.FC<Props> = ({ students, handleScoreChange, handleFinalScoreChange, handleFinalCompGradeChange }) => {
     const columnGroups: string[][] = [
         [''],
         ['Assign 1', 'Assign 2', 'Assign 3', 'Seat Work 1', 'Seat Work 2', 'Total Score (SRC)', 'CPA'],
@@ -41,6 +43,14 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange, handleFina
         ['Final Lab Exam', 'F'],
         ['FGA', 'Fin Lab Grade Point'],
         ['Fin Grade Point', 'Final Period Grade'],
+    ];
+
+    const finalCompGrades: string[][] = [
+        [
+            '1/2 MTG + 1/2 FTG', '1/2 MTG + 1/2 FTG (For Removal)', '1/2 MTG + 1/2 FTG (After Removal)', 'Description',
+            '1/3 MTG + 2/3 FTG', '1/3 MTG + 2/3 FTG (For Removal)', '1/3 MTG + 2/3 FTG (After Removal)', 'Description',
+            'Remarks (INC, Withdrawn, DF, OD)',
+        ]
     ];
 
     const groupedHeaders = [
@@ -74,6 +84,7 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange, handleFina
     const lectureCount = columnGroups.slice(1, 6).reduce((acc, curr) => acc + curr.length, 0);
     const labCount = columnGroups.slice(6, 10).reduce((acc, curr) => acc + curr.length, 0);
     const midtermCount = columnGroups[10].length;
+    const finCompGrades = finalCompGrades.flat();
 
     const finalFlatHeaders = finalColumnGroups.flat();
     const finalLectureCount = finalColumnGroups.slice(0, 5).reduce((acc, curr) => acc + curr.length, 0);
@@ -82,6 +93,7 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange, handleFina
 
     const [scoreHeaders, setScoreHeaders] = React.useState<(number | '')[]>(Array(flatHeaders.length).fill(''));
     const [finalScoreHeaders, setFinalScoreHeaders] = React.useState<(number | '')[]>(Array(finalFlatHeaders.length).fill(''));
+    const [finalCompGradeHeaders, setFinalCompGradeHeaders] = React.useState<(number | string)[]>(Array(finCompGrades.length).fill(''));
 
     const handleHeaderInputChange = (index: number, value: string) => {
         const updated = [...scoreHeaders];
@@ -93,6 +105,12 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange, handleFina
         const updated = [...finalScoreHeaders];
         updated[index] = value === '' ? '' : Number(value);
         setFinalScoreHeaders(updated);
+    };
+
+    const handleFinalCompGradeHeaderChange = (index: number, value: string) => {
+        const updated = [...finalCompGradeHeaders];
+        updated[index] = value;
+        setFinalCompGradeHeaders(updated);
     };
 
     const csStart = columnGroups[0].length;
@@ -122,6 +140,7 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange, handleFina
                         <th className="px-2 py-1 bg-dark-blue table-cell-default"></th>
                         <th colSpan={flatHeaders.length - 1} className="border border-gray-300 px-2 py-1 table-cell-default bg-light-blue">Midterm Grade</th>
                         <th colSpan={finalFlatHeaders.length} className="border border-gray-300 border-l-[30px] border-l-[#1F3864] px-2 py-1 table-cell-default bg-light-blue">Final Grade</th>
+                        <th colSpan={finCompGrades.length} rowSpan={3} className="border border-gray-300 border-l-[30px] border-l-[#1F3864] px-2 py-1 table-cell-default bg-green text-white text-base">Computed Final Grade</th>
                     </tr>
 
                     <tr className="bg-ucap-yellow">
@@ -152,8 +171,7 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange, handleFina
                                 key={`final-${index}`}
                                 colSpan={group.count}
                                 className={`table-cell-default border border-gray-300 ${index === 0 ? 'border-l-[30px] border-l-[#1F3864]' : ''
-                                    }`}
-                            >
+                                    }`}>
                                 {group.title}
                             </th>
                         ))}
@@ -185,6 +203,17 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange, handleFina
                             </th>
                         ))}
 
+                        {/* Final Computed Grades Section*/}
+                        {finCompGrades.map((label, index) => (
+                            <th
+                                key={`final-comp-${index}`}
+                                rowSpan={2}
+                                className={`table-cell-default border border-gray-300 transform
+                                    ${index === 0 ? 'border-l-[30px] border-l-[#1F3864]' : ''}
+                                    h-50 whitespace-nowrap font-normal`}>
+                                {label}
+                            </th>
+                        ))}
                     </tr>
 
                     <tr>
@@ -201,7 +230,7 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange, handleFina
                     </tr>
 
                     <tr>
-                        <td colSpan={flatHeaders.length + finalFlatHeaders.length + 3} className="bg-dark-blue h-10"></td>
+                        <td colSpan={flatHeaders.length + finalFlatHeaders.length + finCompGrades.length + 3} className="bg-dark-blue h-10"></td>
                     </tr>
 
                     {/* Header Scores and Calculations */}
@@ -440,11 +469,24 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange, handleFina
                                         value={finalScoreHeaders[actualIndex] ?? ''}
                                         onChange={(e) => handleFinalHeaderInputChange(actualIndex, e.target.value)}
                                         onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
-                                        className="w-16 text-center outline-none"/>
+                                        className="w-16 text-center outline-none" />
                                 </th>
 
                             );
                         })}
+                        {finCompGrades.map((_, index) => (
+                            <th
+                                key={`final-comp-header-${index}`}
+                                className={`border border-gray-300 table-cell-default ${index === 0 ? 'border-l-[30px] border-l-[#1F3864]' : ''}`}
+                            >
+                                <input
+                                    type="text"
+                                    value={finalCompGradeHeaders[index] ?? ''}
+                                    onChange={(e) => handleFinalCompGradeHeaderChange(index, e.target.value)}
+                                    className="w-24 text-center outline-none"
+                                />
+                            </th>
+                        ))}
                     </tr>
                 </thead>
 
@@ -718,10 +760,47 @@ const MidtermTable: React.FC<Props> = ({ students, handleScoreChange, handleFina
                                                 value={student.finalScores?.[actualIndex] ?? ''}
                                                 onChange={(e) => handleFinalScoreChange(studentIndex, actualIndex, e.target.value)}
                                                 onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()}
-                                                className="w-16 text-center outline-none"/>
+                                                className="w-16 text-center outline-none" />
                                         </td>
                                     );
 
+                                })}
+                                {finCompGrades.map((_, index) => {
+                                    if (index === 0) {
+                                        const computedGrade = ((midtermGrade * 0.5) + (finalGrade * 0.5)).toFixed(2);
+                                        return (
+                                            <td
+                                                key={`final-comp-${studentIndex}-${index}`}
+                                                className={`border border-gray-300 table-cell-default ${index === 0 ? 'border-l-[30px] border-l-[#1F3864]' : ''}`}
+                                            >
+                                                {computedGrade}
+                                            </td>
+                                        );
+                                    }
+                                    if (index === 4) {
+                                        const computedGrade = ((midtermGrade * 0.33) + (finalGrade * 0.67)).toFixed(2);
+                                        return (
+                                            <td
+                                                key={`final-comp-${studentIndex}-${index}`}
+                                                className={`border border-gray-300 table-cell-default`}
+                                            >
+                                                {computedGrade}
+                                            </td>
+                                        );
+                                    }
+                                    return (
+                                        <td
+                                            key={`final-comp-${studentIndex}-${index}`}
+                                            className={`border border-gray-300 table-cell-default ${index === 0 ? 'border-l-[30px] border-l-[#1F3864]' : ''}`}
+                                        >
+                                            <input
+                                                type="text"
+                                                value={student.finalCompGrades?.[index] ?? ''}
+                                                onChange={(e) => handleFinalCompGradeChange(studentIndex, index, e.target.value)}
+                                                className="w-24 text-center outline-none"
+                                            />
+                                        </td>
+                                    );
                                 })}
                             </tr>
                         );
