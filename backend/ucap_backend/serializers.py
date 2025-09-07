@@ -2,15 +2,18 @@ from rest_framework import serializers
 from .models import *
 from django.contrib.auth.hashers import check_password
 
-class RoleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Role
-        fields = ['role_id', 'role_type']  # Use 'role_type', not 'role_name'
-
 class InstructorSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['user_id', 'first_name', 'middle_name', 'last_name', 'suffix', 'email']
+
+
+#============================================================================================================================
+
+class RoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Role
+        fields = ['role_id', 'role']  # Use 'role_type', not 'role_name'
 
 class CampusSerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,36 +21,57 @@ class CampusSerializer(serializers.ModelSerializer):
         fields = ['campus_name']
 
 class CollegeSerializer(serializers.ModelSerializer):
-    campus_id = CampusSerializer()
+    college_campus_id = CampusSerializer()
 
     class Meta:
         model = College
-        fields = ['college_name']
+        fields = ['college_id', 'college_name', 'college_campus_id']
 
 class DepartmentSerializer(serializers.ModelSerializer):
+    department_campus_id = CampusSerializer()
+    department_college_id = CollegeSerializer()
+
     class Meta:
         model = Department
-        fields = ['department_name']
+        fields = ['department_id', 'department_name', 'department_campus_id', 'department_college_id']
 
 class ProgramSerializer(serializers.ModelSerializer):
+    program_department_id = DepartmentSerializer()
+
     class Meta:
         model = Program
-        fields = ['program_name']
-
-class AcademicYearSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AcademicYear
-        fields = ['academic_year_start', 'academic_year_end']
-
-class CreditSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Credit
-        fields = ['lecture_unit', 'laboratory_unit']
+        fields = ['program_id', 'program_name', 'program_department_id']
 
 class SemesterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Semester
-        fields = ['semester_type']
+        fields = ['semester_id', 'semester_type']
+
+class YearLevelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = YearLevel
+        fields = ['year_level_id', 'year_level']
+
+class AcademicYearSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AcademicYear
+        fields = ['academic_year_id', 'academic_year_start', 'academic_year_end']
+
+class CreditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Credit
+        fields = ['credit_id', 'lecture_unit', 'laboratory_unit', 'credit_unit']
+
+class CourseListSerializer(serializers.ModelSerializer):
+    course_credit_id = CreditSerializer()
+    course_program_id = ProgramSerializer()
+    course_year_level_id = YearLevelSerializer()
+
+    class Meta:
+        model = Course
+        fields = ['course_code', 'course_credit_id', 'course_program_id', 'course_year_level_id', 'course_title']
+
+#============================================================================================================================
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:

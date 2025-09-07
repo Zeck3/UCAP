@@ -74,6 +74,15 @@ def get_academic_years(request):
         return JsonResponse({"message": str(e)}, status=500)
 
 @api_view(["GET"])
+def get_year_levels(request):
+    try:
+        year_levels = YearLevel.objects.all()
+        serializer = YearLevelSerializer(year_levels, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+
+@api_view(["GET"])
 def get_credits(request):
     try:
         credits = Credit.objects.all()
@@ -95,7 +104,7 @@ def get_semesters(request):
 def get_courses(request):
     try:
         courses = Course.objects.all()
-        serializer = ViewCourseSerializer(courses, many=True)
+        serializer = CourseListSerializer(courses, many=True)
         return JsonResponse(serializer.data, safe=False)
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500)

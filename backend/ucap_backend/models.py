@@ -5,17 +5,6 @@ class Role(models.Model):
     role_id = models.AutoField(serialize=True, primary_key=True)
     role = models.CharField(max_length=255) 
 
-    def __str__(self):
-        return self.role_type
-    
-    def save(self, *args, **kwargs):
-        if not self.pk or not User.objects.filter(pk=self.pk, password=self.password).exists():
-            self.password = make_password(self.password)
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"
-
 class Campus(models.Model):
     campus_id = models.AutoField(serialize=True, primary_key=True)
     campus_name = models.CharField(max_length=225)
@@ -33,7 +22,7 @@ class Department(models.Model):
 
 class User(models.Model):
     user_id = models.IntegerField(primary_key=True)
-    user_department_id = models.ForeignKey(Department, on_delete=models.CASCADE)
+    user_department_id = models.ForeignKey(Department, on_delete=models.CASCADE, blank=True, null=True)
     user_role_id = models.ForeignKey(Role, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=255)
     middle_name = models.CharField(max_length=255, blank=True, null=True)   
@@ -67,7 +56,7 @@ class Credit(models.Model):
     credit_unit = models.IntegerField()
 
 class Course(models.Model):
-    course_code = models.IntegerField(primary_key=True)
+    course_code = models.CharField(primary_key=True)
     course_credit_id = models.ForeignKey(Credit, on_delete=models.CASCADE)
     course_program_id = models.ForeignKey(Program, on_delete=models.CASCADE)
     course_year_level_id = models.ForeignKey(YearLevel, on_delete=models.CASCADE)
@@ -127,7 +116,7 @@ class ProgramOutcome(models.Model):
     PO_course_code = models.ForeignKey(Course, on_delete=models.CASCADE)
     description = models.CharField(max_length=255)
 
-class AssessmentClassification(models.Model):
+class AssessmentClassification(models.Model): 
     assessment_classification_id = models.AutoField(serialize=True, primary_key=True)
     AC_assessment_id = models.ForeignKey(Assessment, on_delete=models.CASCADE)
     assessment_classification = models.CharField(max_length=255)
@@ -147,3 +136,4 @@ class CO_PO_Mapping(models.Model):
 
     class Meta:
         unique_together = ('mapping_program_outcome_id', 'mapping_course_outcome_id')
+

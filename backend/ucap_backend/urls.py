@@ -12,11 +12,12 @@ urlpatterns = [
     path('admin/course_management/departments/', get_departments),  # Department list
     path('admin/course_management/programs/', get_programs),  # Program list
     path('admin/course_management/academic_years/', get_academic_years),  # Academic Year list
+    path('admin/course_management/year_levels/', get_year_levels),  # Year Level list
     path('admin/course_management/credits/', get_credits),  # Credit list
     path('admin/course_management/semesters/', get_semesters),  # Semester list
     path('admin/course_management/display_course_list/', get_courses),  # Course list
     path('admin/course_management/create_course/', create_course),  # Create Course
     path('admin/course_management/section/create_section/', create_section),  # Create Section
     path('instructor/course_dashboard/display_course_list/', get_instructor_courses),  # Instructor Course list
-    
+     
 ]   
