@@ -1,46 +1,42 @@
-import {
-  Routes,
-  Route,
-  //Navigate,
-} from "react-router-dom";
-// import { AuthProvider } from "./context/AuthProvider";
-// import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { Roles } from "./config/Roles";
+import ProtectedRoute from "./components/routes/ProtectedRoute";
+
 import LoginPage from "./pages/LoginPage";
-import CourseDashboard from "./pages/CourseDashboard";
-import ResultSheetPage from "./pages/ResultSheetPage";
-import SectionPage from "./pages/CoursePage";
-import ClassRecordPage from "./pages/ClassRecordPage";
 import NotFoundPage from "./pages/NotFoundPage";
-import AdminCourseDashboard from "./pages/AdminCourseDashboard";
-import AdminUserDashboard from "./pages/AdminUserDashboard";
-import AdminCoursePage from "./pages/AdminCoursePage";
-import Sample from  "./pages/sample_register";
 
-// mga commented out lines kay ayha ra i implement pag naa nay mga user roles and authentication
+import CourseDashboard from "./pages/instructor/CourseDashboard";
+import CoursePage from "./pages/instructor/CoursePage";
+import ClassRecordPage from "./pages/instructor/ClassRecordPage";
+import AdminCourseDashboard from "./pages/admin/AdminCourseDashboard";
+import AdminUserDashboard from "./pages/admin/AdminUserDashboard";
+import DepartmentChairCourseDashboard from "./pages/department_chair/DepartmentChairCourseDashboard";
+import DepartmentChairCoursePage from "./pages/department_chair/DepartmentChairCoursePage";
+import DepartmentChairAssessmentPage from "./pages/department_chair/DepartmentChairAssessmentPage";
 
-function App() {
+export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<LoginPage />} />
-
-      {/* Instructor routes */}
-      <Route path="/course_dashboard" element={<CourseDashboard />} />
-      <Route path="/course_dashboard/section/" element={<SectionPage />} />
-      <Route path="/course_dashboard/section/class_record" element={<ClassRecordPage />} />
-
-      {/* Admin routes */}
-      <Route path="/admin/user_dashboard" element={<AdminUserDashboard />} />
-      <Route path="/admin/course_dashboard" element={<AdminCourseDashboard />} />
-      <Route path="/admin/course_dashboard/section" element={<AdminCoursePage />} />
-
-      {/* Shared route */}
-      <Route path="/course_dashboard/section/course_outcome_assessment" element={<ResultSheetPage />} />
-
-      {/* Catch-all route for unknown pages */}
-      <Route path="/sample" element={<Sample />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<NotFoundPage />} />
+
+      <Route element={<ProtectedRoute allowedRoles={[Roles.DepartmentChair]} />}>
+        <Route path="/department/:department_name/:loaded_course_id/:course_code/:year_and_section" element={<DepartmentChairAssessmentPage />} />
+        <Route path="/department/:department_name/:loaded_course_id/:course_code" element={<DepartmentChairCoursePage />} />
+        <Route path="/department/:department_name" element={<DepartmentChairCourseDashboard />} />
+      </Route>
+
+      <Route element={<ProtectedRoute allowedRoles={[Roles.Instructor]} />}>
+        <Route path="/instructor/:loaded_course_id/:course_code/:year_and_section" element={<ClassRecordPage />} />
+        <Route path="/instructor/:loaded_course_id/:course_code" element={<CoursePage />} />
+        <Route path="/instructor" element={<CourseDashboard />} />
+      </Route>
+
+      <Route element={<ProtectedRoute allowedRoles={[Roles.Administrator]} />}>
+        <Route path="/admin/course_management" element={<AdminCourseDashboard />} />
+        <Route path="/admin/user_management" element={<AdminUserDashboard />} />
+      </Route>
     </Routes>
   );
 }
-
-export default App;

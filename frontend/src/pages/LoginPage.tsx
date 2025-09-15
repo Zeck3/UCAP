@@ -2,51 +2,85 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import LoginComponent from "../components/LoginComponent";
 import WelcomeComponent from "../components/WelcomeComponent";
+import dummy from "../data/dummy";
+import { useAuth } from "../context/useAuth";
+import { roleRoutes } from "../config/Roles";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [user_id, setUserID] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const { login, user } = useAuth();
 
   useEffect(() => {
-    document.title = "uCAP";
-  }, []);
-  
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage("");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
+  useEffect(() => {
+    if (user) {
+      const route = roleRoutes[user.role_id];
+      if (route) {
+        navigate(route, { replace: true });
+      } else {
+        console.warn(`No route defined for role_id: ${user.role_id}`);
+      }
+    }
+  }, [user, navigate]);
+
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
+
+    if (!user_id.trim() && !password.trim()) {
+      setErrorMessage("Please enter User ID and Password.");
+      return;
+    } else if (!user_id.trim()) {
+      setErrorMessage("Please enter your User ID.");
+      return;
+    } else if (!password.trim()) {
+      setErrorMessage("Please enter your Password.");
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage("");
 
     try {
-      const response = await fetch("http://localhost:8000/api/login/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ user_id, password }),
-      });
+      const enteredId = user_id;
+      const enteredPassword = password;
 
-      if (!response.ok) {
-        throw new Error("Invalid credentials");
+      setUserID("");
+      setPassword("");
+
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const users = dummy[0].user_tbl;
+      const foundUser = users.find(
+        (u) =>
+          String(u.user_id) === enteredId &&
+          String(u.password) === enteredPassword
+      );
+
+      if (foundUser) {
+        login(foundUser);
+        const route = roleRoutes[foundUser.role_id] ?? "/login";
+        navigate(route);
+      } else {
+        setErrorMessage("Invalid User ID or Password");
       }
-
-      const data = await response.json();
-      localStorage.setItem("token", data.token);
-      navigate("/course_dashboard");
-    } catch (err) {
-      console.error(err);
-      setError("Invalid user ID or password.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="flex px-12 py-6.5">
-        <div className="flex flex-start w-screen">
-          <img src="/ucap-logo.svg" alt="uCAP Logo" className="h-22.5" />
-        </div>
-      </header>
       <main className="w-screen flex flex-1">
         <div className="flex flex-col-reverse lg:flex-row flex-1">
           <LoginComponent
@@ -55,7 +89,8 @@ export default function LoginPage() {
             password={password}
             setPassword={setPassword}
             onLoginClick={handleLogin}
-            showError={false}
+            errorMessage={errorMessage}
+            loading={loading}
           />
           <WelcomeComponent />
         </div>
