@@ -73,8 +73,8 @@ class Section(models.Model):
     section_loaded_course_id = models.ForeignKey(LoadedCourseTable, on_delete=models.CASCADE)
     section_instructor_assigned_id = models.ForeignKey(User, on_delete=models.CASCADE)
     year_and_section = models.CharField(max_length=225)
-    result_sheet_remarks = models.CharField(max_length=225)
-    result_sheet_status = models.CharField(max_length=225)
+    result_sheet_remarks = models.CharField(max_length=225, blank=True, null=True)
+    result_sheet_status = models.CharField(max_length=225, blank=True, null=True)
 
 class Student(models.Model):
     student_id = models.IntegerField(primary_key=True)
