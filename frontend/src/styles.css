@@ -1,24 +1,26 @@
+/* Font Imports */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Tilt+Warp&display=swap');
 @import "tailwindcss";
 
-html{
+/* Global Styles */
+html {
   font-size: 13px;
 }
 
-/* Main Font */
 body {
   font-family: 'Inter', sans-serif;
   font-weight: 500;
   color: #3E3E3E;
 }
 
-/* Main Colors */
+/* Custom Variables */
 :root {
   --ucap-yellow: #FCB315;
   --ucap-blue: #1A1851;
 }
 
+/* Background Classes */
 .bg-ucap-yellow {
   background-color: var(--ucap-yellow);
 }
@@ -27,24 +29,10 @@ body {
   background-color: #e6a400;
 }
 
-.text-ucap-yellow {
-  color: var(--ucap-yellow);
+.bg-coa-yellow {
+  background-color: #FCF305;
 }
 
-.text-ucap-blue {
-  color: var(--ucap-blue);
-}
-
-.focus-ring-ucap-blue:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--ucap-blue);
-}
-
-.font-tilt-warp {
-  font-family: "Tilt Warp", sans-serif;
-}
-
-/* Class Record Colors */
 .bg-light-blue {
   background-color: #99CCFF;
 }
@@ -61,18 +49,52 @@ body {
   background-color: #70AD47;
 }
 
-/* Remove Input Spinners */
+/* Text Color Classes */
+.text-ucap-yellow {
+  color: var(--ucap-yellow);
+}
+
+.text-coa-red {
+  color: #9C0006;
+}
+
+.text-coa-blue {
+  color: #333399;
+}
+
+.text-ucap-blue {
+  color: var(--ucap-blue);
+}
+
+/* Border Classes */
+.border-coa-gray {
+  border-color: #e8e2e2;
+}
+
+/* Focus Styles */
+.focus-ring-ucap-blue:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ucap-blue);
+}
+
+/* Font Classes */
+.font-tilt-warp {
+  font-family: "Tilt Warp", sans-serif;
+}
+
+/* Input Spinner Removal */
 input[type='number']::-webkit-outer-spin-button,
 input[type='number']::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
 input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
 
-/* Default Cell Width */
+/* Table Cell Defaults */
 .table-cell-default {
   min-width: 50px;
   padding: 5px;

@@ -127,7 +127,10 @@ const ClassRecordPage = () => {
         </div>
 
         {/* Generate Button */}
-        <button className="flex items-center space-x-2 bg-ucap-yellow bg-ucap-yellow-hover text-white font-semibold py-2 px-4 rounded-full shadow transition-all duration-200 mr-10">
+        <button
+        onClick={() => navigate("/course_dashboard/section/course_outcome_assessment")}
+        className="flex items-center space-x-2 bg-ucap-yellow bg-ucap-yellow-hover text-white font-semibold py-2 px-4 rounded-full shadow transition-all duration-200 mr-10"
+        >
           <img src="/generate.svg" alt="Generate" className="w-4 h-4" />
           <span>Generate COA Result Sheet</span>
         </button>
