@@ -97,7 +97,7 @@ class LoginValidator:
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
-        fields = '__all__'
+        fields = ['course_code', 'course_title']
 
 #===== For Registration Validation =============================================================================================================        
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -158,3 +158,14 @@ class LoadedCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = LoadedCourseTable
         fields = ['loaded_course_id', 'loaded_course_code', 'loaded_academic_year_start', 'loaded_academic_year_end']
+
+class DepartmentCourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ['course_code', 'course_title']
+
+class DepartmentInstructorSerializer(serializers.ModelSerializer):
+    assigned_department = serializers.CharField(source='user_department_id.department_name', read_only=True)
+    class Meta:
+        model = User
+        fields = ['user_id', 'first_name', 'last_name', 'assigned_department']
