@@ -141,9 +141,11 @@ def login_authentication(request):
             return Response({
                 "message": "Login successful",
                 "user_id": user.user_id,
+                "role_id": user.user_role_id.role_id,
+                "department_id": user.user_department_id.department_id,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "role": user.user_role_id.role
+                "email": user.email
             }, status=status.HTTP_200_OK)
         else:
             return Response(validator.errors, status=status.HTTP_401_UNAUTHORIZED)
@@ -232,12 +234,12 @@ def faculty_registration(request):
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500)
 
-@api_view(["PUT"])
+@api_view(["PUT", "PATCH"])
 def update_faculty(request, user_id):
     try:
         user = User.objects.get(user_id=user_id)
         data = json.loads(request.body)
-        serializer = InstructorSerializer(user, data=data, partial=(request.method == "PATCH"))
+        serializer = InstructorSerializer(user, data=data, partial=(request.method == "PUT"))
         if serializer.is_valid():
             serializer.save()
             return JsonResponse({

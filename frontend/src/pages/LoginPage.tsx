@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import LoginComponent from "../components/LoginComponent";
 import WelcomeComponent from "../components/WelcomeComponent";
-import dummy from "../data/dummy";
+//import dummy from "../data/dummy";
 import { useAuth } from "../context/useAuth";
 import { roleRoutes } from "../config/Roles";
 
@@ -33,7 +33,7 @@ export default function LoginPage() {
       }
     }
   }, [user, navigate]);
-
+/*
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -78,6 +78,44 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+*/
+  const handleLoginAPI = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!user_id.trim() && !password.trim()) {
+      setErrorMessage("Please enter User ID and Password.");
+      return;
+    } else if (!user_id.trim()) {
+      setErrorMessage("Please enter your User ID.");
+      return;
+    } else if (!password.trim()) {
+      setErrorMessage("Please enter your Password.");
+      return;
+    }
+    setLoading(true);
+    setErrorMessage("");
+    try {
+      const response = await fetch("http://localhost:8000/api/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_id, password }),
+      });
+      if (!response.ok){
+        throw new Error("Invalid User ID or Password");
+      }
+      const foundUser = await response.json();
+      setUserID("");
+      setPassword("");
+      login(foundUser);
+      const route = roleRoutes[foundUser.role_id] ?? "/login";
+      navigate(route);
+    } catch (error: any) {
+      setErrorMessage(error.message || "An error occurred during login.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -88,7 +126,7 @@ export default function LoginPage() {
             setUserId={setUserID}
             password={password}
             setPassword={setPassword}
-            onLoginClick={handleLogin}
+            onLoginClick={handleLoginAPI}
             errorMessage={errorMessage}
             loading={loading}
           />

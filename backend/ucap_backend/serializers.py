@@ -99,19 +99,20 @@ class CourseSerializer(serializers.ModelSerializer):
         fields = ['course_code', 'course_title']
 #===== SECTION SERIALIZERS ==============================================================================================================
 class SectionCourseSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='section_loaded_course_id.loaded_course_id', read_only=True)
     course_code = serializers.CharField(source='section_loaded_course_id.loaded_course_code.course_code', read_only=True)
     course_title = serializers.CharField(source='section_loaded_course_id.loaded_course_code.course_title', read_only=True)
     academic_year_start = serializers.IntegerField(source='section_loaded_course_id.loaded_academic_year_id.academic_year_start', read_only=True)
     academic_year_end = serializers.IntegerField(source='section_loaded_course_id.loaded_academic_year_id.academic_year_end', read_only=True)
-    semester = serializers.CharField(source='section_loaded_course_id.loaded_course_code.course_semester_id.semester_type', read_only=True)
+    semester_type = serializers.CharField(source='section_loaded_course_id.loaded_course_code.course_semester_id.semester_type', read_only=True)
     year_level = serializers.CharField(source='section_loaded_course_id.loaded_course_code.course_year_level_id.year_level', read_only=True)
-    department = serializers.CharField(source='section_loaded_course_id.loaded_course_code.course_program_id.program_department_id.department_name', read_only=True)
+    department_name = serializers.CharField(source='section_loaded_course_id.loaded_course_code.course_program_id.program_department_id.department_name', read_only=True)
     college = serializers.CharField(source='section_loaded_course_id.loaded_course_code.course_program_id.program_department_id.department_college_id.college_name', read_only=True)
     campus = serializers.CharField(source='section_loaded_course_id.loaded_course_code.course_program_id.program_department_id.department_college_id.college_campus_id.campus_name', read_only=True)    
     
     class Meta:
         model = Section
-        fields = ['course_code', 'course_title', 'academic_year_start', 'academic_year_end', 'semester', 'department', 'college', 'campus', 'year_level']
+        fields = ['id', 'course_code', 'course_title', 'academic_year_start', 'academic_year_end', 'semester_type', 'department_name', 'college', 'campus', 'year_level']
 
 class CreateSectionSerializer(serializers.ModelSerializer):
     class Meta:

@@ -28,7 +28,7 @@ urlpatterns = [
 #============================================================================================================================
     path('instructor/course_dashboard/<int:instructor_id>/display_courses/', instructor_courses),                                   
     path('instructor/course_dashboard/<int:instructor_id>/<str:loaded_course_id>/display_sections/', instructor_sections),          
-    path('instructor/course_dashboard/<int:instructor_id>/display_course_information/', instructor_course_information),
+    path('instructor/course_dashboard/<int:instructor_id>/display_course_information/', instructor_course_information),                 #for Instructor Dashboard
 #============================================================================================================================
     path('admin/course_management/section/create_section/', create_section), 
     #path('department_chair/course_management/<str:course_code>/load_course/', load_course),
