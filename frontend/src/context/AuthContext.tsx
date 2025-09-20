@@ -11,8 +11,11 @@ export type User = {
 
 export type AuthContextType = {
   user: User | null;
-  login: (userData: User) => void;
+  loading: boolean;
+  login: (userData: User, access: string, refresh: string) => void;
   logout: () => void;
 };
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);

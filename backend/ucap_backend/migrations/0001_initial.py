@@ -8,247 +8,421 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='AcademicYear',
+            name="AcademicYear",
             fields=[
-                ('academic_year_id', models.AutoField(primary_key=True, serialize=False)),
-                ('academic_year_start', models.IntegerField()),
-                ('academic_year_end', models.IntegerField()),
+                (
+                    "academic_year_id",
+                    models.AutoField(primary_key=True, serialize=False),
+                ),
+                ("academic_year_start", models.IntegerField()),
+                ("academic_year_end", models.IntegerField()),
             ],
         ),
         migrations.CreateModel(
-            name='Assessment',
+            name="Assessment",
             fields=[
-                ('assessment_id', models.AutoField(primary_key=True, serialize=False)),
-                ('assessment_title', models.CharField(max_length=225)),
-                ('highest_score', models.IntegerField()),
+                ("assessment_id", models.AutoField(primary_key=True, serialize=False)),
+                ("assessment_title", models.CharField(max_length=225)),
+                ("highest_score", models.IntegerField()),
             ],
         ),
         migrations.CreateModel(
-            name='Campus',
+            name="Campus",
             fields=[
-                ('campus_id', models.AutoField(primary_key=True, serialize=False)),
-                ('campus_name', models.CharField(max_length=225)),
+                ("campus_id", models.AutoField(primary_key=True, serialize=False)),
+                ("campus_name", models.CharField(max_length=225)),
             ],
         ),
         migrations.CreateModel(
-            name='College',
+            name="College",
             fields=[
-                ('college_id', models.AutoField(primary_key=True, serialize=False)),
-                ('college_name', models.CharField(max_length=225)),
-                ('college_campus_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.campus')),
+                ("college_id", models.AutoField(primary_key=True, serialize=False)),
+                ("college_name", models.CharField(max_length=225)),
+                (
+                    "college_campus_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.campus",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Course',
+            name="Course",
             fields=[
-                ('course_code', models.CharField(primary_key=True, serialize=False)),
-                ('course_title', models.CharField(max_length=255)),
+                ("course_code", models.CharField(primary_key=True, serialize=False)),
+                ("course_title", models.CharField(max_length=255)),
             ],
         ),
         migrations.CreateModel(
-            name='CourseTerm',
+            name="CourseTerm",
             fields=[
-                ('course_term_id', models.AutoField(primary_key=True, serialize=False)),
-                ('course_term', models.CharField(max_length=225)),
+                ("course_term_id", models.AutoField(primary_key=True, serialize=False)),
+                ("course_term", models.CharField(max_length=225)),
             ],
         ),
         migrations.CreateModel(
-            name='Credit',
+            name="Credit",
             fields=[
-                ('credit_id', models.AutoField(primary_key=True, serialize=False)),
-                ('lecture_unit', models.IntegerField()),
-                ('laboratory_unit', models.IntegerField()),
-                ('credit_unit', models.IntegerField()),
+                ("credit_id", models.AutoField(primary_key=True, serialize=False)),
+                ("lecture_unit", models.IntegerField()),
+                ("laboratory_unit", models.IntegerField()),
+                ("credit_unit", models.IntegerField()),
             ],
         ),
         migrations.CreateModel(
-            name='Department',
+            name="Department",
             fields=[
-                ('department_id', models.AutoField(primary_key=True, serialize=False)),
-                ('department_name', models.CharField(max_length=255)),
-                ('department_campus_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.campus')),
-                ('department_college_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.college')),
+                ("department_id", models.AutoField(primary_key=True, serialize=False)),
+                ("department_name", models.CharField(max_length=255)),
+                (
+                    "department_campus_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.campus",
+                    ),
+                ),
+                (
+                    "department_college_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.college",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='LoadedCourseTable',
+            name="LoadedCourseTable",
             fields=[
-                ('loaded_course_id', models.AutoField(primary_key=True, serialize=False)),
-                ('loaded_academic_year_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.academicyear')),
-                ('loaded_course_code', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.course')),
+                (
+                    "loaded_course_id",
+                    models.AutoField(primary_key=True, serialize=False),
+                ),
+                (
+                    "loaded_academic_year_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.academicyear",
+                    ),
+                ),
+                (
+                    "loaded_course_code",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.course",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Role',
+            name="Role",
             fields=[
-                ('role_id', models.AutoField(primary_key=True, serialize=False)),
-                ('role', models.CharField(max_length=255)),
+                ("role_id", models.AutoField(primary_key=True, serialize=False)),
+                ("role", models.CharField(max_length=255)),
             ],
         ),
         migrations.CreateModel(
-            name='Section',
+            name="Section",
             fields=[
-                ('section_id', models.AutoField(primary_key=True, serialize=False)),
-                ('year_and_section', models.CharField(max_length=225)),
-                ('result_sheet_remarks', models.CharField(blank=True, max_length=225, null=True)),
-                ('result_sheet_status', models.CharField(blank=True, max_length=225, null=True)),
+                ("section_id", models.AutoField(primary_key=True, serialize=False)),
+                ("year_and_section", models.CharField(max_length=225)),
+                (
+                    "result_sheet_remarks",
+                    models.CharField(blank=True, max_length=225, null=True),
+                ),
+                (
+                    "result_sheet_status",
+                    models.CharField(blank=True, max_length=225, null=True),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Semester',
+            name="Semester",
             fields=[
-                ('semester_id', models.AutoField(primary_key=True, serialize=False)),
-                ('semester_type', models.CharField(max_length=255)),
+                ("semester_id", models.AutoField(primary_key=True, serialize=False)),
+                ("semester_type", models.CharField(max_length=255)),
             ],
         ),
         migrations.CreateModel(
-            name='YearLevel',
+            name="YearLevel",
             fields=[
-                ('year_level_id', models.AutoField(primary_key=True, serialize=False)),
-                ('year_level', models.CharField(max_length=255)),
+                ("year_level_id", models.AutoField(primary_key=True, serialize=False)),
+                ("year_level", models.CharField(max_length=255)),
             ],
         ),
         migrations.CreateModel(
-            name='User',
+            name="User",
             fields=[
-                ('user_id', models.IntegerField(primary_key=True, serialize=False)),
-                ('first_name', models.CharField(max_length=255)),
-                ('middle_name', models.CharField(blank=True, max_length=255, null=True)),
-                ('last_name', models.CharField(max_length=255)),
-                ('suffix', models.CharField(blank=True, max_length=255, null=True)),
-                ('email', models.EmailField(max_length=255, unique=True)),
-                ('password', models.CharField(max_length=255)),
-                ('user_department_id', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.department')),
-                ('user_role_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.role')),
+                ("user_id", models.IntegerField(primary_key=True, serialize=False)),
+                ("first_name", models.CharField(max_length=255)),
+                (
+                    "middle_name",
+                    models.CharField(blank=True, max_length=255, null=True),
+                ),
+                ("last_name", models.CharField(max_length=255)),
+                ("suffix", models.CharField(blank=True, max_length=255, null=True)),
+                ("email", models.EmailField(max_length=255, unique=True)),
+                ("password", models.CharField(max_length=255)),
+                (
+                    "user_department_id",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.department",
+                    ),
+                ),
+                (
+                    "user_role_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.role",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Student',
+            name="Student",
             fields=[
-                ('student_id', models.IntegerField(primary_key=True, serialize=False)),
-                ('student_name', models.CharField(max_length=225)),
-                ('remarks', models.CharField(max_length=225)),
-                ('student_section_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.section')),
-            ],
-        ),
-        migrations.AddField(
-            model_name='section',
-            name='section_instructor_assigned_id',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.user'),
-        ),
-        migrations.AddField(
-            model_name='section',
-            name='section_loaded_course_id',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.loadedcoursetable'),
-        ),
-        migrations.CreateModel(
-            name='ProgramOutcome',
-            fields=[
-                ('program_outcome_id', models.AutoField(primary_key=True, serialize=False)),
-                ('description', models.CharField(max_length=255)),
-                ('PO_course_code', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.course')),
-            ],
-        ),
-        migrations.CreateModel(
-            name='Program',
-            fields=[
-                ('program_id', models.AutoField(primary_key=True, serialize=False)),
-                ('program_name', models.CharField(max_length=255)),
-                ('program_department_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.department')),
-            ],
-        ),
-        migrations.CreateModel(
-            name='CourseUnit',
-            fields=[
-                ('course_unit_id', models.AutoField(primary_key=True, serialize=False)),
-                ('course_unit', models.CharField(max_length=225)),
-                ('course_unit_percentage', models.IntegerField()),
-                ('course_unit_term_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.courseterm')),
-            ],
-        ),
-        migrations.CreateModel(
-            name='CourseOutcome',
-            fields=[
-                ('course_outcome_id', models.AutoField(primary_key=True, serialize=False)),
-                ('description', models.CharField(max_length=255)),
-                ('CO_assessment_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.assessment')),
-                ('CO_course_code', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.course')),
-            ],
-        ),
-        migrations.AddField(
-            model_name='course',
-            name='course_credit_id',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.credit'),
-        ),
-        migrations.AddField(
-            model_name='course',
-            name='course_program_id',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.program'),
-        ),
-        migrations.AddField(
-            model_name='course',
-            name='course_semester_id',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.semester'),
-        ),
-        migrations.AddField(
-            model_name='course',
-            name='course_year_level_id',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.yearlevel'),
-        ),
-        migrations.CreateModel(
-            name='Component',
-            fields=[
-                ('component_id', models.AutoField(primary_key=True, serialize=False)),
-                ('component_name', models.CharField(max_length=225)),
-                ('component_percentage', models.IntegerField()),
-                ('component_course_unit_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.courseunit')),
-            ],
-        ),
-        migrations.CreateModel(
-            name='AssessmentClassification',
-            fields=[
-                ('assessment_classification_id', models.AutoField(primary_key=True, serialize=False)),
-                ('assessment_classification', models.CharField(max_length=255)),
-                ('AC_assessment_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.assessment')),
+                ("student_id", models.IntegerField(primary_key=True, serialize=False)),
+                ("student_name", models.CharField(max_length=225)),
+                ("remarks", models.CharField(max_length=225)),
+                (
+                    "student_section_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.section",
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='assessment',
-            name='assessment_component_id',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.component'),
+            model_name="section",
+            name="section_instructor_assigned_id",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="ucap_backend.user"
+            ),
         ),
         migrations.AddField(
-            model_name='assessment',
-            name='assessment_section_id',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.section'),
+            model_name="section",
+            name="section_loaded_course_id",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                to="ucap_backend.loadedcoursetable",
+            ),
         ),
         migrations.CreateModel(
-            name='RawScore',
+            name="ProgramOutcome",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('score', models.IntegerField(blank=True, null=True)),
-                ('rawscore_assessment_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.assessment')),
-                ('rawscore_student_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.student')),
+                (
+                    "program_outcome_id",
+                    models.AutoField(primary_key=True, serialize=False),
+                ),
+                ("description", models.CharField(max_length=255)),
+                (
+                    "PO_course_code",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.course",
+                    ),
+                ),
+            ],
+        ),
+        migrations.CreateModel(
+            name="Program",
+            fields=[
+                ("program_id", models.AutoField(primary_key=True, serialize=False)),
+                ("program_name", models.CharField(max_length=255)),
+                (
+                    "program_department_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.department",
+                    ),
+                ),
+            ],
+        ),
+        migrations.CreateModel(
+            name="CourseUnit",
+            fields=[
+                ("course_unit_id", models.AutoField(primary_key=True, serialize=False)),
+                ("course_unit", models.CharField(max_length=225)),
+                ("course_unit_percentage", models.IntegerField()),
+                (
+                    "course_unit_term_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.courseterm",
+                    ),
+                ),
+            ],
+        ),
+        migrations.CreateModel(
+            name="CourseOutcome",
+            fields=[
+                (
+                    "course_outcome_id",
+                    models.AutoField(primary_key=True, serialize=False),
+                ),
+                ("description", models.CharField(max_length=255)),
+                (
+                    "CO_assessment_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.assessment",
+                    ),
+                ),
+                (
+                    "CO_course_code",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.course",
+                    ),
+                ),
+            ],
+        ),
+        migrations.AddField(
+            model_name="course",
+            name="course_credit_id",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="ucap_backend.credit"
+            ),
+        ),
+        migrations.AddField(
+            model_name="course",
+            name="course_program_id",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="ucap_backend.program"
+            ),
+        ),
+        migrations.AddField(
+            model_name="course",
+            name="course_semester_id",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="ucap_backend.semester"
+            ),
+        ),
+        migrations.AddField(
+            model_name="course",
+            name="course_year_level_id",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="ucap_backend.yearlevel"
+            ),
+        ),
+        migrations.CreateModel(
+            name="Component",
+            fields=[
+                ("component_id", models.AutoField(primary_key=True, serialize=False)),
+                ("component_name", models.CharField(max_length=225)),
+                ("component_percentage", models.IntegerField()),
+                (
+                    "component_course_unit_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.courseunit",
+                    ),
+                ),
+            ],
+        ),
+        migrations.CreateModel(
+            name="AssessmentClassification",
+            fields=[
+                (
+                    "assessment_classification_id",
+                    models.AutoField(primary_key=True, serialize=False),
+                ),
+                ("assessment_classification", models.CharField(max_length=255)),
+                (
+                    "AC_assessment_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.assessment",
+                    ),
+                ),
+            ],
+        ),
+        migrations.AddField(
+            model_name="assessment",
+            name="assessment_component_id",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="ucap_backend.component"
+            ),
+        ),
+        migrations.AddField(
+            model_name="assessment",
+            name="assessment_section_id",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="ucap_backend.section"
+            ),
+        ),
+        migrations.CreateModel(
+            name="RawScore",
+            fields=[
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("score", models.IntegerField(blank=True, null=True)),
+                (
+                    "rawscore_assessment_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.assessment",
+                    ),
+                ),
+                (
+                    "rawscore_student_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.student",
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('rawscore_student_id', 'rawscore_assessment_id')},
+                "unique_together": {("rawscore_student_id", "rawscore_assessment_id")},
             },
         ),
         migrations.CreateModel(
-            name='CO_PO_Mapping',
+            name="CO_PO_Mapping",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('mapping', models.CharField(max_length=255)),
-                ('mapping_course_outcome_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.courseoutcome')),
-                ('mapping_program_outcome_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ucap_backend.programoutcome')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("mapping", models.CharField(max_length=255)),
+                (
+                    "mapping_course_outcome_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.courseoutcome",
+                    ),
+                ),
+                (
+                    "mapping_program_outcome_id",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="ucap_backend.programoutcome",
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('mapping_program_outcome_id', 'mapping_course_outcome_id')},
+                "unique_together": {
+                    ("mapping_program_outcome_id", "mapping_course_outcome_id")
+                },
             },
         ),
     ]
