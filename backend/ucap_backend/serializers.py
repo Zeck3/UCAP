@@ -144,10 +144,8 @@ class LoginValidator:
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
-        fields = ["course_code", "course_title"]
-
-
-# ===== SECTION SERIALIZERS ==============================================================================================================
+        fields = '__all__'
+#===== SECTION SERIALIZERS ==============================================================================================================
 class SectionCourseSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(
         source="section_loaded_course_id.loaded_course_id", read_only=True
