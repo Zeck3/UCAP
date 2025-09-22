@@ -1,7 +1,7 @@
 // src/pages/ResultSheetPage.tsx
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { classInfo, pos, students } from "../data/classInfo";
+import { classInfo, pos, students } from "../data/rspInfo";
 import type { JSX } from "react";
 
 // Array defining the order of Bloom's taxonomy levels for sorting.
@@ -106,9 +106,9 @@ function StudentScoreCell({
 export default function ResultSheetPage(): JSX.Element {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-  const closeSidebar = () => setIsOpen(false);
-
+  const [footerOpen, setFooterOpen] = useState(true);
   const totalColumns = 4 + totalClassworkColumns();
+  const studentCount = students.length;
 
   // Memoized layout preparation by clustering classwork for each CO.
   const layout = useMemo(
@@ -127,8 +127,6 @@ export default function ResultSheetPage(): JSX.Element {
       })),
     []
   );
-
-  const studentCount = students.length;
 
   // Memoized totals and thresholds for each CO.
   const coTotalsMemo = useMemo(
@@ -163,7 +161,7 @@ export default function ResultSheetPage(): JSX.Element {
         notAchieved: `${notAchieved} (${pctNot}%)`,
       };
     });
-  }, [layout, coTotalsMemo, students, studentCount]);
+  }, [layout, coTotalsMemo, studentCount]);
 
   // Early return if no data is available.
   if (!pos.length || !students.length) {
@@ -202,260 +200,380 @@ export default function ResultSheetPage(): JSX.Element {
 
   return (
     <div className="bg-gray-50 text-gray-700 min-h-screen flex flex-col">
-      <header className="flex items-center justify-between bg-white px-6 py-6 shadow-md">
-        <div className="flex items-center space-x-2">
-          <button onClick={() => navigate(-1)} className="text-gray-600 hover:text-gray-800">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h1 className="text-xl font-semibold ml-4">COA Result Sheet</h1>
-        </div>
+      <header className="fixed top-0 left-0 right-0 z-20 bg-white h-20 flex items-center px-6 border border-gray-200 ">
+        <button onClick={() => navigate(-1)} className="text-gray-600 hover:text-gray-800">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <h1 className="text-xl font-semibold ml-4">COA Result Sheet</h1>
       </header>
 
-      <main className="px-6 py-6 flex-grow">
-        <div className="bg-white shadow rounded-lg p-4">
-          <div className="overflow-x-auto">
-            <table className="table-auto border-collapse w-full">
-              <tbody>
-                {/* Rows for displaying class information. */}
-                {[
-                  ["Campus/College/Department:", classInfo.cacode],
-                  ["Program:", classInfo.program],
-                  ["Course:", classInfo.course],
-                  ["AY/Semester:", classInfo.aySemester],
-                  ["Faculty:", classInfo.faculty],
-                ].map(([label, value], idx) => (
-                  <tr key={idx}>
-                    <td className="border border-coa-gray px-3 py-2 font-medium min-w-[220px]" colSpan={3}>
-                      {label}
-                    </td>
-                    <td className="border border-coa-gray px-3 py-2" colSpan={totalColumns - 3}>
-                      {value}
-                    </td>
-                  </tr>
-                ))}
-
-                {/* Spacer row for visual separation. */}
-                <tr>
-                  <td colSpan={totalColumns} className="border border-coa-gray px-3 py-6" />
-                </tr>
-
-                {/* Title row for the assessment result sheet. */}
-                <tr>
-                  <td colSpan={totalColumns} className="border border-coa-gray px-3 py-2 text-center font-medium">
-                    Assessment Result Sheet
-                  </td>
-                </tr>
-
-                {/* Row for program outcomes (POs). */}
-                <tr>
-                  <td className="border border-coa-gray px-3 py-2 font-medium min-w-[220px]" colSpan={3}>
-                    Result Status: (Completed or Not)
-                  </td>
-
-                  {/* Empty cell for alignment. */}
+      <main className="pt-19.5 flex-grow">
+        <div className="bg-white">
+          <table className="table-auto border-collapse w-full">
+            <tbody>
+              {/* Rows for displaying class information. */}
+              {[
+                ["Campus/College/Department:", classInfo.cacode],
+                ["Program:", classInfo.program],
+                ["Course:", classInfo.course],
+                ["AY/Semester:", classInfo.aySemester],
+                ["Faculty:", classInfo.faculty],
+              ].map(([label, value], idx) => (
+                <tr key={idx}>
                   <td
-                    className="border border-coa-gray px-2 py-2 text-center font-medium align-top min-w-[35px]"
-                    rowSpan={5 + students.length}
-                  ></td>
-
-                  {poCells}
-                </tr>
-
-                {/* Row for course outcomes (COs). */}
-                <tr>
-                  <td
-                    className="border border-coa-gray px-3 py-2 font-medium align-top min-w-[220px]"
-                    rowSpan={3}
+                    className="border border-coa-gray px-3 py-2 font-medium min-w-[220px]"
                     colSpan={3}
                   >
-                    Remarks:
+                    {label}
                   </td>
-
-                  {coCells}
+                  <td
+                    className="border border-coa-gray px-3 py-2"
+                    colSpan={totalColumns - 3}
+                  >
+                    {value}
+                  </td>
                 </tr>
+              ))}
 
-                {/* Row for Bloom's levels and KPI headers. */}
-                <tr>
-                  {layout.flatMap((po, pIdx) =>
-                    po.cos.flatMap((co, cIdx) => {
-                      const grouped: { bloom: string; count: number }[] = [];
-                      let prev: string | null = null;
-                      for (const item of co.clustered.length ? co.clustered : [{ name: "", blooms: "" as string, coIndex: -1 }]) {
-                        if (item.blooms === prev) {
-                          grouped[grouped.length - 1].count++;
-                        } else {
-                          grouped.push({ bloom: item.blooms, count: 1 });
-                          prev = item.blooms;
-                        }
+              {/* Spacer row for visual separation. */}
+              <tr>
+                <td colSpan={totalColumns} className="border border-coa-gray px-3 py-6" />
+              </tr>
+
+              {/* Title row for the assessment result sheet. */}
+              <tr>
+                <td
+                  colSpan={totalColumns}
+                  className="border border-coa-gray px-3 py-2 text-center font-medium"
+                >
+                  Assessment Result Sheet
+                </td>
+              </tr>
+
+              {/* Row for program outcomes (POs). */}
+              <tr>
+                <td
+                  className="border border-coa-gray px-3 py-2 font-medium min-w-[220px]"
+                  colSpan={3}
+                >
+                  Result Status: (Completed or Not)
+                </td>
+
+                {/* Empty cell for alignment. */}
+                <td
+                  className="border border-coa-gray px-2 py-2 text-center font-medium align-top min-w-[35px]"
+                  rowSpan={5 + studentCount}
+                ></td>
+
+                {poCells}
+              </tr>
+
+              {/* Row for course outcomes (COs). */}
+              <tr>
+                <td
+                  className="border border-coa-gray px-3 py-2 font-medium align-top min-w-[220px]"
+                  rowSpan={3}
+                  colSpan={3}
+                >
+                  Remarks:
+                </td>
+                {coCells}
+              </tr>
+
+              {/* Row for Bloom's levels and KPI headers. */}
+              <tr>
+                {layout.flatMap((po, pIdx) =>
+                  po.cos.flatMap((co, cIdx) => {
+                    const grouped: { bloom: string; count: number }[] = [];
+                    let prev: string | null = null;
+                    for (const item of co.clustered.length ? co.clustered : [{ name: "", blooms: "" as string, coIndex: -1 }]) {
+                      if (item.blooms === prev) {
+                        grouped[grouped.length - 1].count++;
+                      } else {
+                        grouped.push({ bloom: item.blooms, count: 1 });
+                        prev = item.blooms;
                       }
-                      return [
-                        ...grouped.map((g, gIdx) => (
-                          <td key={`blooms-${pIdx}-${cIdx}-${gIdx}`} className="border border-coa-gray px-3 py-2 text-center italic break-words whitespace-normal" colSpan={g.count}>
-                            {g.bloom}
-                          </td>
-                        )),
-                        <td key={`blooms-kpi-${pIdx}-${cIdx}`} className="border border-coa-gray px-3 py-2 text-center font-semibold" colSpan={3}>
-                          KPI
-                        </td>,
-                      ];
-                    })
-                  )}
-                </tr>
+                    }
+                    return [
+                      ...grouped.map((g, gIdx) => (
+                        <td
+                          key={`blooms-${pIdx}-${cIdx}-${gIdx}`}
+                          className="border border-coa-gray px-3 py-2 text-center italic break-words whitespace-normal"
+                          colSpan={g.count}
+                        >
+                          {g.bloom}
+                        </td>
+                      )),
+                      <td
+                        key={`blooms-kpi-${pIdx}-${cIdx}`}
+                        className="border border-coa-gray px-3 py-2 text-center font-semibold"
+                        colSpan={3}
+                      >
+                        KPI
+                      </td>,
+                    ];
+                  })
+                )}
+              </tr>
 
-                {/* Row for classwork names with vertical text orientation. */}
-                <tr>
-                  {layout.flatMap((po, pIdx) =>
+              {/* Row for classwork names with vertical text orientation. */}
+              <tr>
+                {layout.flatMap((po, pIdx) =>
+                  po.cos.flatMap((co, cIdx) => {
+                    const cwCells = co.clustered.map((cw, cwIdx) => (
+                      <ClassworkNameCell
+                        key={`cw-${pIdx}-${cIdx}-${cwIdx}`}
+                        cw={cw}
+                        pIdx={pIdx}
+                        cIdx={cIdx}
+                        cwIdx={cwIdx}
+                      />
+                    ));
+
+                    cwCells.push(
+                      <td
+                        key={`cw-total-${pIdx}-${cIdx}`}
+                        className="border border-coa-gray px-2 py-2 text-center font-semibold text-gray-600 min-w-[50px]"
+                      >
+                        Total
+                      </td>,
+                      <td
+                        key={`cw-pass70-${pIdx}-${cIdx}`}
+                        className="border border-coa-gray px-2 py-2 text-center text-sm min-w-[56px]"
+                      >
+                        Passing (70%)
+                      </td>,
+                      <td
+                        key={`cw-pass80-${pIdx}-${cIdx}`}
+                        className="border border-coa-gray px-2 py-2 text-center text-sm min-w-[56px]"
+                      >
+                        Passing (80%)
+                      </td>
+                    );
+
+                    return cwCells;
+                  })
+                )}
+              </tr>
+
+              {/* Row for maximum scores and thresholds. */}
+              <tr>
+                <td className="border border-coa-gray px-3 py-2 text-center font-medium">
+                  No.
+                </td>
+                <td className="border border-coa-gray px-3 py-2 text-center font-medium">
+                  Student ID
+                </td>
+                <td className="border border-coa-gray px-3 py-2 text-center font-medium">
+                  Name
+                </td>
+
+                {(() => {
+                  let index = 0;
+                  return layout.flatMap((po, pIdx) =>
                     po.cos.flatMap((co, cIdx) => {
-                      const cwCells = co.clustered.map((cw, cwIdx) => (
-                        <ClassworkNameCell key={`cw-${pIdx}-${cIdx}-${cwIdx}`} cw={cw} pIdx={pIdx} cIdx={cIdx} cwIdx={cwIdx} />
-                      ));
+                      const { totalMax, pass70, pass80Count } = coTotalsMemo[index++];
 
-                      cwCells.push(
-                        <td key={`cw-total-${pIdx}-${cIdx}`} className="border border-coa-gray px-2 py-2 text-center font-semibold text-gray-600 min-w-[50px]">
-                          Total
+                      const maxCells = co.clustered.map((cw, cwIdx) => {
+                        const maxVal = co.classwork[cw.coIndex]?.maxScore ?? "";
+                        return (
+                          <td
+                            key={`max-${pIdx}-${cIdx}-${cwIdx}`}
+                            className="border border-coa-gray px-3 py-2 text-center text-coa-blue min-w-[56px] "
+                          >
+                            {maxVal}
+                          </td>
+                        );
+                      });
+
+                      maxCells.push(
+                        <td
+                          key={`max-total-${pIdx}-${cIdx}`}
+                          className="border border-coa-gray px-3 py-2 text-center font-semibold text-coa-blue"
+                        >
+                          {totalMax}
                         </td>,
-                        <td key={`cw-pass70-${pIdx}-${cIdx}`} className="border border-coa-gray px-2 py-2 text-center text-sm min-w-[56px]">
-                          Passing (70%)
+                        <td
+                          key={`max-pass70-${pIdx}-${cIdx}`}
+                          className="border border-coa-gray px-3 py-2 text-center font-semibold text-coa-blue"
+                        >
+                          {pass70}
                         </td>,
-                        <td key={`cw-pass80-${pIdx}-${cIdx}`} className="border border-coa-gray px-2 py-2 text-center text-sm min-w-[56px]">
-                          Passing (80%)
+                        <td
+                          key={`max-pass80-${pIdx}-${cIdx}`}
+                          className="border border-coa-gray px-3 py-2 text-center font-semibold text-coa-blue"
+                        >
+                          {pass80Count}
                         </td>
                       );
 
-                      return cwCells;
+                      return maxCells;
                     })
-                  )}
-                </tr>
+                  );
+                })()}
+              </tr>
 
-                {/* Row for maximum scores and thresholds. */}
-                <tr>
-                  <td className="border border-coa-gray px-3 py-2 text-center font-medium">No.</td>
-                  <td className="border border-coa-gray px-3 py-2 text-center font-medium">Student ID</td>
-                  <td className="border border-coa-gray px-3 py-2 text-center font-medium">Name</td>
+              {/* Rows for student data, scores, and pass/fail indicators. */}
+              {students.map((student, sIdx) => (
+                <tr key={student.id}>
+                  <td className="border border-coa-gray px-3 py-2 text-center">
+                    {sIdx + 1}
+                  </td>
+                  <td className="border border-coa-gray px-3 py-2 text-center">
+                    {student.id}
+                  </td>
+                  <td className="border border-coa-gray px-3 py-2 whitespace-nowrap">
+                    {student.name}
+                  </td>
 
                   {(() => {
                     let index = 0;
                     return layout.flatMap((po, pIdx) =>
                       po.cos.flatMap((co, cIdx) => {
-                        const { totalMax, pass70, pass80Count } = coTotalsMemo[index++];
+                        const studentScores = student.scores[co.name] ?? [];
+                        const { pass70: pass70Threshold, pass80Count } = coTotalsMemo[index++];
 
-                        const maxCells = co.clustered.map((cw, cwIdx) => {
-                          const maxVal = co.classwork[cw.coIndex]?.maxScore ?? "";
+                        const scoreCells = co.clustered.map((cw, cwIdx) => {
+                          const val = studentScores[cw.coIndex]?.raw ?? "";
                           return (
-                            <td key={`max-${pIdx}-${cIdx}-${cwIdx}`} className="border border-coa-gray px-3 py-2 text-center text-coa-blue min-w-[56px]">
-                              {maxVal}
-                            </td>
+                            <StudentScoreCell
+                              key={`score-${student.id}-${pIdx}-${cIdx}-${cwIdx}`}
+                              val={val}
+                              studentId={student.id}
+                              pIdx={pIdx}
+                              cIdx={cIdx}
+                              cwIdx={cwIdx}
+                            />
                           );
                         });
 
-                        maxCells.push(
-                          <td key={`max-total-${pIdx}-${cIdx}`} className="border border-coa-gray px-3 py-2 text-center font-semibold text-coa-blue">{totalMax}</td>,
-                          <td key={`max-pass70-${pIdx}-${cIdx}`} className="border border-coa-gray px-3 py-2 text-center font-semibold text-coa-blue">{pass70}</td>,
-                          <td key={`max-pass80-${pIdx}-${cIdx}`} className="border border-coa-gray px-3 py-2 text-center font-semibold text-coa-blue">{pass80Count}</td>
-                        );
+                        if (studentScores.length > 0) {
+                          const studentTotal = studentScores.reduce(
+                            (sum, sc) => sum + (sc?.raw ?? 0),
+                            0
+                          );
+                          const pass70 = studentTotal >= pass70Threshold;
 
-                        return maxCells;
+                          const pass70Count = students.filter((s) => {
+                            const total = (s.scores[co.name] ?? []).reduce(
+                              (sum, sc) => sum + (sc?.raw ?? 0),
+                              0
+                            );
+                            return total >= pass70Threshold;
+                          }).length;
+                          const pass80 = pass70Count >= pass80Count;
+
+                          scoreCells.push(
+                            <td
+                              key={`student-total-${student.id}-${pIdx}-${cIdx}`}
+                              className="border border-coa-gray px-3 py-2 text-center font-semibold text-coa-blue"
+                            >
+                              {studentTotal}
+                            </td>,
+                            <td
+                              key={`student-pass70-${student.id}-${pIdx}-${cIdx}`}
+                              className="border border-coa-gray px-3 py-2 text-center font-semibold"
+                            >
+                              {pass70 ? (
+                                <span className="text-black">YES</span>
+                              ) : (
+                                <span className="text-coa-red">NO</span>
+                              )}
+                            </td>
+                          );
+
+                          if (sIdx === 0) {
+                            scoreCells.push(
+                              <td
+                                key={`student-pass80-${pIdx}-${cIdx}`}
+                                className="border border-coa-gray px-3 py-2 text-center font-semibold"
+                                rowSpan={studentCount}
+                              >
+                                {pass80 ? (
+                                  <span className="text-black">YES</span>
+                                ) : (
+                                  <span className="text-coa-red">NO</span>
+                                )}
+                              </td>
+                            );
+                          }
+                        } else {
+                          scoreCells.push(
+                            <td
+                              key={`student-total-${student.id}-${pIdx}-${cIdx}`}
+                              className="border border-coa-gray px-3 py-2 text-center"
+                            />,
+                            <td
+                              key={`student-pass70-${student.id}-${pIdx}-${cIdx}`}
+                              className="border border-coa-gray px-3 py-2 text-center"
+                            />,
+                            ...(sIdx === 0
+                              ? [
+                                <td
+                                  key={`student-pass80-${pIdx}-${cIdx}`}
+                                  className="border border-coa-gray px-3 py-2 text-center"
+                                  rowSpan={studentCount}
+                                />,
+                              ]
+                              : [])
+                          );
+                        }
+
+                        return scoreCells;
                       })
                     );
                   })()}
                 </tr>
-
-                {/* Rows for student data, scores, and pass/fail indicators. */}
-                {students.map((student, sIdx) => (
-                  <tr key={student.id}>
-                    <td className="border border-coa-gray px-3 py-2 text-center">{sIdx + 1}</td>
-                    <td className="border border-coa-gray px-3 py-2 text-center">{student.id}</td>
-                    <td className="border border-coa-gray px-3 py-2 whitespace-nowrap">{student.name}</td>
-
-                    {(() => {
-                      let index = 0;
-                      return layout.flatMap((po, pIdx) =>
-                        po.cos.flatMap((co, cIdx) => {
-                          const studentScores = student.scores[co.name] ?? [];
-                          const { pass70: pass70Threshold } = coTotalsMemo[index++];
-
-                          const scoreCells = co.clustered.map((cw, cwIdx) => {
-                            const val = studentScores[cw.coIndex]?.raw ?? "";
-                            return (
-                              <StudentScoreCell
-                                key={`score-${student.id}-${pIdx}-${cIdx}-${cwIdx}`}
-                                val={val}
-                                studentId={student.id}
-                                pIdx={pIdx}
-                                cIdx={cIdx}
-                                cwIdx={cwIdx}
-                              />
-                            );
-                          });
-
-                          if (studentScores.length > 0) {
-                            const studentTotal = studentScores.reduce((sum, sc) => sum + (sc?.raw ?? 0), 0);
-                            const pass70 = studentTotal >= pass70Threshold;
-
-                            const pass70Count = students.filter((s) => {
-                              const total = (s.scores[co.name] ?? []).reduce((sum, sc) => sum + (sc?.raw ?? 0), 0);
-                              return total >= pass70Threshold;
-                            }).length;
-                            const pass80 = pass70Count >= Math.ceil(studentCount * 0.8);
-
-                            scoreCells.push(
-                              <td key={`student-total-${student.id}-${pIdx}-${cIdx}`} className="border border-coa-gray px-3 py-2 text-center font-semibold text-coa-blue">
-                                {studentTotal}
-                              </td>
-                            );
-
-                            scoreCells.push(
-                              <td key={`student-pass70-${student.id}-${pIdx}-${cIdx}`} className="border border-coa-gray px-3 py-2 text-center font-semibold">
-                                {pass70 ? <span className="text-black">YES</span> : <span className="text-coa-red">NO</span>}
-                              </td>
-                            );
-
-                            if (sIdx === 0) {
-                              scoreCells.push(
-                                <td key={`student-pass80-${pIdx}-${cIdx}`} className="border border-coa-gray px-3 py-2 text-center font-semibold" rowSpan={students.length}>
-                                  {pass80 ? <span className="text-black">YES</span> : <span className="text-coa-red">NO</span>}
-                                </td>
-                              );
-                            }
-                          } else {
-                            scoreCells.push(
-                              <td key={`student-total-${student.id}-${pIdx}-${cIdx}`} className="border border-coa-gray px-3 py-2 text-center" />,
-                              <td key={`student-pass70-${student.id}-${pIdx}-${cIdx}`} className="border border-coa-gray px-3 py-2 text-center" />,
-                              ...(sIdx === 0 ? [<td key={`student-pass80-${pIdx}-${cIdx}`} className="border border-coa-gray px-3 py-2 text-center" rowSpan={students.length} />] : [])
-                            );
-                          }
-
-                          return scoreCells;
-                        })
-                      );
-                    })()}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       </main>
 
-      <footer className="px-8 py-8 bg-white border-t border-gray-200">
-        <div className="flex justify-between items-center">
-          <button
-            onClick={() => setIsOpen(true)}
-            className="text-gray-600 hover:underline font-semibold text-medium"
+      <footer
+        className={`fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-gray-200
+              transition-transform duration-300 ${footerOpen ? "translate-y-0" : "translate-y-full"
+          }`}
+      >
+        {/* Toggle button */}
+        <div
+          className="absolute -top-10 right-10 w-12 h-10 rounded-tl-full rounded-tr-full
+               bg-white flex items-center justify-center cursor-pointer border-t border-l border-r border-gray-300"
+          onClick={() => setFooterOpen((o) => !o)}
+        >
+          <svg
+            className={`w-5 h-5 -scale-y-100 text-gray-600 transition-transform duration-300 ${footerOpen ? "rotate-180" : ""
+              }`}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
           >
-            View Analytics
-          </button>
-          <div></div> {/* Placeholder for potential right-side content */}
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+
+        {/* Footer content */}
+        <div className="px-8 py-8">
+          <div className="flex justify-between items-center">
+            <button
+              onClick={() => setIsOpen(true)}
+              className="text-gray-600 hover:underline font-semibold text-medium cursor-pointer"
+            >
+              View Analytics
+            </button>
+          </div>
         </div>
       </footer>
+
 
       {/* Overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40"
-          onClick={closeSidebar}
+          onClick={() => setIsOpen(false)}
         />
       )}
 
@@ -463,7 +581,7 @@ export default function ResultSheetPage(): JSX.Element {
       {isOpen && (
         <div className="fixed right-0 top-0 h-full w-250 bg-white z-50 p-4 overflow-y-auto shadow-xl border-l border-gray-200">
           <div className="flex items-center mb-4 pt-8 px-8">
-            <button onClick={closeSidebar} className="text-gray-600 hover:text-gray-800 mr-2">
+            <button onClick={() => setIsOpen(false)} className="text-gray-600 hover:text-gray-800 mr-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>

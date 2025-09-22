@@ -41,11 +41,19 @@ body {
   background-color: #1F3864;
 }
 
+.bg-ucap-blue {
+  background-color: var(--ucap-blue);
+}
+
+.bg-pale-green {
+  background-color: #C5E0B3;
+}
+
 .bg-bright-yellow {
   background-color: #FCF305;
 }
 
-.bg-green {
+.bg-ucap-green {
   background-color: #70AD47;
 }
 
