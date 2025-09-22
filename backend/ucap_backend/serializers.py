@@ -139,6 +139,24 @@ class LoginValidator:
             self.errors["message"] = "Invalid user_id or password."
             return False
 
+class LoginSerializer(serializers.ModelSerializer):
+    role_id = serializers.IntegerField(source="user_role_id.role_id", read_only=True)
+    department_id = serializers.IntegerField(
+        source="user_department_id.department_id", read_only=True, default=None
+    )
+
+    class Meta:
+        model = User
+        fields = [
+            "user_id",
+            "first_name",
+            "middle_name",
+            "last_name",
+            "suffix",
+            "email",
+            "role_id",
+            "department_id",
+        ]
 
 # ===== COURSE SERIALIZERS ===================================================================================================================================
 class CourseSerializer(serializers.ModelSerializer):

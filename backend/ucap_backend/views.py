@@ -138,20 +138,12 @@ def login_authentication(request):
         validator = LoginValidator(request.data)
         if validator.is_valid():
             user = validator.user
-            serializers = InstructorSerializer(user)
-            return Response({
-                "message": "Login successful",
-                "user_id": user.user_id,
-                "role_id": user.user_role_id.role_id,
-                "department_id": user.user_department_id.department_id if user.user_department_id else None,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "email": user.email
-            }, status=status.HTTP_200_OK)
+            serializers = LoginSerializer(user)
+            return JsonResponse(serializers.data, status=status.HTTP_200_OK)
         else:
-            return Response(validator.errors, status=status.HTTP_401_UNAUTHORIZED)
+            return JsonResponse(validator.errors, status=status.HTTP_401_UNAUTHORIZED)
     except Exception as e:
-        return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 #===== ADMIN COURSE & USER MANAGEMENT =============================================================================================================================
 @api_view(["GET"])
