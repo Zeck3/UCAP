@@ -2,11 +2,26 @@ from rest_framework import serializers
 from .models import *
 from django.contrib.auth.hashers import make_password, check_password
 
+# ===== For Login Validation =============================================================================================================
+class UserSerializer(serializers.ModelSerializer):
+    role_id = serializers.IntegerField(source="user_role.user_role_id", read_only=True)
+    department_id = serializers.IntegerField(source="department.department_id", read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "user_id",
+            "role_id",
+            "department_id",
+            "first_name",
+            "last_name",
+            "email",
+        ]
 
 # ============================================================================================================================
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Role
+        model = UserRole
         fields = ["role_id", "role"]
 
 
@@ -112,52 +127,7 @@ class InstructorSerializer(serializers.ModelSerializer):
             "user_role",
             "user_department",
         ]
-
-
-# ===== For Login Validation =============================================================================================================
-class LoginValidator:
-    def __init__(self, data):
-        self.data = data
-        self.user = None
-        self.errors = {}
-
-    def is_valid(self):
-        user_id = self.data.get("user_id")
-        password = self.data.get("password")
-
-        if not user_id or not password:
-            self.errors["message"] = "Both user_id and password are required."
-            return False
-
-        try:
-            user_password = User.objects.get(user_id=user_id)
-            if not check_password(password, user_password.password):
-                raise ValueError
-            self.user = user_password
-            return True
-        except:
-            self.errors["message"] = "Invalid user_id or password."
-            return False
-
-class LoginSerializer(serializers.ModelSerializer):
-    role_id = serializers.IntegerField(source="user_role_id.role_id", read_only=True)
-    department_id = serializers.IntegerField(
-        source="user_department_id.department_id", read_only=True, default=None
-    )
-
-    class Meta:
-        model = User
-        fields = [
-            "user_id",
-            "first_name",
-            "middle_name",
-            "last_name",
-            "suffix",
-            "email",
-            "role_id",
-            "department_id",
-        ]
-
+        
 # ===== COURSE SERIALIZERS ===================================================================================================================================
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -278,7 +248,7 @@ class LoadedCourseSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = LoadedCourseTable
+        model = LoadedCourse
         fields = [
             "loaded_course_id",
             "loaded_course_code",

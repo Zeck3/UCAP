@@ -2,13 +2,53 @@ from django.http import JsonResponse
 from .models import *
 import json
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from .serializers import *
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate, login, logout
+from django.views.decorators.csrf import ensure_csrf_cookie
+from rest_framework.permissions import AllowAny
+from django.views.decorators.csrf import csrf_exempt
+
+#===== LOGIN AUTHENTICATION =============================================================================================================================
+@ensure_csrf_cookie
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def csrf_token_view(request):
+    return JsonResponse({"detail": "CSRF cookie set"})
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def login_view(request):
+    user_id = request.data.get("user_id")
+    password = request.data.get("password")
+
+    user = authenticate(request, username=user_id, password=password)
+    if user is not None:
+        login(request, user)
+        return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
+    return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    logout(request)
+    return Response({"message": "Logged out successfully"}, status=status.HTTP_200_OK)
 
 @api_view(["GET"])
-def hello_view(request):
-    return JsonResponse({"message": "Hello from Django!"})
+@permission_classes([AllowAny])
+def me_view(request):
+    if not request.user.is_authenticated:
+        return Response(None, status=status.HTTP_200_OK)
+    serializer = UserSerializer(request.user)
+    return Response(serializer.data)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def heartbeat_view(request):
+    return Response({"detail": "alive"})
 
 #===== GET SERIALIZERS =============================================================================================================================
 @api_view(["GET"])
@@ -130,20 +170,6 @@ def instructor_course_information(request, instructor_id):
         return Response(serializer.data, status=200)
     except User.DoesNotExist:
         return Response({"message": "Instructor not found"}, status=404)
-    
-#===== LOGIN AUTHENTICATION =============================================================================================================================
-@api_view(["POST"])
-def login_authentication(request):
-    try:
-        validator = LoginValidator(request.data)
-        if validator.is_valid():
-            user = validator.user
-            serializers = LoginSerializer(user)
-            return JsonResponse(serializers.data, status=status.HTTP_200_OK)
-        else:
-            return JsonResponse(validator.errors, status=status.HTTP_401_UNAUTHORIZED)
-    except Exception as e:
-        return JsonResponse({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 #===== ADMIN COURSE & USER MANAGEMENT =============================================================================================================================
 @api_view(["GET"])
