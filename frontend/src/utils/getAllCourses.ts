@@ -1,4 +1,4 @@
-import { dummy } from "../data/dummy";
+import axios from "axios";
 
 export interface CourseDetails {
   id: string;
@@ -9,25 +9,53 @@ export interface CourseDetails {
   year_level: string;
 }
 
-export function getAllCourses(): CourseDetails[] {
-  const { program_tbl, semester_tbl, year_level_tbl, course_tbl } = dummy[0];
+const API_URL_FACULTY = "http://localhost:8000/api/admin/faculty_management/";
+const API_URL_COURSE = "http://localhost:8000/api/admin/course_management/";
 
-  return course_tbl.map((course) => {
-    const program = program_tbl.find((p) => p.program_id === course.program_id);
-    const semester = semester_tbl.find(
-      (s) => s.semester_id === course.semester_id
-    );
-    const year = year_level_tbl.find(
-      (y) => y.year_level_id === course.year_level_id
-    );
 
-    return {
-      id: course.course_code,
+export async function getAllCourses(): Promise<CourseDetails[]> {
+  try {
+    const res = await axios.get(`${API_URL_FACULTY}course_list/`);
+    return res.data.map((course: any) => ({
+      id: course.course_id,
       course_code: course.course_code,
       course_title: course.course_title,
-      program_name: program?.program_name ?? "N/A",
-      semester_type: semester?.semester_type ?? "N/A",
-      year_level: year?.year_level ?? "N/A",
-    } satisfies CourseDetails;
-  });
+      program_name: course.program,
+      semester_type: course.semester,
+      year_level: course.year_level,
+    }));
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return [];
+  }
+}
+
+export async function getDepartments() {
+  try {
+    const res = await axios.get(`${API_URL_FACULTY}departments/`);
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching departments:", error);
+    return [];
+  }
+}
+
+export async function getYearLevels() {
+  try {
+    const res = await axios.get(`${API_URL_COURSE}year_levels/`);
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching year levels:", error);
+    return [];
+  }
+}
+
+export async function getSemesters() {
+  try {
+    const res = await axios.get(`${API_URL_COURSE}semesters/`);
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching semesters:", error);
+    return [];
+  }
 }

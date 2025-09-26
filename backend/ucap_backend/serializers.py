@@ -83,37 +83,25 @@ class CreditSerializer(serializers.ModelSerializer):
 
 # ===== Admin Course List Serializer =============================================================================================================
 class CourseListSerializer(serializers.ModelSerializer):
-    course_credit = serializers.CharField(
-        source="course_credit_id.credit_unit", read_only=True
-    )
-    course_program = serializers.CharField(
-        source="course_program_id.program_name", read_only=True
-    )
-    course_year_level = serializers.CharField(
-        source="course_year_level_id.year_level", read_only=True
-    )
-    course_semester = serializers.CharField(
-        source="course_semester_id.semester_type", read_only=True
-    )
+    program = serializers.CharField(source="program.program_name", read_only=True)
+    year_level = serializers.CharField(source="year_level.year_level_type", read_only=True)
+    semester = serializers.CharField(source="semester.semester_type", read_only=True)
 
     class Meta:
         model = Course
         fields = [
             "course_code",
-            "course_credit",
-            "course_program",
-            "course_year_level",
-            "course_semester",
+            "program",
+            "year_level",
+            "semester",
             "course_title",
         ]
 
 
 # ===== INSTRUCTOR SERIALIZERS =============================================================================================================
 class InstructorSerializer(serializers.ModelSerializer):
-    user_role = serializers.CharField(source="user_role_id.role", read_only=True)
-    user_department = serializers.CharField(
-        source="user_department_id.department_name", read_only=True
-    )
+    user_role = serializers.CharField(source="user_role.user_role_type", read_only=True)
+    user_department = serializers.CharField(source="department.department_name", read_only=True)
 
     class Meta:
         model = User

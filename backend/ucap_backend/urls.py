@@ -9,7 +9,7 @@ urlpatterns = [
     path("me/", me_view, name="current_user"),
     path("heartbeat/", heartbeat_view),
     # == Admin Management ========================================================================================================
-    path("admin/course_management/departments/", get_departments),
+    path("admin/faculty_management/departments/", get_departments),
     path("admin/course_management/programs/", get_programs),
     path("admin/course_management/year_levels/", get_year_levels),
     path("admin/course_management/semesters/", get_semesters),

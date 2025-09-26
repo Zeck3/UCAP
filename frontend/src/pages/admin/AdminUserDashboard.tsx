@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { getAllUsers } from "../../utils/getAllUsers";
+import { useMemo, useState, useEffect } from "react";
+import { getAllUsers, deleteUser, registerUser, getRoles, getDepartments } from "../../utils/getAllUsers";
 import type { UserInfo } from "../../utils/getAllUsers";
 import ToolBarComponent from "../../components/ToolBarComponent";
 import PlusIcon from "../../assets/plus-solid.svg?react";
@@ -9,19 +9,30 @@ import SidePanelComponent from "../../components/SidePanelComponent";
 import UserInputComponent from "../../components/UserInputComponent";
 import DropdownComponent from "../../components/DropDownComponent";
 import AppLayout from "../../layout/AppLayout";
-import dummy from "../../data/dummy";
 
 export default function AdminUserDashboard() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const users: UserInfo[] = getAllUsers();
-  const db = dummy[0];
+  const [users, setUsers] = useState<UserInfo[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState<any>({});
 
-  const departmentOptions = db.department_tbl.map((c) => c.department_name);
-  
-  const roleOptions = db.role_tbl
-    .filter((c) => c.role !== "Administrator")
-    .map((c) => c.role);
+
+  useEffect(() => {
+    async function fetchUsers() {
+      setLoading(true);
+      const data = await getAllUsers();
+      setUsers(data);
+      setLoading(false);
+      const roles = await getRoles();
+      setRoles(roles);
+      const departments = await getDepartments();
+      setDepartments(departments);
+    }
+    fetchUsers();
+  }, []);
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery.trim()) return users;
@@ -33,6 +44,20 @@ export default function AdminUserDashboard() {
         user.name.toLowerCase().includes(query)
     );
   }, [searchQuery, users]);
+
+  const handleRegister = async () => {
+    const created = await registerUser(formData);
+    if (created) {
+      setUsers((prev) => [...prev, created]);
+      setIsPanelOpen(false);
+      setFormData({});
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    const success = await deleteUser(id);
+    if (success) setUsers((prev) => prev.filter((u) => u.id !== id));
+  };
 
   return (
     <AppLayout
@@ -53,6 +78,9 @@ export default function AdminUserDashboard() {
         buttonIcon={<PlusIcon className="text-white h-5 w-5" />}
         onButtonClick={() => setIsPanelOpen(true)}
       />
+      {loading ? (
+        <p className="text-center mt-4">Loading faculty...</p>
+      ) : (
       <TableComponent
         data={filteredUsers}
         emptyImageSrc={emptyImage}
@@ -65,14 +93,15 @@ export default function AdminUserDashboard() {
           { key: "department", label: "Department" },
         ]}
         onEdit={(id) => console.log("Edit user", id)}
-        onDelete={(id) => console.log("Delete user", id)}
+        onDelete={handleDelete}
         showActions
       />
+      )}
       <SidePanelComponent
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}
         panelFunction="Add Faculty"
-        submit={() => console.log("API Request POST")}
+        submit={handleRegister}
         fullWidthRow={false}
         buttonFunction="Add Faculty"
       >
@@ -81,11 +110,14 @@ export default function AdminUserDashboard() {
         <UserInputComponent label="Middle Name" name="middle_name" />
         <UserInputComponent label="Email" name="email" />
         <UserInputComponent label="Last Name" name="last_name" />
-        <DropdownComponent label="Role" options={roleOptions} />
+        <DropdownComponent 
+          label="Role" 
+          options={roles.map((r) => r.role)}
+        />
         <UserInputComponent label="Suffix" name="suffix" />
         <DropdownComponent
           label="Department"
-          options={departmentOptions}
+          options={departments.map((d) => d.department_name)}
         />
       </SidePanelComponent>
     </AppLayout>

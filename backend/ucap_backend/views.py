@@ -152,7 +152,8 @@ def instructor_courses(request, instructor_id):
         return Response({"message": "Instructor not found"}, status=404)
     except Exception as e:
         return Response({"message": str(e)}, status=500)
-    
+
+  
 @api_view(["GET"])
 def instructor_sections(request, instructor_id, loaded_course_id):
     try:
@@ -173,6 +174,7 @@ def instructor_course_information(request, instructor_id):
 
 #===== ADMIN COURSE & USER MANAGEMENT =============================================================================================================================
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def get_courses(request):
     try:
         courses = Course.objects.all()
@@ -182,13 +184,17 @@ def get_courses(request):
         return JsonResponse({"message": str(e)}, status=500)
     
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def get_faculty(request):
     try:
-        instructors = User.objects.all()
-        serializer = InstructorSerializer(instructors, many=True)
+
+        faculty_excluded = User.objects.exclude(user_role_id=1)
+        serializer = InstructorSerializer(faculty_excluded, many=True)
+
         return JsonResponse(serializer.data, safe=False)
     except Exception as e:
-        return JsonResponse({"message": str(e)}, status=500)  
+        return JsonResponse({"message": str(e)}, status=500)
+
 
 @api_view(["POST"])
 def create_course(request):
