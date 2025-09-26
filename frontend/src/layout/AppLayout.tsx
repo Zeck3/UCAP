@@ -28,6 +28,14 @@ export default function AppLayout({
     navigate(activeItem);
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
+
   return (
     <div className="h-screen flex">
       <HeaderComponent
@@ -36,7 +44,7 @@ export default function AppLayout({
             ? [user.last_name, user.first_name].filter(Boolean).join(", ")
             : "Guest"
         }
-        onLogout={() => logout()}
+        onLogout={handleLogout}
         onButtonClick={toggleSidebar}
         onLogoClick={goToMain}
         crumbs={crumbs}

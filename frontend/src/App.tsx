@@ -13,8 +13,10 @@ import AdminUserDashboard from "./pages/admin/AdminUserDashboard";
 import DepartmentChairCourseDashboard from "./pages/department_chair/DepartmentChairCourseDashboard";
 import DepartmentChairCoursePage from "./pages/department_chair/DepartmentChairCoursePage";
 import DepartmentChairAssessmentPage from "./pages/department_chair/DepartmentChairAssessmentPage";
+import { useIdleHeartbeat } from "./context/useIdleHeartbeat";
 
 export default function App() {
+  useIdleHeartbeat();
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />

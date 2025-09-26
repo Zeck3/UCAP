@@ -4,7 +4,6 @@ import LoginComponent from "../components/LoginComponent";
 import WelcomeComponent from "../components/WelcomeComponent";
 import { useAuth } from "../context/useAuth";
 import { roleRoutes } from "../config/Roles";
-import axiosClient from "../api/axiosClient";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -13,7 +12,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const { login, user } = useAuth();
- 
+
   useEffect(() => {
     if (errorMessage) {
       const timer = setTimeout(() => {
@@ -49,32 +48,27 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    setErrorMessage("");
+
+    const parsedUserId = Number(userId);
+    if (isNaN(parsedUserId)) {
+      setErrorMessage("Invalid Login Credentials");
+      setLoading(false);
+      setUserId("");
+      setPassword("");
+      return;
+    }
 
     try {
-      const { data } = await axiosClient.post("login/", {
-        user_id: Number(userId),
-        password,
-      });
-
-      localStorage.setItem("access_token", data.access);
-      localStorage.setItem("refresh_token", data.refresh);
-
-      const userData = data;
-      login(userData, data.access, data.refresh);
-
-      const redirectPath = roleRoutes[userData.role_id];
-      if (redirectPath) {
-        navigate(redirectPath, { replace: true });
-      } else {
-        console.warn("No route defined for role:", userData.role_id);
-        navigate("/login", { replace: true });
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMessage("Invalid User ID or Password");
-    } finally {
+      await login(parsedUserId, password);
+      console.log("Login successful");
       setLoading(false);
+      setUserId("");
+      setPassword("");
+    } catch {
+      setErrorMessage("Invalid Login Credentials");
+      setLoading(false);
+      setUserId("");
+      setPassword("");
     }
   };
 
