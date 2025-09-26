@@ -18,6 +18,7 @@ interface TableProps<T extends { id: string | number }> {
   onRowClick?: (row: T) => void;
   disableRowPointer?: boolean;
   showActions?: boolean;
+  loading?: boolean;
 }
 
 export default function TableComponent<T extends { id: string | number }>({
@@ -30,6 +31,7 @@ export default function TableComponent<T extends { id: string | number }>({
   emptyImageSrc = "/empty.svg",
   emptyMessage = "No data available",
   showActions = false,
+  loading = false,
 }: TableProps<T>) {
   const [openMenuId, setOpenMenuId] = useState<T["id"] | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -63,6 +65,14 @@ export default function TableComponent<T extends { id: string | number }>({
       </div>
     );
   }
+
+  if (loading) {
+  return (
+    <div className="flex justify-center items-center py-10">
+      <span className="text-gray-500 animate-pulse">Loading...</span>
+    </div>
+  );
+}
 
   return (
     <div className="overflow-x-auto pt-4 pb-20">
