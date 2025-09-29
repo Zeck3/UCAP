@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { AuthContext } from "./AuthContext";
-import type { User } from "../types/types";
-import {
-  loginRequest,
-  logoutRequest,
-  fetchCurrentUser,
-} from "../api/authClient";
+import type { CurrentUser } from "../types/userManagementTypes";
+import { loginRequest, logoutRequest, fetchCurrentUser } from "../api/authApi";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<CurrentUser | null>(null);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     if (!initialized) {
-      fetchCurrentUser().then((user) => {
-        setUser(user);
-        setInitialized(true);
-      });
+      fetchCurrentUser()
+        .then((user) => {
+          setUser(user);
+        })
+        .catch(() => {
+          setUser(null);
+        })
+        .finally(() => setInitialized(true));
     }
   }, [initialized]);
 

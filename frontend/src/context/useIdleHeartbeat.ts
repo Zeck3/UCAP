@@ -1,51 +1,44 @@
 import { useEffect, useRef, useCallback } from "react";
-import { useAuth } from "./useAuth";
 import axiosClient from "../api/axiosClient";
+import type { CurrentUser } from "../types/userManagementTypes";
 
-const IDLE_TIMEOUT = 15 * 60 * 1000;
-const HEARTBEAT_MIN_INTERVAL = 5 * 1000;
+export const useHeartbeat = (
+  user: CurrentUser | null,
+  idleTime = 2 * 60 * 1000
+) => {
+  const timeoutRef = useRef<number | null>(null);
 
-export function useIdleHeartbeat() {
-  const { user, logout } = useAuth();
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastHeartbeatRef = useRef<number>(0);
-
-  const sendHeartbeat = useCallback(() => {
-    const now = Date.now();
-    if (now - lastHeartbeatRef.current > HEARTBEAT_MIN_INTERVAL) {
-      axiosClient.get("/heartbeat/").catch(() => {});
-      lastHeartbeatRef.current = now;
+  const sendHeartbeat = useCallback(async () => {
+    try {
+      await axiosClient.get("/heartbeat/");
+    } catch {
+      console.log("Heartbeat failed");
     }
   }, []);
 
-  const resetTimer = useCallback(() => {
+  const resetHeartbeatTimer = useCallback(() => {
     if (!user) return;
-
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
-    sendHeartbeat();
-
-    timeoutRef.current = setTimeout(() => {
-      logout();
-      alert("Logged out due to inactivity.");
-    }, IDLE_TIMEOUT);
-  }, [user, logout, sendHeartbeat]);
+    if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
+    timeoutRef.current = window.setTimeout(() => {
+      sendHeartbeat();
+    }, idleTime);
+  }, [sendHeartbeat, idleTime, user]);
 
   useEffect(() => {
     if (!user) return;
 
-    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    const events = ["mousemove", "keydown", "scroll", "click"];
     events.forEach((event) =>
-      window.addEventListener(event, resetTimer)
+      window.addEventListener(event, resetHeartbeatTimer)
     );
 
-    resetTimer();
+    resetHeartbeatTimer();
 
     return () => {
+      if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
       events.forEach((event) =>
-        window.removeEventListener(event, resetTimer)
+        window.removeEventListener(event, resetHeartbeatTimer)
       );
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [user, resetTimer]);
-}
+  }, [resetHeartbeatTimer, user]);
+};
