@@ -1,27 +1,74 @@
+import { useEffect } from "react";
+
 type UserInputComponentProps = {
   label: string;
   name: string;
-  onChange?: (name: string, value: string) => void;
+  value: string;
+  required?: boolean;
+  showAsterisk?: boolean;
+  error?: string;
+  onChange: (name: string, value: string) => void;
+  onClearError?: (name: string) => void;
+  loading?: boolean;
+  readOnly?: boolean;
 };
 
 export default function UserInputComponent({
   label,
   name,
+  value = "",
+  required = false,
+  showAsterisk = true,
+  error,
   onChange,
+  onClearError,
+  loading = false,
+  readOnly = false,
 }: UserInputComponentProps) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    onChange(name, value);
+
+    if (onClearError) {
+      onClearError(name);
+    }
+  };
+
+  useEffect(() => {
+    if (error && onClearError) {
+      const timer = setTimeout(() => {
+        onClearError(name);
+      }, 3000); // 3 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [error, name, onClearError]);
+
   return (
     <div className="flex flex-col gap-1">
-      <label className="block text-sm" htmlFor={name}>
+      <label className="flex text-sm" htmlFor={name}>
         {label}
+        {required && showAsterisk && (
+          <span className="text-red-500 ml-1">*</span>
+        )}
       </label>
 
       <input
         id={name}
         name={name}
-        type="text"
-        onChange={(e) => onChange?.(name, e.target.value)}
-        className="w-full text-base h-10 px-3 py-2 border border-[#E9E6E6] rounded-md"
+        value={value}
+        required={required}
+        onChange={handleChange}
+        disabled={loading}
+        readOnly={readOnly}
+        className={`w-full text-base h-10 px-3 py-2 border rounded-md ${
+          error ? "border-red-500" : "border-[#E9E6E6]"
+        } ${
+          readOnly || loading ? "bg-gray-100 cursor-not-allowed" : ""
+        }`}
       />
+      <div className="h-5">
+        {error && <p className="text-xs text-red-500">{error}</p>}
+      </div>
     </div>
   );
 }

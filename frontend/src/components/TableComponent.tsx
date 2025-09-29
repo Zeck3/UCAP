@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import KebabIcon from "../assets/ellipsis-vertical-solid.svg?react";
 import EditIcon from "../assets/customize.svg?react";
 import DeleteIcon from "../assets/trash-solid.svg?react";
+import ChevronRight from "../assets/chevron-right-solid.svg?react";
+import ChevronLeft from "../assets/chevron-left-solid.svg?react";
 
 interface Column<T> {
   key: keyof T;
@@ -19,6 +21,7 @@ interface TableProps<T extends { id: string | number }> {
   disableRowPointer?: boolean;
   showActions?: boolean;
   loading?: boolean;
+  skeletonRows?: number;
 }
 
 export default function TableComponent<T extends { id: string | number }>({
@@ -32,9 +35,18 @@ export default function TableComponent<T extends { id: string | number }>({
   emptyMessage = "No data available",
   showActions = false,
   loading = false,
+  skeletonRows = 6,
 }: TableProps<T>) {
   const [openMenuId, setOpenMenuId] = useState<T["id"] | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedData = data.slice(startIndex, startIndex + itemsPerPage);
+
+  const totalPages = Math.ceil(data.length / itemsPerPage);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -57,6 +69,37 @@ export default function TableComponent<T extends { id: string | number }>({
     if (openMenuId === null) dropdownRef.current = null;
   }, [openMenuId]);
 
+  if (loading) {
+    return (
+      <div className="overflow-x-auto pt-4 pb-20">
+        <table className="min-w-full text-left text-sm">
+          <thead>
+            <tr>
+              <th
+                colSpan={columns.length + (showActions ? 1 : 0)}
+                className="py-4"
+              >
+                <div className="h-8 bg-gray-200 rounded w-full animate-pulse"></div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: skeletonRows }).map((_, rowIndex) => (
+              <tr key={rowIndex} className="animate-pulse">
+                <td
+                  colSpan={columns.length + (showActions ? 1 : 0)}
+                  className="py-4"
+                >
+                  <div className="h-8 bg-gray-200 rounded w-full"></div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
   if (data.length === 0) {
     return (
       <div className="flex flex-col justify-center items-center pt-8">
@@ -65,14 +108,6 @@ export default function TableComponent<T extends { id: string | number }>({
       </div>
     );
   }
-
-  if (loading) {
-  return (
-    <div className="flex justify-center items-center py-10">
-      <span className="text-gray-500 animate-pulse">Loading...</span>
-    </div>
-  );
-}
 
   return (
     <div className="overflow-x-auto pt-4 pb-20">
@@ -91,7 +126,7 @@ export default function TableComponent<T extends { id: string | number }>({
         </thead>
 
         <tbody>
-          {data.map((row, idx) => {
+          {paginatedData.map((row, idx) => {
             const isClickable = !!onRowClick && !disableRowPointer;
             return (
               <tr
@@ -163,6 +198,26 @@ export default function TableComponent<T extends { id: string | number }>({
           })}
         </tbody>
       </table>
+
+      <div className="flex justify-end items-center gap-x-4 mt-4">
+        <button
+          className="px-2 py-2 border border-[#E9E6E6] rounded disabled:opacity-50 enabled:cursor-pointer"
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage((p) => p - 1)}
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <span className="text-sm">
+          {currentPage} of {totalPages}
+        </span>
+        <button
+          className="px-2 py-2 border border-[#E9E6E6] rounded disabled:opacity-50 enabled:cursor-pointer"
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage((p) => p + 1)}
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </div>
     </div>
   );
 }
