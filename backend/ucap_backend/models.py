@@ -1,7 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
+# ====================================================
 # Login Authentication and User Management
+# ====================================================
 class UserManager(BaseUserManager):
     def create_user(self, user_id, password=None, **extra_fields):
         if not user_id:
@@ -47,11 +49,16 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = "user_id"
 
+    def __str__(self):
+        return str(self.user_id)
+
 class UserRole(models.Model):
     user_role_id = models.AutoField(serialize=True, primary_key=True)
     user_role_type = models.CharField(max_length=255)
 
+# ====================================================
 # University Hierarchy 
+# ====================================================
 class Campus(models.Model):
     campus_id = models.AutoField(serialize=True, primary_key=True)
     campus_name = models.CharField(max_length=225)
@@ -72,7 +79,9 @@ class Program(models.Model):
     department = models.ForeignKey("Department", on_delete=models.CASCADE)
     program_name = models.CharField(max_length=255)
 
+# ====================================================
 # Course Information
+# ====================================================
 class YearLevel(models.Model):
     year_level_id = models.AutoField(serialize=True, primary_key=True)
     year_level_type = models.CharField(max_length=255)
@@ -95,7 +104,9 @@ class Course(models.Model):
     credit = models.ForeignKey("Credit", on_delete=models.PROTECT)
     course_title = models.CharField(max_length=255)
 
+# ====================================================
 # Loaded Course Information
+# ====================================================
 class AcademicYear(models.Model):
     academic_year_id = models.AutoField(serialize=True, primary_key=True)
     academic_year_start = models.IntegerField()
@@ -106,7 +117,9 @@ class LoadedCourse(models.Model):
     course = models.ForeignKey("Course", on_delete=models.CASCADE)
     academic_year = models.ForeignKey("AcademicYear", on_delete=models.PROTECT)
 
+# ====================================================
 # Section Information
+# ====================================================
 class Section(models.Model):
     section_id = models.AutoField(primary_key=True)
     loaded_course = models.ForeignKey("LoadedCourse", on_delete=models.CASCADE)
@@ -124,7 +137,9 @@ class Student(models.Model):
     class Meta:
         unique_together = ("student_id", "section")
 
+# ====================================================
 # Global Class Record Template for Loaded Course
+# ====================================================
 class CourseTerm(models.Model):
     course_term_id = models.AutoField(primary_key=True)
     loaded_course = models.ForeignKey("LoadedCourse", on_delete=models.CASCADE)
@@ -142,7 +157,9 @@ class CourseComponent(models.Model):
     course_component_type = models.CharField(max_length=225)
     course_component_percentage = models.IntegerField()
 
+# ====================================================
 # Section-Specific Class Record
+# ====================================================
 class SectionCourseTerm(models.Model):
     section_course_term_id = models.AutoField(primary_key=True)
     section = models.ForeignKey("Section", on_delete=models.CASCADE)
@@ -160,7 +177,9 @@ class SectionCourseComponent(models.Model):
     section_course_component_name = models.CharField(max_length=225)
     section_course_component_percentage = models.IntegerField()
 
+# ====================================================
 # Assessments
+# ====================================================
 class Assessment(models.Model):
     assessment_id = models.AutoField(primary_key=True)
     section = models.ForeignKey("Section", on_delete=models.CASCADE)
@@ -178,7 +197,9 @@ class RawScore(models.Model):
     class Meta:
         unique_together = ("student", "assessment")
 
-# Assessment Information
+# ====================================================
+# Assessment Information and Outcome Mapping
+# ====================================================
 class CourseOutcome(models.Model):
     course_outcome_id = models.AutoField(primary_key=True)
     course = models.ForeignKey("Course", on_delete=models.CASCADE)
