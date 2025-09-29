@@ -1,10 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Roles } from "./config/Roles";
 import ProtectedRoute from "./components/routes/ProtectedRoute";
-
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
-
 import CourseDashboard from "./pages/instructor/CourseDashboard";
 import CoursePage from "./pages/instructor/CoursePage";
 import ClassRecordPage from "./pages/instructor/ClassRecordPage";
@@ -13,10 +11,16 @@ import AdminUserDashboard from "./pages/admin/AdminUserDashboard";
 import DepartmentChairCourseDashboard from "./pages/department_chair/DepartmentChairCourseDashboard";
 import DepartmentChairCoursePage from "./pages/department_chair/DepartmentChairCoursePage";
 import DepartmentChairAssessmentPage from "./pages/department_chair/DepartmentChairAssessmentPage";
-import { useIdleHeartbeat } from "./context/useIdleHeartbeat";
+import { useContext } from "react";
+import { AuthContext } from "./context/AuthContext";
+import { useHeartbeat } from "./context/useIdleHeartbeat";
 
 export default function App() {
-  useIdleHeartbeat();
+  const auth = useContext(AuthContext);
+  if (!auth) throw new Error("AuthContext is undefined");
+  const { user } = auth;
+  useHeartbeat(user, 1000);
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
