@@ -146,7 +146,7 @@ export default function DepartmentChairCoursePage() {
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}
         panelFunction="Add Section"
-        submit={() => console.log("API Request POST")}
+        onSubmit={() => console.log("API Request POST")}
         fullWidthRow={false}
         buttonFunction="Add Section"
       >

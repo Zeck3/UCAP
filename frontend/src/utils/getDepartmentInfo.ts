@@ -1,6 +1,6 @@
 // utils/getUserDepartmentInfo.ts
 import { dummy } from "../data/dummy";
-import type { User } from "../types/types";
+import type { User } from "../types/dropdownTypes";
 
 export function getUserDepartmentInfo(user: User | null) {
   if (!user?.department_id) return null;

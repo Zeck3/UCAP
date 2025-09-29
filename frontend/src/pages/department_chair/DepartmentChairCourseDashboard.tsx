@@ -127,7 +127,7 @@ export default function DepartmentChairCourseDashboard() {
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}
         panelFunction="Load Courses"
-        submit={() => console.log("API Request POST")}
+        onSubmit={() => console.log("API Request POST")}
         fullWidthRow={false}
         buttonFunction="Load Courses"
       >
