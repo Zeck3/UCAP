@@ -1,39 +1,55 @@
 import { useNavigate } from "react-router-dom";
 import { useLayout } from "../../context/useLayout";
-import { useMemo, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../../context/useAuth";
-import { getInstructorCourses } from "../../utils/getInstructorCourses";
-import type { InstructorCourse } from "../../utils/getInstructorCourses";
+import { InstructorCourses } from "../../api/instructorDashboardApi";
+import type { InstructorCourse } from "../../types/instructorDashboardTypes";
 import emptyImage from "../../assets/undraw_file-search.svg";
 import ToolBarComponent from "../../components/ToolBarComponent";
 import CardsGridComponent from "../../components/CardsGridComponent";
 import TableComponent from "../../components/TableComponent";
 import AppLayout from "../../layout/AppLayout";
 
+
 export default function CourseDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const { user } = useAuth();
   const { layout } = useLayout();
   const navigate = useNavigate();
+  const [courses, setCourses] = useState<InstructorCourse[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const currentUserId = user?.user_id ?? null;
 
-  const instructorCourses: InstructorCourse[] = useMemo(() => {
-    if (!currentUserId) return [];
-    return getInstructorCourses(currentUserId);
+  useEffect(() => {
+    async function fetchCourses() {
+      if (!currentUserId) return;
+      try {
+        setLoading(true);
+        const data = await InstructorCourses(currentUserId);
+        setCourses(data);
+      } catch (err) {
+        console.error("Failed to fetch instructor courses:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchCourses();
   }, [currentUserId]);
 
+  // 🔹 Filter courses
   const filteredCourses = useMemo(() => {
-    if (!searchQuery.trim()) return instructorCourses;
+    if (!searchQuery.trim()) return courses;
 
     const query = searchQuery.toLowerCase();
-    return instructorCourses.filter(
+    return courses.filter(
       (course) =>
         course.course_code.toLowerCase().includes(query) ||
         course.course_title.toLowerCase().includes(query)
     );
-  }, [searchQuery, instructorCourses]);
+  }, [searchQuery, courses]);
 
+  // 🔹 Navigate on course click
   const goToCoursePage = (course: InstructorCourse) => {
     navigate(`/instructor/${course.id}/${course.course_code.replace(/\s+/g, "")}`);
   };
@@ -52,7 +68,9 @@ export default function CourseDashboard() {
         ]}
         onSearch={(val) => setSearchQuery(val)}
       />
-      {layout === "cards" ? (
+      {loading ? (
+        <p className="text-center mt-4">Loading courses...</p>
+      ) : layout === "cards" ? (
         <CardsGridComponent
           items={filteredCourses}
           onCardClick={goToCoursePage}

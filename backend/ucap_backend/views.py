@@ -181,6 +181,40 @@ def course_detail_view(request, course_code):
 
 
 # ====================================================
+# Instructor Dashboard
+# ====================================================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def instructor_loaded_courses_view(request, instructor_id):
+    try:
+        assigned_course = Section.objects.filter(instructor_assigned=instructor_id)
+
+        seen = set()
+        unique_courses = []
+        for sec in assigned_course.select_related("loaded_course__course"):
+            course = sec.loaded_course.course
+            if course.pk not in seen:
+                seen.add(course.pk)
+                unique_courses.append(sec)
+
+        serializer = InstructorLoadedCourseSerializer(unique_courses, many=True)
+        return Response(serializer.data, status=200)
+    except User.DoesNotExist:
+        return Response({"message": "Instructor not found"}, status=404)
+    except Exception as e:
+        return Response({"message": str(e)}, status=500)
+  
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def instructor_assigned_sections_view(request, instructor_id, loaded_course_id):
+    try:
+        assigned_sections = Section.objects.filter(instructor_assigned=instructor_id, loaded_course=loaded_course_id)
+        serializer = InstructorAssignedSectionSerializer(assigned_sections, many=True)
+        return Response(serializer.data, status=200)
+    except User.DoesNotExist:
+        return Response({"message": "Instructor not found"}, status=404)
+    
+# ====================================================
 # Dropdown
 # ====================================================
 @api_view(["GET"])
@@ -253,49 +287,6 @@ def academic_year_list_view(request):
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# #===== INSTRUCTOR COURSES & SECTIONS =============================================================================================================================
-# @api_view(["GET"])
-# def instructor_courses(request, instructor_id):
-#     try:
-#         assigned_course = Section.objects.filter(section_instructor_assigned_id=instructor_id)
-
-#         seen = set()
-#         unique_courses = []
-#         for sec in assigned_course.select_related("section_loaded_course_id__loaded_course_code"):
-#             course = sec.section_loaded_course_id.loaded_course_code
-#             if course.pk not in seen:
-#                 seen.add(course.pk)
-#                 unique_courses.append(course)
-
-#         serializer = CourseSerializer(unique_courses, many=True)
-#         return Response(serializer.data, status=200)
-#     except User.DoesNotExist:
-#         return Response({"message": "Instructor not found"}, status=404)
-#     except Exception as e:
-#         return Response({"message": str(e)}, status=500)
-
-  
-# @api_view(["GET"])
-# def instructor_sections(request, instructor_id, loaded_course_id):
-#     try:
-#         assigned_sections = Section.objects.filter(section_instructor_assigned_id=instructor_id, section_loaded_course_id=loaded_course_id)
-#         serializer = SectionSerializer(assigned_sections, many=True)
-#         return Response(serializer.data, status=200)
-#     except User.DoesNotExist:
-#         return Response({"message": "Instructor not found"}, status=404)
-# #============================================================================================================================================================
-# @api_view(["GET"])
-# def instructor_course_information(request, instructor_id):
-#     try:
-#         assigned_course_info = Section.objects.filter(section_instructor_assigned_id=instructor_id)
-#         serializer = SectionCourseSerializer(assigned_course_info, many=True)
-#         return Response(serializer.data, status=200)
-#     except User.DoesNotExist:
-#         return Response({"message": "Instructor not found"}, status=404)
-
-# #===== ADMIN COURSE & USER MANAGEMENT =============================================================================================================================
-
-# #============================================================================================================================
 
 # @api_view(["POST"])
 # def load_course(request, course_code):
