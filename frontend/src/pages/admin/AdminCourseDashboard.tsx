@@ -185,7 +185,7 @@ export default function AdminCourseDashboard() {
         );
         setCourses((prev) =>
           prev.map((c) =>
-            c.id === updatedCourse.course_code ? updatedCourse : c
+            c.course_code === updatedCourse.course_code ? updatedCourse : c
           )
         );
       } else {
@@ -236,14 +236,18 @@ export default function AdminCourseDashboard() {
           emptyImageSrc={emptyImage}
           emptyMessage="No Courses Available!"
           aspectRatio="20/9"
-          fieldTop={(course) => course.course_code}
+          fieldTop={(course) => course.id}
           title={(course) => course.course_title}
           subtitle={(course) => {
             const semesterText = course.semester_type
-              .toLowerCase()
-              .replace("semester", "sem")
-              .trim();
-            return `${course.year_level_type} ${semesterText} | ${course.program_name}`;
+              ? course.semester_type
+                  .toLowerCase()
+                  .replace("semester", "sem")
+                  .trim()
+              : "Undefined";
+            return `${course.year_level_type ?? ""} ${semesterText} | ${
+              course.program_name ?? ""
+            }`;
           }}
           loading={loading}
           disableCardPointer

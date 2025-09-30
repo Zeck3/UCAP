@@ -38,7 +38,7 @@ export default function UserInputComponent({
     if (error && onClearError) {
       const timer = setTimeout(() => {
         onClearError(name);
-      }, 3000); // 3 seconds
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [error, name, onClearError]);

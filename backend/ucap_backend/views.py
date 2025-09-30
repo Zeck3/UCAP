@@ -166,7 +166,7 @@ def course_detail_view(request, course_code):
             serializer = UpdateCourseSerializer(course, data=data, partial=(request.method == "PATCH"))
             if serializer.is_valid():
                 serializer.save()
-                updated_course = UpdateCourseSerializer(course).data
+                updated_course = CourseSerializer(course).data
                 return Response(updated_course, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
