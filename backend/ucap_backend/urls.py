@@ -34,7 +34,7 @@ urlpatterns = [
     # ====================================================
     # Instructor Dashboard
     # ====================================================
-    path("instructor/<int:instructor_id>", instructor_loaded_courses_view,),
+    path("instructor/<int:instructor_id>/", instructor_loaded_courses_view,),
     path("instructor/<int:instructor_id>/<str:loaded_course_id>", instructor_assigned_sections_view,),
     # # ============================================================================================================================
     # path("admin/course_management/section/create_section/", create_section),
