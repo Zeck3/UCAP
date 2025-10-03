@@ -79,6 +79,10 @@ body {
   border-color: #e8e2e2;
 }
 
+.border-ucap-blue {
+  border-color: #1A1851;
+}
+
 /* Focus Styles */
 .focus-ring-ucap-blue:focus {
   outline: none;
