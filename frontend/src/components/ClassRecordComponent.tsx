@@ -1,26 +1,30 @@
-// ClassRecordComponent.tsx (modified)
+// Import necessary types and React hooks
 import type { HeaderNode } from "../data/TableHeaderConfig";
 import type { JSX } from "react";
 import { useMemo, useState } from "react";
 import { crpInfo } from "../data/crpInfo";
 import type { Student } from "../data/crpInfo";
 
+// Define component props interface
 interface ClassRecordComponentProps {
   headerConfig: HeaderNode[];
 }
 
+// Calculate number of leaf nodes
 function countLeaves(node: HeaderNode): number {
   return node.children.length === 0
     ? node.colSpan || 1
     : node.children.map(countLeaves).reduce((a, b) => a + b, 0);
 }
 
+// Determine maximum depth of header tree
 function getMaxDepth(node: HeaderNode): number {
   return node.children.length === 0
     ? 1
     : 1 + Math.max(...node.children.map(getMaxDepth));
 }
 
+// Compute total leaf count excluding separators
 function getTotalLeafCount(nodes: HeaderNode[]): number {
   return nodes
     .filter((node) => node.type !== "h-separator")
@@ -28,6 +32,7 @@ function getTotalLeafCount(nodes: HeaderNode[]): number {
     .reduce((a, b) => a + b, 0);
 }
 
+// Render title with line breaks if present
 function renderTitleLines(title: string): JSX.Element | string {
   if (title.includes("\n")) {
     return (
@@ -43,6 +48,7 @@ function renderTitleLines(title: string): JSX.Element | string {
   return title;
 }
 
+// Gather keys for assignment nodes
 function collectAssignmentKeys(nodes: HeaderNode[]): string[] {
   const keys: string[] = [];
   function collect(node: HeaderNode) {
@@ -55,6 +61,7 @@ function collectAssignmentKeys(nodes: HeaderNode[]): string[] {
   return keys;
 }
 
+// Collect maximum scores for assignments
 function collectMaxScores(nodes: HeaderNode[]): Record<string, number> {
   const scores: Record<string, number> = {};
   function collect(node: HeaderNode) {
@@ -67,6 +74,7 @@ function collectMaxScores(nodes: HeaderNode[]): Record<string, number> {
   return scores;
 }
 
+// Compute derived values based on node calculations
 function computeValues(baseScores: Record<string, number>, maxScores: Record<string, number>, nodes: HeaderNode[]): Record<string, number> {
   const values: Record<string, number> = { ...baseScores };
 
@@ -79,7 +87,7 @@ function computeValues(baseScores: Record<string, number>, maxScores: Record<str
         const groupSum = node.groupKeys?.reduce((s, k) => s + (baseScores[k] || 0), 0) ?? 0;
         if (node.calculationType === "sum") {
           value = groupSum;
-        } else { // percentage
+        } else {
           const maxGroupSum = node.groupKeys?.reduce((s, k) => s + (maxScores[k] || 0), 0) ?? 0;
           value = maxGroupSum > 0 ? (groupSum / maxGroupSum) * 100 : 0;
         }
@@ -94,7 +102,7 @@ function computeValues(baseScores: Record<string, number>, maxScores: Record<str
         const grades = [1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 3.75, 4.00, 4.25, 4.50, 4.75, 5.00];
         value = grades.reduce((prev, curr) =>
           Math.abs(curr - gp) < Math.abs(prev - gp) ? curr :
-          Math.abs(curr - gp) === Math.abs(prev - gp) ? Math.max(curr, prev) : prev
+            Math.abs(curr - gp) === Math.abs(prev - gp) ? Math.max(curr, prev) : prev
         );
       }
       values[node.key] = value;
@@ -105,6 +113,7 @@ function computeValues(baseScores: Record<string, number>, maxScores: Record<str
   return values;
 }
 
+// Format value based on calculation type
 function formatValue(value: number, type?: string): string {
   if (["gradePoint", "totalGradePoint"].includes(type ?? "")) {
     return value.toFixed(3);
@@ -117,6 +126,7 @@ function formatValue(value: number, type?: string): string {
   }
 }
 
+// Get CSS class for header based on title
 function getHeaderClass(node: HeaderNode): string {
   const title = node.title;
   if (title === "Computed Final Grade") return "bg-ucap-green text-white text-lg";
@@ -138,12 +148,14 @@ function getHeaderClass(node: HeaderNode): string {
   return "";
 }
 
+// Get background class for calculated cells
 function getCalculatedBg(type?: string): string {
   if (type === "gradePoint") return "bg-pale-green";
   if (type === "roundedGrade") return "bg-ucap-yellow";
   return "";
 }
 
+// Get text class based on value and type
 function getTextClass(value: number, type?: string): string {
   if (["gradePoint", "totalGradePoint", "roundedGrade", "computedRounded", "computedWeighted"].includes(type ?? "") && value >= 3.00) {
     return "text-coa-red";
@@ -151,6 +163,7 @@ function getTextClass(value: number, type?: string): string {
   return "text-coa-blue";
 }
 
+// Get description for grade value
 function getDesc(g: number): string {
   if (g > 3.00) return "N/A";
   if (g <= 1.25) return "Excellent";
@@ -161,7 +174,7 @@ function getDesc(g: number): string {
   return "N/A";
 }
 
-// Build rows of <th> elements
+// Construct header rows for table
 function buildHeaderRows(
   nodes: HeaderNode[],
   originalMaxDepth: number,
@@ -172,8 +185,8 @@ function buildHeaderRows(
 ): JSX.Element[][] {
   const newMaxDepth = originalMaxDepth + 1;
   const rows: JSX.Element[][] = Array.from({ length: newMaxDepth }, () => []);
-  const hSeparators: JSX.Element[] = []; // collect h-separators
-  const buttonRow: JSX.Element[] = []; // collect buttons for the extra row
+  const hSeparators: JSX.Element[] = [];
+  const buttonRow: JSX.Element[] = [];
 
   function build(node: HeaderNode, level: number) {
     if (node.type === "v-separator") {
@@ -209,7 +222,6 @@ function buildHeaderRows(
       return;
     }
 
-    // Default normal node
     const hasChildren = node.children.length > 0;
     const colSpan = node.colSpan || (hasChildren ? node.children.reduce((sum, child) => sum + countLeaves(child), 0) : 1);
 
@@ -224,7 +236,6 @@ function buildHeaderRows(
       rowSpan = 1;
     }
 
-    // isLeafDeep for vertical text: apply to original deep leaves
     const isLeafDeep = !hasChildren && level === originalMaxDepth - 1 && !node.computedGrades;
 
     const headerClass = getHeaderClass(node);
@@ -234,9 +245,8 @@ function buildHeaderRows(
         key={`${level}-${node.title}`}
         colSpan={colSpan}
         rowSpan={rowSpan}
-        className={`border border-gray-300 p-2 text-center ${headerClass} ${
-          isLeafDeep ? "[writing-mode:vertical-rl] rotate-180 text-xs" : "whitespace-normal"
-        }`}
+        className={`border border-gray-300 p-2 text-center ${headerClass} ${isLeafDeep ? "[writing-mode:vertical-rl] rotate-180 text-xs" : "whitespace-normal"
+          } ${node.calculationType ? 'w-[3.75rem]' : ''}`}
       >
         {renderTitleLines(node.title)}
       </th>
@@ -267,7 +277,7 @@ function buildHeaderRows(
         buttonRow.push(
           <th
             key={`button-${node.title}`}
-            className="border border-gray-200 p-0 text-center"
+            className={`border border-gray-200 p-0 text-center ${node.calculationType ? 'w-[3.75rem]' : ''}`}
           >
             <button
               onClick={() => openPopup(node.title)}
@@ -285,7 +295,7 @@ function buildHeaderRows(
         buttonRow.push(
           <th
             key={`empty-${node.title}`}
-            className={`border border-gray-300 p-2 text-center ${bgClass}`}
+            className={`border border-gray-300 p-2 text-center ${bgClass} ${node.calculationType ? 'w-[3.75rem]' : ''}`}
           />
         );
       }
@@ -295,26 +305,23 @@ function buildHeaderRows(
   nodes.forEach((node) => build(node, 0));
   nodes.forEach((node) => addButtons(node));
 
-  // Insert button row at the end of the header rows (before h-separators)
   if (buttonRow.length > 0) {
     rows[originalMaxDepth] = buttonRow;
   }
 
-  // Append horizontal separator row
   if (hSeparators.length > 0) {
     rows.push(hSeparators);
   }
 
-  // Build sub row for student headers and max scores
   const subRow = buildSubRow(nodes, maxScores, setMaxScores, computedMaxValues);
   if (subRow.length > 0) {
     rows.push(subRow);
   }
 
-  // Filter out any empty rows (though unlikely)
   return rows.filter((row) => row.length > 0);
 }
 
+// Build sub-row for max scores and editable inputs
 function buildSubRow(
   nodes: HeaderNode[],
   maxScores: Record<string, number>,
@@ -323,122 +330,75 @@ function buildSubRow(
 ): JSX.Element[] {
   const subRow: JSX.Element[] = [];
 
-  function computeComputedValue(mid: number, fin: number, key: string): { content: string; valueNum?: number; type?: string; textClass: string } {
-    const grades = [1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 3.75, 4.00, 4.25, 4.50, 4.75, 5.00];
-    let raw = 0;
-    let rounded = 0;
-    let type: string | undefined;
-    let content = "";
-    let textClass = "";
-
-    if (key === "computed-half-weighted") {
-      raw = mid * 0.5 + fin * 0.5;
-      content = formatValue(raw, "computedWeighted");
-      type = "computedWeighted";
-      textClass = getTextClass(raw, type);
-    } else if (key === "computed-half-for-removal" || key === "computed-half-after-removal") {
-      raw = mid * 0.5 + fin * 0.5;
-      raw = Number(raw.toFixed(2)); // Added: Round raw to match displayed value for consistent closeness calculation
-      rounded = grades.reduce((prev, curr) =>
-        Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
-      content = formatValue(rounded, "computedRounded");
-      type = "computedRounded";
-      textClass = getTextClass(rounded, type);
-    } else if (key === "computed-half-desc") {
-      raw = mid * 0.5 + fin * 0.5;
-      raw = Number(raw.toFixed(2)); // Added: Round raw to match displayed value for consistent closeness calculation
-      rounded = grades.reduce((prev, curr) =>
-        Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
-      content = getDesc(rounded);
-      textClass = "text-coa-blue";
-    } else if (key === "computed-third-weighted") {
-      raw = mid * (1 / 3) + fin * (2 / 3);
-      content = formatValue(raw, "computedWeighted");
-      type = "computedWeighted";
-      textClass = getTextClass(raw, type);
-    } else if (key === "computed-third-for-removal" || key === "computed-third-after-removal") {
-      raw = mid * (1 / 3) + fin * (2 / 3);
-      raw = Number(raw.toFixed(2)); // Added: Round raw to match displayed value for consistent closeness calculation
-      rounded = grades.reduce((prev, curr) =>
-        Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
-      content = formatValue(rounded, "computedRounded");
-      type = "computedRounded";
-      textClass = getTextClass(rounded, type);
-    } else if (key === "computed-third-desc") {
-      raw = mid * (1 / 3) + fin * (2 / 3);
-      raw = Number(raw.toFixed(2)); // Added: Round raw to match displayed value for consistent closeness calculation
-      rounded = grades.reduce((prev, curr) =>
-        Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
-      content = getDesc(rounded);
-      textClass = "text-coa-blue";
-    } else if (key === "computed-remarks") {
-      content = "";
-    }
-
-    return { content, valueNum: rounded, type, textClass };
-  }
-
-  function addToSub(node: HeaderNode) {
+  function build(node: HeaderNode) {
     if (node.type === "v-separator") {
-      subRow.push(<th key={`sub-vsep-${node.title}`} className="bg-ucap-blue w-10 border border-ucap-blue" />);
+      subRow.push(
+        <th
+          key={`sub-vsep-${node.title}`}
+          className="bg-ucap-blue w-10 border border-ucap-blue"
+        />
+      );
       return;
     }
 
     if (node.type === "spacer") {
-      subRow.push(<th key={`sub-spacer-${node.title}`} className="bg-white w-20 border border-gray-300" />);
+      subRow.push(
+        <th
+          key={`sub-spacer-${node.title}`}
+          className="bg-white w-20 border border-gray-300"
+        />
+      );
       return;
     }
 
     if (node.type === "h-separator") {
-      return; // skip
+      return;
     }
 
-    if (node.studentInfo) {
-      subRow.push(<th key={`sub-student-no`} className="border border-gray-300 p-2 text-center">No.</th>);
-      subRow.push(<th key={`sub-student-id`} className="border border-gray-300 p-2 text-center">Student ID</th>);
-      subRow.push(<th key={`sub-student-name`} className="border border-gray-300 p-2 text-center">Name</th>);
+    if (node.isRowSpan) {
+      subRow.push(<th key={`sub-no`} className="border border-gray-300 p-2 text-center font-bold">No.</th>);
+      subRow.push(<th key={`sub-id`} className="border border-gray-300 p-2 text-center font-bold">Student ID</th>);
+      subRow.push(<th key={`sub-name`} className="border border-gray-300 p-2 text-center font-bold">Name</th>);
       return;
     }
 
     if (node.children.length > 0) {
-      node.children.forEach(addToSub);
+      node.children.forEach(build);
     } else {
-      let content: string | JSX.Element = "";
+      let content: JSX.Element | string | number = "";
       let bgClass = getCalculatedBg(node.calculationType);
       let textClass = "";
-      let type = node.calculationType;
-
-      if (node.key && node.maxScore !== undefined && node.calculationType === "assignment") {
+      if (node.calculationType === "assignment" && node.key) {
         content = (
           <input
             type="number"
-            value={maxScores[node.key]}
+            value={node.key ? maxScores[node.key] : ""}
             onChange={(e) => {
-              const newValue = Number(e.target.value);
-              setMaxScores((prev) => ({ ...prev, [node.key!]: newValue }));
+              if (node.key) {
+                if (typeof node.key === "string") {
+                  setMaxScores((prev) => ({ ...prev, [node.key as string]: Number(e.target.value) }));
+                }
+              }
             }}
             className="w-full text-center bg-transparent border-none focus:outline-none text-coa-blue"
           />
         );
       } else if (node.key && computedMaxValues[node.key] !== undefined) {
         content = formatValue(computedMaxValues[node.key], node.calculationType);
-        textClass = getTextClass(computedMaxValues[node.key], type);
+        const value = computedMaxValues[node.key];
+        textClass = "text-coa-blue";
       } else if (node.calculationType === "computed" && node.key) {
         const mid = computedMaxValues["midterm-total-grade"] || 0;
         const fin = computedMaxValues["final-total-grade"] || 0;
-        const { content: compContent, textClass: compTextClass } = computeComputedValue(mid, fin, node.key);
+        const { content: compContent, valueNum, type, textClass: compTextClass } = computeComputedContent(mid, fin, node.key);
         content = compContent;
-        textClass = compTextClass;
+        bgClass = getCalculatedBg(type);
+        textClass = "text-coa-blue";
       }
-
       subRow.push(
         <th
           key={`sub-${node.title}`}
-          className={`border border-gray-300 p-2 text-center ${bgClass} ${textClass}`}
+          className={`border border-gray-300 p-2 text-center ${bgClass} ${textClass} ${node.calculationType ? 'w-[3.75rem]' : ''}`}
         >
           {content}
         </th>
@@ -446,10 +406,69 @@ function buildSubRow(
     }
   }
 
-  nodes.forEach(addToSub);
+  nodes.forEach(build);
   return subRow;
 }
 
+// Compute content for computed grade cells
+function computeComputedContent(mid: number, fin: number, key: string): { content: string; valueNum?: number; type?: string; textClass: string } {
+  const grades = [1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 3.75, 4.00, 4.25, 4.50, 4.75, 5.00];
+  let raw = 0;
+  let rounded = 0;
+  let type: string | undefined;
+  let content = "";
+  let textClass = "";
+
+  if (key === "computed-half-weighted") {
+    raw = mid * 0.5 + fin * 0.5;
+    content = formatValue(raw, "computedWeighted");
+    type = "computedWeighted";
+    textClass = getTextClass(raw, type);
+  } else if (key === "computed-half-for-removal" || key === "computed-half-after-removal") {
+    raw = mid * 0.5 + fin * 0.5;
+    raw = Number(raw.toFixed(2));
+    rounded = grades.reduce((prev, curr) =>
+      Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
+        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+    content = formatValue(rounded, "computedRounded");
+    type = "computedRounded";
+    textClass = getTextClass(rounded, type);
+  } else if (key === "computed-half-desc") {
+    raw = mid * 0.5 + fin * 0.5;
+    raw = Number(raw.toFixed(2));
+    rounded = grades.reduce((prev, curr) =>
+      Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
+        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+    content = getDesc(rounded);
+    textClass = "text-coa-blue";
+  } else if (key === "computed-third-weighted") {
+    raw = mid * (1 / 3) + fin * (2 / 3);
+    content = formatValue(raw, "computedWeighted");
+    type = "computedWeighted";
+    textClass = getTextClass(raw, type);
+  } else if (key === "computed-third-for-removal" || key === "computed-third-after-removal") {
+    raw = mid * (1 / 3) + fin * (2 / 3);
+    raw = Number(raw.toFixed(2));
+    rounded = grades.reduce((prev, curr) =>
+      Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
+        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+    content = formatValue(rounded, "computedRounded");
+    type = "computedRounded";
+    textClass = getTextClass(rounded, type);
+  } else if (key === "computed-third-desc") {
+    raw = mid * (1 / 3) + fin * (2 / 3);
+    raw = Number(raw.toFixed(2));
+    rounded = grades.reduce((prev, curr) =>
+      Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
+        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+    content = getDesc(rounded);
+    textClass = "text-coa-blue";
+  }
+
+  return { content, valueNum: rounded, type, textClass };
+}
+
+// Build student data row
 function buildStudentRow(
   student: Student,
   index: number,
@@ -459,11 +478,11 @@ function buildStudentRow(
   computedValues: Record<string, number>,
   maxScores: Record<string, number>,
   remarks: string[],
-  updateRemark: (i: number, v: string) => void
+  updateRemark: (index: number, value: string) => void
 ): JSX.Element {
   const row: JSX.Element[] = [];
 
-  function computeComputedContent(mid: number, fin: number, key: string, isStudent: boolean, index?: number): { content: string | JSX.Element; textClass: string; bgClass: string } {
+  function computeComputedContent(mid: number, fin: number, key: string, isStudent: boolean = false, index?: number): { content: string | JSX.Element; textClass: string; bgClass: string } {
     const grades = [1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 3.75, 4.00, 4.25, 4.50, 4.75, 5.00];
     let raw = 0;
     let rounded = 0;
@@ -480,20 +499,20 @@ function buildStudentRow(
       bgClass = getCalculatedBg(type);
     } else if (key === "computed-half-for-removal" || key === "computed-half-after-removal") {
       raw = mid * 0.5 + fin * 0.5;
-      raw = Number(raw.toFixed(2)); // Added: Round raw to match displayed value for consistent closeness calculation
+      raw = Number(raw.toFixed(2));
       rounded = grades.reduce((prev, curr) =>
         Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+          Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
       cont = formatValue(rounded, "computedRounded");
       type = "computedRounded";
       textClass = getTextClass(rounded, type);
       bgClass = getCalculatedBg(type);
     } else if (key === "computed-half-desc") {
       raw = mid * 0.5 + fin * 0.5;
-      raw = Number(raw.toFixed(2)); // Added: Round raw to match displayed value for consistent closeness calculation
+      raw = Number(raw.toFixed(2));
       rounded = grades.reduce((prev, curr) =>
         Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+          Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
       cont = getDesc(rounded);
       textClass = "text-coa-blue";
     } else if (key === "computed-third-weighted") {
@@ -504,20 +523,20 @@ function buildStudentRow(
       bgClass = getCalculatedBg(type);
     } else if (key === "computed-third-for-removal" || key === "computed-third-after-removal") {
       raw = mid * (1 / 3) + fin * (2 / 3);
-      raw = Number(raw.toFixed(2)); // Added: Round raw to match displayed value for consistent closeness calculation
+      raw = Number(raw.toFixed(2));
       rounded = grades.reduce((prev, curr) =>
         Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+          Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
       cont = formatValue(rounded, "computedRounded");
       type = "computedRounded";
       textClass = getTextClass(rounded, type);
       bgClass = getCalculatedBg(type);
     } else if (key === "computed-third-desc") {
       raw = mid * (1 / 3) + fin * (2 / 3);
-      raw = Number(raw.toFixed(2)); // Added: Round raw to match displayed value for consistent closeness calculation
+      raw = Number(raw.toFixed(2));
       rounded = grades.reduce((prev, curr) =>
         Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+          Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
       cont = getDesc(rounded);
       textClass = "text-coa-blue";
     } else if (key === "computed-remarks") {
@@ -565,16 +584,14 @@ function buildStudentRow(
     }
 
     if (node.type === "h-separator") {
-      return; // skip
+      return;
     }
 
     if (node.children.length > 0) {
       node.children.forEach(addToRow);
     } else {
-      // leaf
       const effectiveColSpan = node.colSpan || 1;
       if (node.isRowSpan) {
-        // add three student cells
         row.push(<td key={`student-no-${index}`} className="border border-gray-300 p-2 text-left">{index + 1}</td>);
         row.push(<td key={`student-id-${index}`} className="border border-gray-300 p-2 text-left">{student.studentId}</td>);
         row.push(<td key={`student-name-${index}`} className="border border-gray-300 p-2 text-left">{`${student.fName}, ${student.lName}`}</td>);
@@ -587,19 +604,18 @@ function buildStudentRow(
           content = (
             <input
               type="number"
-              min={0} // Added: Minimum score limit
-              max={maxScores[node.key]} // Added: Maximum score limit based on maxScore
+              min={0}
+              max={maxScores[node.key]}
               value={node.key ? studentScore[node.key] : ""}
               onChange={(e) => {
                 if (node.key) {
                   const newValue = Number(e.target.value);
-                  // Optional: Enforce max in JS too (since HTML max is advisory)
                   if (newValue <= maxScores[node.key]) {
                     updateScore(node.key, newValue);
                   }
                 }
               }}
-              className="w-full text-center bg-transparent border-none focus:outline-none" // Removed text-coa-blue
+              className="w-full text-center bg-transparent border-none focus:outline-none"
             />
           );
         } else if (node.key && computedValues[node.key] !== undefined) {
@@ -620,7 +636,7 @@ function buildStudentRow(
           <td
             key={`student-${node.title}-${index}`}
             colSpan={effectiveColSpan}
-            className={`border border-gray-300 p-2 text-center ${bgClass} ${textClass}`}
+            className={`border border-gray-300 p-2 text-center ${bgClass} ${textClass} ${node.calculationType ? 'w-[3.75rem]' : ''}`}
           >
             {content}
           </td>
@@ -633,6 +649,7 @@ function buildStudentRow(
   return <tr key={index}>{row}</tr>;
 }
 
+// Main component for rendering class record table
 export default function ClassRecordComponent({
   headerConfig,
 }: ClassRecordComponentProps) {
@@ -647,7 +664,7 @@ export default function ClassRecordComponent({
   const [studentScores, setStudentScores] = useState(students.map((student) => {
     const scoreObj: Record<string, number> = {};
     assignmentKeys.forEach((key, idx) => {
-      scoreObj[key] = student.scores?.[idx] ?? 0; // Map array index to key, default to 0
+      scoreObj[key] = student.scores?.[idx] ?? 0;
     });
     return scoreObj;
   }));

@@ -4,13 +4,16 @@ import type { JSX } from "react";
 import ClassRecordComponent from "../components/ClassRecordComponent";
 import { headerConfig } from "../data/TableHeaderConfig";
 
+// Define main page component
 export default function ClassRecordPage(): JSX.Element {
+  // Initialize navigation and state for footer visibility
   const navigate = useNavigate();
   const [footerOpen, setFooterOpen] = useState(true);
 
+  // Render page structure with header, main content, and footer
   return (
     <div className="text-gray-700 min-h-screen flex flex-col">
-      {/* Header */}
+      // Render fixed header with back button and title
       <header className="fixed top-0 left-0 right-0 z-20 bg-white h-20 flex items-center px-6 border-b border-gray-300">
         <button
           onClick={() => navigate(-1)}
@@ -29,17 +32,16 @@ export default function ClassRecordPage(): JSX.Element {
         <h1 className="text-xl font-semibold ml-4">Class Record</h1>
       </header>
 
-      {/* Main Content */}
+      // Render main content with table for class record
       <main className="flex-1 mt-19.5 mb-32">
         <table className="table-auto border border-gray-300 min-w-max text-center">
           <ClassRecordComponent headerConfig={headerConfig} />
           <tbody>
-            {/* Example body rows */}
           </tbody>
         </table>
       </main>
 
-      {/* Footer */}
+      // Render toggleable footer with action buttons
       <footer
         className={`fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-gray-300 transition-transform duration-300 ${
           footerOpen ? "translate-y-0" : "translate-y-full"

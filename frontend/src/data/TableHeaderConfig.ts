@@ -1,6 +1,6 @@
-// TableHeaderConfig.ts
 import { crpInfo } from "./crpInfo";
 
+// Define HeaderNode interface for table header structure
 export interface HeaderNode {
   title: string;
   children: HeaderNode[];
@@ -19,6 +19,7 @@ export interface HeaderNode {
   computedGrades?: boolean;
 }
 
+// Create spanning cell for class information display
 export function createSpanningCell(): HeaderNode {
   const lines = [
     `Department: ${crpInfo.info.department}`,
@@ -37,6 +38,7 @@ export function createSpanningCell(): HeaderNode {
   };
 }
 
+// Create computed final grade section with various calculations
 export function createComputedSection(): HeaderNode {
   const titles = [
     "1/2 MTG + 1/2 FTG",
@@ -76,6 +78,7 @@ export function createComputedSection(): HeaderNode {
   };
 }
 
+// Create grade section for midterm or final period
 export function createGradeSection(type: "Midterm" | "Final"): HeaderNode {
   const isMidterm = type === "Midterm";
   const period = isMidterm ? crpInfo.midterm : crpInfo.final;
@@ -390,6 +393,7 @@ export function createGradeSection(type: "Midterm" | "Final"): HeaderNode {
   };
 }
 
+// Export header configuration array for table structure
 export const headerConfig: HeaderNode[] = [
   createSpanningCell(),
   { title: "", children: [], type: "v-separator" },

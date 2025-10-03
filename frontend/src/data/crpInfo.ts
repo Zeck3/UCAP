@@ -1,9 +1,10 @@
-// crpInfo.ts (modified)
+// Define CRPItem interface for individual items with title and maximum score
 export interface CRPItem {
   title: string;
   maxScore: number;
 }
 
+// Define CRPPeriod interface for lecture and laboratory sections in a period
 export interface CRPPeriod {
   lecture: {
     classStanding: CRPItem[];
@@ -18,13 +19,15 @@ export interface CRPPeriod {
   };
 }
 
+// Define Student interface for student details and scores array
 export interface Student {
   studentId: string;
   fName: string;
   lName: string;
-  scores: number[]; // Changed to array; order must match assignmentKeys
+  scores: number[];
 }
 
+// Define CRPInfo interface for overall class record information
 export interface CRPInfo {
   info: {
     department: string;
@@ -37,6 +40,7 @@ export interface CRPInfo {
   students: Student[];
 }
 
+// Export the CRPInfo constant containing class details, midterm and final periods, and student data
 export const crpInfo: CRPInfo = {
   info: {
     department: "Department of Electronics Engineering",
