@@ -157,7 +157,7 @@ function getCalculatedBg(type?: string): string {
 
 // Get text class based on value and type
 function getTextClass(value: number, type?: string): string {
-  if (["gradePoint", "totalGradePoint", "roundedGrade", "computedRounded", "computedWeighted"].includes(type ?? "") && value >= 3.00) {
+  if (["gradePoint", "totalGradePoint", "roundedGrade", "computedRounded", "computedWeighted"].includes(type ?? "") && value > 3.00) {
     return "text-coa-red";
   }
   return "text-coa-blue";
