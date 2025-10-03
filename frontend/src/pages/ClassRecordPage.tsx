@@ -36,8 +36,6 @@ export default function ClassRecordPage(): JSX.Element {
       <main className="flex-1 mt-19.5 mb-32">
         <table className="table-auto border border-gray-300 min-w-max text-center">
           <ClassRecordComponent headerConfig={headerConfig} />
-          <tbody>
-          </tbody>
         </table>
       </main>
 
