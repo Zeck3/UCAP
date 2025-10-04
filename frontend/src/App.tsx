@@ -13,7 +13,7 @@ import DepartmentChairCoursePage from "./pages/department_chair/DepartmentChairC
 import DepartmentChairAssessmentPage from "./pages/department_chair/DepartmentChairAssessmentPage";
 import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext";
-import { useHeartbeat } from "./context/useIdleHeartbeat";
+import { useHeartbeat } from "./context/useHeartbeat";
 
 export default function App() {
   const auth = useContext(AuthContext);
@@ -34,7 +34,7 @@ export default function App() {
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={[Roles.Instructor]} />}>
-        <Route path="/instructor/:loaded_course_id/:course_code/:year_and_section" element={<ClassRecordPage />} />
+        <Route path="/instructor/:loaded_course_id/:course_code/:section_id/:year_and_section" element={<ClassRecordPage />} />
         <Route path="/instructor/:loaded_course_id/:course_code" element={<CoursePage />} />
         <Route path="/instructor" element={<CourseDashboard />} />
       </Route>

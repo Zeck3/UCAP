@@ -10,7 +10,6 @@ import CardsGridComponent from "../../components/CardsGridComponent";
 import TableComponent from "../../components/TableComponent";
 import AppLayout from "../../layout/AppLayout";
 
-
 export default function CourseDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const { user } = useAuth();
@@ -37,21 +36,29 @@ export default function CourseDashboard() {
     fetchCourses();
   }, [currentUserId]);
 
-  // 🔹 Filter courses
   const filteredCourses = useMemo(() => {
-    if (!searchQuery.trim()) return courses;
+    const query = searchQuery.trim().toLowerCase();
+    const filtered = query
+      ? courses.filter(
+          (course) =>
+            course.course_code.toLowerCase().includes(query) ||
+            course.course_title.toLowerCase().includes(query)
+        )
+      : courses;
 
-    const query = searchQuery.toLowerCase();
-    return courses.filter(
-      (course) =>
-        course.course_code.toLowerCase().includes(query) ||
-        course.course_title.toLowerCase().includes(query)
-    );
+    return filtered.map((course) => ({
+      ...course,
+      id: course.loaded_course_id,
+    }));
   }, [searchQuery, courses]);
 
-  // 🔹 Navigate on course click
   const goToCoursePage = (course: InstructorCourse) => {
-    navigate(`/instructor/${course.id}/${course.course_code.replace(/\s+/g, "")}`);
+    navigate(
+      `/instructor/${course.loaded_course_id}/${course.course_code.replace(
+        /\s+/g,
+        ""
+      )}`
+    );
   };
 
   return (
@@ -68,9 +75,7 @@ export default function CourseDashboard() {
         ]}
         onSearch={(val) => setSearchQuery(val)}
       />
-      {loading ? (
-        <p className="text-center mt-4">Loading courses...</p>
-      ) : layout === "cards" ? (
+      {layout === "cards" ? (
         <CardsGridComponent
           items={filteredCourses}
           onCardClick={goToCoursePage}
@@ -78,6 +83,7 @@ export default function CourseDashboard() {
           emptyMessage="No Courses Available!"
           aspectRatio="20/9"
           fieldTop="course_code"
+          loading={loading}
           title={(course) => course.course_title}
           subtitle={(course) => {
             const semesterText = course.semester_type
@@ -93,6 +99,7 @@ export default function CourseDashboard() {
           onRowClick={goToCoursePage}
           emptyImageSrc={emptyImage}
           emptyMessage="No Courses Available!"
+          loading={loading}
           columns={[
             { key: "course_code", label: "Code" },
             { key: "course_title", label: "Course Title" },
@@ -100,7 +107,6 @@ export default function CourseDashboard() {
             { key: "semester_type", label: "Semester" },
             { key: "department_name", label: "Department" },
           ]}
-          onEdit={(id) => console.log("Edit course", id)}
         />
       )}
     </AppLayout>

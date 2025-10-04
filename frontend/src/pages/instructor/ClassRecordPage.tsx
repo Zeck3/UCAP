@@ -58,7 +58,6 @@ export default function ClassRecordPage() {
     setStudents(updatedStudents);
   };
 
-
   return (
     <AppLayout activeItem="/instructor" disablePadding>
       <ClassRecordTable

@@ -70,7 +70,7 @@ export default function LoginComponent({
             ${
               loading
                 ? "bg-[#E9D4A6] cursor cursor-not-allowed"
-                : "bg-ucap-yellow bg-ucap-yellow-hover"
+                : "bg-ucap-yellow bg-ucap-yellow-hover cursor-pointer"
             }`}
         >
           {loading ? (

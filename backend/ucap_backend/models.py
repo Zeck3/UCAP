@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 # ====================================================
 # Login Authentication and User Management
@@ -138,11 +139,11 @@ class Student(models.Model):
         unique_together = ("student_id", "section")
 
 # ====================================================
-# Global Class Record Template for Loaded Course
+# Class Record
 # ====================================================
 class CourseTerm(models.Model):
     course_term_id = models.AutoField(primary_key=True)
-    loaded_course = models.ForeignKey("LoadedCourse", on_delete=models.CASCADE)
+    section = models.ForeignKey("Section", on_delete=models.CASCADE)
     course_term_type = models.CharField(max_length=225)
 
 class CourseUnit(models.Model):
@@ -158,32 +159,11 @@ class CourseComponent(models.Model):
     course_component_percentage = models.IntegerField()
 
 # ====================================================
-# Section-Specific Class Record
-# ====================================================
-class SectionCourseTerm(models.Model):
-    section_course_term_id = models.AutoField(primary_key=True)
-    section = models.ForeignKey("Section", on_delete=models.CASCADE)
-    section_course_term_type = models.CharField(max_length=225)
-
-class SectionCourseUnit(models.Model):
-    section_course_unit_id = models.AutoField(primary_key=True)
-    section_course_term = models.ForeignKey("SectionCourseTerm", on_delete=models.CASCADE)
-    section_course_unit_type = models.CharField(max_length=225)
-    section_course_unit_percentage = models.IntegerField()
-
-class SectionCourseComponent(models.Model):
-    section_course_component_id = models.AutoField(primary_key=True)
-    section_course_unit = models.ForeignKey("SectionCourseUnit", on_delete=models.CASCADE)
-    section_course_component_name = models.CharField(max_length=225)
-    section_course_component_percentage = models.IntegerField()
-
-# ====================================================
 # Assessments
 # ====================================================
 class Assessment(models.Model):
     assessment_id = models.AutoField(primary_key=True)
-    section = models.ForeignKey("Section", on_delete=models.CASCADE)
-    section_component = models.ForeignKey("SectionCourseComponent", on_delete=models.CASCADE)
+    course_component = models.ForeignKey("CourseComponent", on_delete=models.CASCADE)
     blooms_classification = models.ForeignKey("BloomsClassification", on_delete=models.SET_NULL, null=True, blank=True)
     course_outcomes = models.ManyToManyField("CourseOutcome", through="AssessmentCourseOutcome")
     assessment_title = models.CharField(max_length=225, null=True, blank=True)

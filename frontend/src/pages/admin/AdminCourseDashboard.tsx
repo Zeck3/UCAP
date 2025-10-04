@@ -202,10 +202,6 @@ export default function AdminCourseDashboard() {
     }
   };
 
-  useEffect(() => {
-    console.log("Current formData:", formData);
-  }, [formData]);
-
   const handleDelete = async (id: string) => {
     const success = await deleteCourse(id);
     if (success) setCourses((prev) => prev.filter((c) => c.id !== id));
@@ -281,6 +277,7 @@ export default function AdminCourseDashboard() {
           setIsEditing(false);
           setSidePanelLoading(false);
           setFormData(initialFormData);
+          setErrors({});
         }}
         panelFunction={editingCourse ? "Edit Course" : "Add Course"}
         onSubmit={handleSubmit}

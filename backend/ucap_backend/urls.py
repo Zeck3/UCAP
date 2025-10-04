@@ -22,6 +22,11 @@ urlpatterns = [
     path("admin/course_management/", course_management_view),
     path("admin/course_management/<str:course_code>", course_detail_view),
     # ====================================================
+    # Instructor Dashboard
+    # ====================================================
+    path("instructor/<int:instructor_id>/", instructor_loaded_courses_view,),
+    path("instructor/<int:instructor_id>/<str:loaded_course_id>", instructor_assigned_sections_view,),
+    # ====================================================
     # Dropdown
     # ====================================================
     path("user_role/", user_role_list_view),
@@ -31,11 +36,6 @@ urlpatterns = [
     path("semester/", semester_list_view),
     path("credit_unit/", credit_unit_list_view),
     path("academic_year/", academic_year_list_view),
-    # ====================================================
-    # Instructor Dashboard
-    # ====================================================
-    path("instructor/<int:instructor_id>/", instructor_loaded_courses_view,),
-    path("instructor/<int:instructor_id>/<str:loaded_course_id>", instructor_assigned_sections_view,),
     # # ============================================================================================================================
     # path("admin/course_management/section/create_section/", create_section),
     # # path('department_chair/course_management/<str:course_code>/load_course/', load_course),

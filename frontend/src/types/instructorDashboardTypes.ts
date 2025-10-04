@@ -9,7 +9,7 @@ export type User = {
 };
 
 export type InstructorCourse = {
-  id: number;
+  loaded_course_id: number;
   course_code: string;
   course_title: string;
   academic_year: string;
@@ -18,7 +18,7 @@ export type InstructorCourse = {
 };
 
 export type CourseDetailsWithSections = {
-  id: number;
+  section_id: number;
   course_title: string;
   academic_year: string;
   semester_type: string;
@@ -26,12 +26,6 @@ export type CourseDetailsWithSections = {
   department_name: string;
   college_name: string;
   campus_name: string;
-  year_and_section: string;
-  instructor_assigned: string;
-};
-
-export type SectionItem = {
-  id: number;
   year_and_section: string;
   instructor_assigned: string;
 };

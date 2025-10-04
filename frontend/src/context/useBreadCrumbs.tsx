@@ -6,21 +6,39 @@ interface Crumb {
 }
 
 export function useBreadcrumbs() {
-  const { department_name, loaded_course_id, course_code, year_and_section } = useParams();
+  const {
+    department_name,
+    loaded_course_id,
+    course_code,
+    section_id,
+    year_and_section,
+  } = useParams<{
+    department_name?: string;
+    loaded_course_id?: string;
+    course_code?: string;
+    section_id?: string;
+    year_and_section?: string;
+  }>();
+
   const crumbs: Crumb[] = [];
 
   if (loaded_course_id && course_code) {
-    const base = department_name ? `/department/${department_name}` : "/instructor";
+    const base = department_name
+      ? `/department/${department_name}`
+      : "/instructor";
     crumbs.push({
       label: course_code,
       path: `${base}/${loaded_course_id}/${course_code}`,
     });
   }
 
-  if (year_and_section) {
+  if (section_id && year_and_section) {
+    const base = department_name
+      ? `/department/${department_name}`
+      : "/instructor";
     crumbs.push({
       label: year_and_section,
-      path: `${department_name ? `/department/${department_name}` : "/instructor"}/${loaded_course_id}/${course_code}/${year_and_section}`,
+      path: `${base}/${loaded_course_id}/${course_code}/${section_id}/${year_and_section}`,
     });
   }
 

@@ -232,6 +232,7 @@ export default function AdminUserDashboard() {
           setIsEditing(false);
           setSidePanelLoading(false);
           setFormData(initialFormData);
+          setErrors({});
         }}
         panelFunction={editingFaculty ? "Edit Faculty" : "Add Faculty"}
         onSubmit={handleSubmit}

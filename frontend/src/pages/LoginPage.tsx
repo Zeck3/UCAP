@@ -60,7 +60,6 @@ export default function LoginPage() {
 
     try {
       await login(parsedUserId, password);
-      console.log("Login successful");
       setLoading(false);
       setUserId("");
       setPassword("");

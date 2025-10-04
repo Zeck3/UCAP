@@ -267,13 +267,12 @@ class InstructorLoadedCourseSerializer(serializers.ModelSerializer):
     academic_year = serializers.SerializerMethodField()
     semester_type = serializers.CharField(source="loaded_course.course.semester.semester_type", read_only=True)
     department_name = serializers.CharField(source="loaded_course.course.program.department.department_name", read_only=True)
-    id = serializers.IntegerField(source="loaded_course_id", read_only=True)
 
     def get_academic_year(self, obj):
         return str(obj.loaded_course.academic_year.academic_year_start) + "-" + str(obj.loaded_course.academic_year.academic_year_end)
     class Meta:
         model = Section
-        fields = ["id", "course_code", "course_title", "academic_year", "semester_type", "department_name"]
+        fields = ["loaded_course_id", "course_code", "course_title", "academic_year", "semester_type", "department_name"]
 
 class InstructorAssignedSectionSerializer(serializers.ModelSerializer):
     course_title = serializers.CharField(source="loaded_course.course.course_title", read_only=True)
@@ -295,7 +294,7 @@ class InstructorAssignedSectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Section
-        fields = ["year_and_section", "instructor_assigned", "course_title", "semester_type", "year_level", "department_name", "college_name", "campus_name", "academic_year"]
+        fields = ["section_id", "year_and_section", "instructor_assigned", "course_title", "semester_type", "year_level", "department_name", "college_name", "campus_name", "academic_year"]
 
 # ====================================================
 # Dropdown

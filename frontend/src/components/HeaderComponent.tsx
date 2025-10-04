@@ -66,14 +66,14 @@ export default function HeaderComponent({
 
       <div className="flex flex-1">
         {!hideBreadcrumbs && crumbs && (
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center">
             {crumbs.map((crumb) => (
-              <span key={crumb.path} className="flex items-center gap-6">
-                <ChevronRight className="h-5"/>
+              <span key={crumb.path} className="flex items-center gap-8 pr-8">
+                <ChevronRight className="h-5 w-5"/>
                 <Link
                   to={crumb.path}
                   state={crumb.state}
-                  className="hover:underline text-xl"
+                  className="hover:underline text-xl text-[#767676]"
                 >
                   {crumb.label}
                 </Link>

@@ -3,6 +3,7 @@ import type { CurrentUser } from "../types/userManagementTypes";
 
 export type AuthContextType = {
   user: CurrentUser | null;
+  initialized: boolean;
   login: (userId: number, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
