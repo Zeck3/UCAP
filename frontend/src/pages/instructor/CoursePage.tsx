@@ -167,7 +167,7 @@ export default function CoursePage() {
             onClick={() => console.log("clicked")}
             className="h-32 border cursor-pointer rounded-lg border-[#E9E6E6] w-full flex flex-col items-center justify-center gap-4"
           >
-            <FileImport className="h-12" />
+            <FileImport className="h-12 text-[#767676]" />
             <span className="text-[#767676] text-sm">
               Upload Course Syllabus in PDF Format
             </span>

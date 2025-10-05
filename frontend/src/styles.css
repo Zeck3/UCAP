@@ -15,12 +15,41 @@ body {
 
 /* Main Colors */
 :root {
-  --ucap-yellow: #FCB315;
-  --ucap-blue: #1A1851;
+  --ucap-yellow: #FFC000;
+  --ucap-blue: #1F3864;
+  --ucap-green: #70AD47;
+}
+
+.bg-coa-yellow{
+  background-color: #FCF305;
 }
 
 .bg-ucap-yellow {
   background-color: var(--ucap-yellow);
+}
+
+.text-coa-blue{
+  color: #333399;
+}
+
+.text-coa-red{
+  color: #9C0006;
+}
+
+.bg-ucap-blue {
+  background-color: var(--ucap-blue);
+}
+
+.bg-ucap-green {
+  background-color: var(--ucap-green);
+}
+
+.bg-pale-green {
+  background-color: #C5E0B3;
+}
+
+.border-ucap-blue {
+  border-color: var(--ucap-blue);
 }
 
 .bg-ucap-yellow-hover:hover {

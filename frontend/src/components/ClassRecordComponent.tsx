@@ -1,30 +1,25 @@
-// Import necessary types and React hooks
 import type { HeaderNode } from "../data/TableHeaderConfig";
 import type { JSX } from "react";
 import { useMemo, useState } from "react";
 import { crpInfo } from "../data/crpInfo";
 import type { Student } from "../data/crpInfo";
 
-// Define component props interface
 interface ClassRecordComponentProps {
   headerConfig: HeaderNode[];
 }
 
-// Calculate number of leaf nodes
 function countLeaves(node: HeaderNode): number {
   return node.children.length === 0
     ? node.colSpan || 1
     : node.children.map(countLeaves).reduce((a, b) => a + b, 0);
 }
 
-// Determine maximum depth of header tree
 function getMaxDepth(node: HeaderNode): number {
   return node.children.length === 0
     ? 1
     : 1 + Math.max(...node.children.map(getMaxDepth));
 }
 
-// Compute total leaf count excluding separators
 function getTotalLeafCount(nodes: HeaderNode[]): number {
   return nodes
     .filter((node) => node.type !== "h-separator")
@@ -32,7 +27,6 @@ function getTotalLeafCount(nodes: HeaderNode[]): number {
     .reduce((a, b) => a + b, 0);
 }
 
-// Render title with line breaks if present
 function renderTitleLines(title: string): JSX.Element | string {
   if (title.includes("\n")) {
     return (
@@ -48,7 +42,6 @@ function renderTitleLines(title: string): JSX.Element | string {
   return title;
 }
 
-// Gather keys for assignment nodes
 function collectAssignmentKeys(nodes: HeaderNode[]): string[] {
   const keys: string[] = [];
   function collect(node: HeaderNode) {
@@ -61,11 +54,14 @@ function collectAssignmentKeys(nodes: HeaderNode[]): string[] {
   return keys;
 }
 
-// Collect maximum scores for assignments
 function collectMaxScores(nodes: HeaderNode[]): Record<string, number> {
   const scores: Record<string, number> = {};
   function collect(node: HeaderNode) {
-    if (node.key && node.maxScore !== undefined && node.calculationType === "assignment") {
+    if (
+      node.key &&
+      node.maxScore !== undefined &&
+      node.calculationType === "assignment"
+    ) {
       scores[node.key] = node.maxScore;
     }
     node.children.forEach(collect);
@@ -74,35 +70,57 @@ function collectMaxScores(nodes: HeaderNode[]): Record<string, number> {
   return scores;
 }
 
-// Compute derived values based on node calculations
-function computeValues(baseScores: Record<string, number>, maxScores: Record<string, number>, nodes: HeaderNode[]): Record<string, number> {
+function computeValues(
+  baseScores: Record<string, number>,
+  maxScores: Record<string, number>,
+  nodes: HeaderNode[]
+): Record<string, number> {
   const values: Record<string, number> = { ...baseScores };
 
   function traverse(node: HeaderNode) {
     node.children.forEach(traverse);
 
-    if (node.key && node.calculationType && node.calculationType !== "assignment" && node.calculationType !== "computed") {
+    if (
+      node.key &&
+      node.calculationType &&
+      node.calculationType !== "assignment" &&
+      node.calculationType !== "computed"
+    ) {
       let value: number = 0;
       if (["sum", "percentage"].includes(node.calculationType)) {
-        const groupSum = node.groupKeys?.reduce((s, k) => s + (baseScores[k] || 0), 0) ?? 0;
+        const groupSum =
+          node.groupKeys?.reduce((s, k) => s + (baseScores[k] || 0), 0) ?? 0;
         if (node.calculationType === "sum") {
           value = groupSum;
         } else {
-          const maxGroupSum = node.groupKeys?.reduce((s, k) => s + (maxScores[k] || 0), 0) ?? 0;
+          const maxGroupSum =
+            node.groupKeys?.reduce((s, k) => s + (maxScores[k] || 0), 0) ?? 0;
           value = maxGroupSum > 0 ? (groupSum / maxGroupSum) * 100 : 0;
         }
-      } else if (["weightedAverage", "totalGradePoint"].includes(node.calculationType)) {
-        value = node.dependsOn?.reduce((s, k, i) => s + (values[k] || 0) * (node.weights?.[i] ?? 0), 0) ?? 0;
+      } else if (
+        ["weightedAverage", "totalGradePoint"].includes(node.calculationType)
+      ) {
+        value =
+          node.dependsOn?.reduce(
+            (s, k, i) => s + (values[k] || 0) * (node.weights?.[i] ?? 0),
+            0
+          ) ?? 0;
       } else if (node.calculationType === "gradePoint") {
         const mga = values[node.dependsOn?.[0] ?? ""] ?? 0;
         const ratio = mga / 100;
-        value = mga >= 70 ? (23 / 3) - (20 / 3) * ratio : 5 - (20 / 7) * ratio;
+        value = mga >= 70 ? 23 / 3 - (20 / 3) * ratio : 5 - (20 / 7) * ratio;
       } else if (node.calculationType === "roundedGrade") {
         const gp = values[node.dependsOn?.[0] ?? ""] ?? 0;
-        const grades = [1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 3.75, 4.00, 4.25, 4.50, 4.75, 5.00];
+        const grades = [
+          1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0,
+          4.25, 4.5, 4.75, 5.0,
+        ];
         value = grades.reduce((prev, curr) =>
-          Math.abs(curr - gp) < Math.abs(prev - gp) ? curr :
-            Math.abs(curr - gp) === Math.abs(prev - gp) ? Math.max(curr, prev) : prev
+          Math.abs(curr - gp) < Math.abs(prev - gp)
+            ? curr
+            : Math.abs(curr - gp) === Math.abs(prev - gp)
+            ? Math.max(curr, prev)
+            : prev
         );
       }
       values[node.key] = value;
@@ -113,7 +131,6 @@ function computeValues(baseScores: Record<string, number>, maxScores: Record<str
   return values;
 }
 
-// Format value based on calculation type
 function formatValue(value: number, type?: string): string {
   if (["gradePoint", "totalGradePoint"].includes(type ?? "")) {
     return value.toFixed(3);
@@ -126,12 +143,21 @@ function formatValue(value: number, type?: string): string {
   }
 }
 
-// Get CSS class for header based on title
 function getHeaderClass(node: HeaderNode): string {
   const title = node.title;
-  if (title === "Computed Final Grade") return "bg-ucap-green text-white text-lg";
-  if (["Midterm Grade", "Final Grade"].includes(title) && node.children.length > 0) return "bg-light-blue";
-  if (["Lecture (67%)", "Laboratory (33%)", "Midterm", "Final", ""].includes(title)) return "bg-ucap-yellow";
+  if (title === "Computed Final Grade")
+    return "bg-ucap-green text-white text-lg";
+  if (
+    ["Midterm Grade", "Final Grade"].includes(title) &&
+    node.children.length > 0
+  )
+    return "bg-light-blue";
+  if (
+    ["Lecture (67%)", "Laboratory (33%)", "Midterm", "Final", ""].includes(
+      title
+    )
+  )
+    return "bg-ucap-yellow";
   if (
     title === "Class Standing Performance (10%)" ||
     (title.includes("Quiz/") && title.endsWith(" Performance Item (40%)")) ||
@@ -142,46 +168,54 @@ function getHeaderClass(node: HeaderNode): string {
     title === "Hands-On Exercises (30%)" ||
     title === "Lab Major Exam (40%)" ||
     title === "Laboratory"
-  ) return "bg-coa-yellow";
+  )
+    return "bg-coa-yellow";
   if (node.calculationType === "roundedGrade") return "bg-ucap-yellow";
   if (node.computedGrades) return "text-sm";
   return "";
 }
 
-// Get background class for calculated cells
 function getCalculatedBg(type?: string): string {
   if (type === "gradePoint") return "bg-pale-green";
   if (type === "roundedGrade") return "bg-ucap-yellow";
   return "";
 }
 
-// Get text class based on value and type
 function getTextClass(value: number, type?: string): string {
-  if (["gradePoint", "totalGradePoint", "roundedGrade", "computedRounded", "computedWeighted"].includes(type ?? "") && value > 3.00) {
+  if (
+    [
+      "gradePoint",
+      "totalGradePoint",
+      "roundedGrade",
+      "computedRounded",
+      "computedWeighted",
+    ].includes(type ?? "") &&
+    value > 3.0
+  ) {
     return "text-coa-red";
   }
   return "text-coa-blue";
 }
 
-// Get description for grade value
 function getDesc(g: number): string {
-  if (g > 3.00) return "N/A";
+  if (g > 3.0) return "N/A";
   if (g <= 1.25) return "Excellent";
   if (g <= 1.75) return "Very Good";
   if (g <= 2.25) return "Good";
   if (g <= 2.75) return "Average";
-  if (g === 3.00) return "Passing";
+  if (g === 3.0) return "Passing";
   return "N/A";
 }
 
-// Construct header rows for table
 function buildHeaderRows(
   nodes: HeaderNode[],
   originalMaxDepth: number,
   openPopup: (title: string) => void,
   maxScores: Record<string, number>,
   setMaxScores: React.Dispatch<React.SetStateAction<Record<string, number>>>,
-  computedMaxValues: Record<string, number>
+  computedMaxValues: Record<string, number>,
+  columnWidths: Record<string, number>,
+  setColumnWidths: React.Dispatch<React.SetStateAction<Record<string, number>>>
 ): JSX.Element[][] {
   const newMaxDepth = originalMaxDepth + 1;
   const rows: JSX.Element[][] = Array.from({ length: newMaxDepth }, () => []);
@@ -190,12 +224,20 @@ function buildHeaderRows(
 
   function build(node: HeaderNode, level: number) {
     if (node.type === "v-separator") {
+      const handleMouseDown = createResizeHandler(
+        setColumnWidths,
+        `col-${level}-${node.title}`
+      );
+
       rows[level].push(
         <th
           key={`vsep-${level}-${node.title}`}
           rowSpan={newMaxDepth - level}
-          className="bg-ucap-blue w-10 border border-ucap-blue"
-        />
+          className="bg-ucap-blue w-1 border border-ucap-blue relative cursor-col-resize"
+          onMouseDown={handleMouseDown}
+        >
+          <div className="absolute top-0 right-0 h-full w-1 cursor-col-resize" />
+        </th>
       );
       return;
     }
@@ -205,7 +247,7 @@ function buildHeaderRows(
         <th
           key={`spacer-${level}-${node.title}`}
           rowSpan={newMaxDepth - level}
-          className="bg-white w-20 border border-gray-300"
+          className="bg-white border border-[#E9E6E6]"
         />
       );
       return;
@@ -216,14 +258,18 @@ function buildHeaderRows(
         <th
           key={`hsep-${level}`}
           colSpan={getTotalLeafCount(nodes)}
-          className="bg-ucap-blue h-10 border border-ucap-blue p-0"
+          className="bg-ucap-blue h-4 border border-ucap-blue p-0"
         />
       );
       return;
     }
 
     const hasChildren = node.children.length > 0;
-    const colSpan = node.colSpan || (hasChildren ? node.children.reduce((sum, child) => sum + countLeaves(child), 0) : 1);
+    const colSpan =
+      node.colSpan ||
+      (hasChildren
+        ? node.children.reduce((sum, child) => sum + countLeaves(child), 0)
+        : 1);
 
     let rowSpan: number;
     if (node.customRowSpan) {
@@ -236,7 +282,8 @@ function buildHeaderRows(
       rowSpan = 1;
     }
 
-    const isLeafDeep = !hasChildren && level === originalMaxDepth - 1 && !node.computedGrades;
+    const isLeafDeep =
+      !hasChildren && level === originalMaxDepth - 1 && !node.computedGrades;
 
     const headerClass = getHeaderClass(node);
 
@@ -245,8 +292,11 @@ function buildHeaderRows(
         key={`${level}-${node.title}`}
         colSpan={colSpan}
         rowSpan={rowSpan}
-        className={`border border-gray-300 p-2 text-center ${headerClass} ${isLeafDeep ? "[writing-mode:vertical-rl] rotate-180 text-xs" : "whitespace-normal"
-          } ${node.calculationType ? 'w-[3.75rem]' : ''}`}
+        className={`border border-[#E9E6E6] p-2 text-center ${headerClass} ${
+          isLeafDeep
+            ? "[writing-mode:vertical-rl] text-left rotate-180 text-xs"
+            : "whitespace-normal"
+        } ${node.calculationType ? "w-[3.75rem]" : ""}`}
       >
         {renderTitleLines(node.title)}
       </th>
@@ -277,7 +327,9 @@ function buildHeaderRows(
         buttonRow.push(
           <th
             key={`button-${node.title}`}
-            className={`border border-gray-200 p-0 text-center ${node.calculationType ? 'w-[3.75rem]' : ''}`}
+            className={`border border-gray-200 p-0 text-center ${
+              node.calculationType ? "w-[3.75rem]" : ""
+            }`}
           >
             <button
               onClick={() => openPopup(node.title)}
@@ -295,7 +347,9 @@ function buildHeaderRows(
         buttonRow.push(
           <th
             key={`empty-${node.title}`}
-            className={`border border-gray-300 p-2 text-center ${bgClass} ${node.calculationType ? 'w-[3.75rem]' : ''}`}
+            className={`border border-[#E9E6E6] p-2 text-center ${bgClass} ${
+              node.calculationType ? "w-[3.75rem]" : ""
+            }`}
           />
         );
       }
@@ -313,7 +367,14 @@ function buildHeaderRows(
     rows.push(hSeparators);
   }
 
-  const subRow = buildSubRow(nodes, maxScores, setMaxScores, computedMaxValues);
+  const subRow = buildSubRow(
+    nodes,
+    maxScores,
+    setMaxScores,
+    computedMaxValues,
+    columnWidths,
+    setColumnWidths
+  );
   if (subRow.length > 0) {
     rows.push(subRow);
   }
@@ -321,22 +382,31 @@ function buildHeaderRows(
   return rows.filter((row) => row.length > 0);
 }
 
-// Build sub-row for max scores and editable inputs
 function buildSubRow(
   nodes: HeaderNode[],
   maxScores: Record<string, number>,
   setMaxScores: React.Dispatch<React.SetStateAction<Record<string, number>>>,
-  computedMaxValues: Record<string, number>
+  computedMaxValues: Record<string, number>,
+  columnWidths: Record<string, number>,
+  setColumnWidths: React.Dispatch<React.SetStateAction<Record<string, number>>>
 ): JSX.Element[] {
   const subRow: JSX.Element[] = [];
 
   function build(node: HeaderNode) {
     if (node.type === "v-separator") {
+      const handleMouseDown = createResizeHandler(
+        setColumnWidths,
+        `sub-col-${node.title}`
+      );
+
       subRow.push(
         <th
-          key={`sub-vsep-${node.title}`}
-          className="bg-ucap-blue w-10 border border-ucap-blue"
-        />
+          key={`vsep-${node.title}`}
+          className="bg-ucap-blue w-1 border border-ucap-blue relative cursor-col-resize"
+          onMouseDown={handleMouseDown}
+        >
+          <div className="absolute top-0 right-0 h-full w-1 cursor-col-resize" />
+        </th>
       );
       return;
     }
@@ -345,7 +415,7 @@ function buildSubRow(
       subRow.push(
         <th
           key={`sub-spacer-${node.title}`}
-          className="bg-white w-20 border border-gray-300"
+          className="bg-white w-20 border border-[#E9E6E6]"
         />
       );
       return;
@@ -356,9 +426,30 @@ function buildSubRow(
     }
 
     if (node.isRowSpan) {
-      subRow.push(<th key={`sub-no`} className="border border-gray-300 p-2 text-center font-bold">No.</th>);
-      subRow.push(<th key={`sub-id`} className="border border-gray-300 p-2 text-center font-bold">Student ID</th>);
-      subRow.push(<th key={`sub-name`} className="border border-gray-300 p-2 text-center font-bold">Name</th>);
+      subRow.push(
+        <th
+          key={`sub-no`}
+          className="border border-[#E9E6E6] p-2 text-left font-bold"
+        >
+          No.
+        </th>
+      );
+      subRow.push(
+        <th
+          key={`sub-id`}
+          className="border border-[#E9E6E6] p-2 text-left font-bold"
+        >
+          Student ID
+        </th>
+      );
+      subRow.push(
+        <th
+          key={`sub-name`}
+          className="border border-[#E9E6E6] p-2 text-left font-bold"
+        >
+          Name
+        </th>
+      );
       return;
     }
 
@@ -376,7 +467,10 @@ function buildSubRow(
             onChange={(e) => {
               if (node.key) {
                 if (typeof node.key === "string") {
-                  setMaxScores((prev) => ({ ...prev, [node.key as string]: Number(e.target.value) }));
+                  setMaxScores((prev) => ({
+                    ...prev,
+                    [node.key as string]: Number(e.target.value),
+                  }));
                 }
               }
             }}
@@ -384,13 +478,19 @@ function buildSubRow(
           />
         );
       } else if (node.key && computedMaxValues[node.key] !== undefined) {
-        content = formatValue(computedMaxValues[node.key], node.calculationType);
-        const value = computedMaxValues[node.key];
+        content = formatValue(
+          computedMaxValues[node.key],
+          node.calculationType
+        );
         textClass = "text-coa-blue";
       } else if (node.calculationType === "computed" && node.key) {
         const mid = computedMaxValues["midterm-total-grade"] || 0;
         const fin = computedMaxValues["final-total-grade"] || 0;
-        const { content: compContent, valueNum, type, textClass: compTextClass } = computeComputedContent(mid, fin, node.key);
+        const { content: compContent, type } = computeComputedContent(
+          mid,
+          fin,
+          node.key
+        );
         content = compContent;
         bgClass = getCalculatedBg(type);
         textClass = "text-coa-blue";
@@ -398,7 +498,9 @@ function buildSubRow(
       subRow.push(
         <th
           key={`sub-${node.title}`}
-          className={`border border-gray-300 p-2 text-center ${bgClass} ${textClass} ${node.calculationType ? 'w-[3.75rem]' : ''}`}
+          className={`border border-[#E9E6E6] p-2 text-center ${bgClass} ${textClass} ${
+            node.calculationType ? "w-[3.75rem]" : ""
+          }`}
         >
           {content}
         </th>
@@ -410,35 +512,58 @@ function buildSubRow(
   return subRow;
 }
 
-// Compute content for computed grade cells
-function computeComputedContent(mid: number, fin: number, key: string): { content: string; valueNum?: number; type?: string; textClass: string } {
-  const grades = [1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 3.75, 4.00, 4.25, 4.50, 4.75, 5.00];
+type ComputedType = "computedWeighted" | "computedRounded" | undefined;
+
+interface ComputedContentResult {
+  content: string;
+  valueNum: number | null;
+  type: ComputedType;
+  textClass: string;
+}
+
+function computeComputedContent(
+  mid: number,
+  fin: number,
+  key: string
+): ComputedContentResult {
+  const grades = [
+    1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25,
+    4.5, 4.75, 5.0,
+  ];
+
   let raw = 0;
   let rounded = 0;
-  let type: string | undefined;
+  let type: ComputedType = undefined;
   let content = "";
   let textClass = "";
 
+  const roundToNearestGrade = (value: number) => {
+    return grades.reduce(
+      (prev, curr) =>
+        Math.abs(curr - value) < Math.abs(prev - value)
+          ? curr
+          : Math.abs(curr - value) === Math.abs(prev - value)
+          ? Math.max(curr, prev)
+          : prev,
+      grades[0]
+    );
+  };
   if (key === "computed-half-weighted") {
     raw = mid * 0.5 + fin * 0.5;
     content = formatValue(raw, "computedWeighted");
     type = "computedWeighted";
     textClass = getTextClass(raw, type);
-  } else if (key === "computed-half-for-removal" || key === "computed-half-after-removal") {
-    raw = mid * 0.5 + fin * 0.5;
-    raw = Number(raw.toFixed(2));
-    rounded = grades.reduce((prev, curr) =>
-      Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+  } else if (
+    ["computed-half-for-removal", "computed-half-after-removal"].includes(key)
+  ) {
+    raw = Number((mid * 0.5 + fin * 0.5).toFixed(2));
+    rounded = roundToNearestGrade(raw);
     content = formatValue(rounded, "computedRounded");
     type = "computedRounded";
     textClass = getTextClass(rounded, type);
   } else if (key === "computed-half-desc") {
-    raw = mid * 0.5 + fin * 0.5;
-    raw = Number(raw.toFixed(2));
-    rounded = grades.reduce((prev, curr) =>
-      Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+    raw = Number((mid * 0.5 + fin * 0.5).toFixed(2));
+    rounded = roundToNearestGrade(raw);
     content = getDesc(rounded);
     textClass = "text-coa-blue";
   } else if (key === "computed-third-weighted") {
@@ -446,29 +571,29 @@ function computeComputedContent(mid: number, fin: number, key: string): { conten
     content = formatValue(raw, "computedWeighted");
     type = "computedWeighted";
     textClass = getTextClass(raw, type);
-  } else if (key === "computed-third-for-removal" || key === "computed-third-after-removal") {
-    raw = mid * (1 / 3) + fin * (2 / 3);
-    raw = Number(raw.toFixed(2));
-    rounded = grades.reduce((prev, curr) =>
-      Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+  } else if (
+    ["computed-third-for-removal", "computed-third-after-removal"].includes(key)
+  ) {
+    raw = Number((mid * (1 / 3) + fin * (2 / 3)).toFixed(2));
+    rounded = roundToNearestGrade(raw);
     content = formatValue(rounded, "computedRounded");
     type = "computedRounded";
     textClass = getTextClass(rounded, type);
   } else if (key === "computed-third-desc") {
-    raw = mid * (1 / 3) + fin * (2 / 3);
-    raw = Number(raw.toFixed(2));
-    rounded = grades.reduce((prev, curr) =>
-      Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-        Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+    raw = Number((mid * (1 / 3) + fin * (2 / 3)).toFixed(2));
+    rounded = roundToNearestGrade(raw);
     content = getDesc(rounded);
     textClass = "text-coa-blue";
   }
 
-  return { content, valueNum: rounded, type, textClass };
+  return {
+    content,
+    valueNum: rounded || raw || null,
+    type,
+    textClass,
+  };
 }
 
-// Build student data row
 function buildStudentRow(
   student: Student,
   index: number,
@@ -482,8 +607,17 @@ function buildStudentRow(
 ): JSX.Element {
   const row: JSX.Element[] = [];
 
-  function computeComputedContent(mid: number, fin: number, key: string, isStudent: boolean = false, index?: number): { content: string | JSX.Element; textClass: string; bgClass: string } {
-    const grades = [1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 3.75, 4.00, 4.25, 4.50, 4.75, 5.00];
+  function computeComputedContent(
+    mid: number,
+    fin: number,
+    key: string,
+    isStudent: boolean = false,
+    index?: number
+  ): { content: string | JSX.Element; textClass: string; bgClass: string } {
+    const grades = [
+      1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0,
+      4.25, 4.5, 4.75, 5.0,
+    ];
     let raw = 0;
     let rounded = 0;
     let type: string | undefined;
@@ -497,12 +631,21 @@ function buildStudentRow(
       type = "computedWeighted";
       textClass = getTextClass(raw, type);
       bgClass = getCalculatedBg(type);
-    } else if (key === "computed-half-for-removal" || key === "computed-half-after-removal") {
+    } else if (
+      key === "computed-half-for-removal" ||
+      key === "computed-half-after-removal"
+    ) {
       raw = mid * 0.5 + fin * 0.5;
       raw = Number(raw.toFixed(2));
-      rounded = grades.reduce((prev, curr) =>
-        Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-          Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+      rounded = grades.reduce(
+        (prev, curr) =>
+          Math.abs(curr - raw) < Math.abs(prev - raw)
+            ? curr
+            : Math.abs(curr - raw) === Math.abs(prev - raw)
+            ? Math.max(curr, prev)
+            : prev,
+        grades[0]
+      );
       cont = formatValue(rounded, "computedRounded");
       type = "computedRounded";
       textClass = getTextClass(rounded, type);
@@ -510,9 +653,15 @@ function buildStudentRow(
     } else if (key === "computed-half-desc") {
       raw = mid * 0.5 + fin * 0.5;
       raw = Number(raw.toFixed(2));
-      rounded = grades.reduce((prev, curr) =>
-        Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-          Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+      rounded = grades.reduce(
+        (prev, curr) =>
+          Math.abs(curr - raw) < Math.abs(prev - raw)
+            ? curr
+            : Math.abs(curr - raw) === Math.abs(prev - raw)
+            ? Math.max(curr, prev)
+            : prev,
+        grades[0]
+      );
       cont = getDesc(rounded);
       textClass = "text-coa-blue";
     } else if (key === "computed-third-weighted") {
@@ -521,12 +670,21 @@ function buildStudentRow(
       type = "computedWeighted";
       textClass = getTextClass(raw, type);
       bgClass = getCalculatedBg(type);
-    } else if (key === "computed-third-for-removal" || key === "computed-third-after-removal") {
+    } else if (
+      key === "computed-third-for-removal" ||
+      key === "computed-third-after-removal"
+    ) {
       raw = mid * (1 / 3) + fin * (2 / 3);
       raw = Number(raw.toFixed(2));
-      rounded = grades.reduce((prev, curr) =>
-        Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-          Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+      rounded = grades.reduce(
+        (prev, curr) =>
+          Math.abs(curr - raw) < Math.abs(prev - raw)
+            ? curr
+            : Math.abs(curr - raw) === Math.abs(prev - raw)
+            ? Math.max(curr, prev)
+            : prev,
+        grades[0]
+      );
       cont = formatValue(rounded, "computedRounded");
       type = "computedRounded";
       textClass = getTextClass(rounded, type);
@@ -534,9 +692,15 @@ function buildStudentRow(
     } else if (key === "computed-third-desc") {
       raw = mid * (1 / 3) + fin * (2 / 3);
       raw = Number(raw.toFixed(2));
-      rounded = grades.reduce((prev, curr) =>
-        Math.abs(curr - raw) < Math.abs(prev - raw) ? curr :
-          Math.abs(curr - raw) === Math.abs(prev - raw) ? Math.max(curr, prev) : prev, grades[0]);
+      rounded = grades.reduce(
+        (prev, curr) =>
+          Math.abs(curr - raw) < Math.abs(prev - raw)
+            ? curr
+            : Math.abs(curr - raw) === Math.abs(prev - raw)
+            ? Math.max(curr, prev)
+            : prev,
+        grades[0]
+      );
       cont = getDesc(rounded);
       textClass = "text-coa-blue";
     } else if (key === "computed-remarks") {
@@ -567,7 +731,7 @@ function buildStudentRow(
       row.push(
         <td
           key={`student-vsep-${node.title}-${index}`}
-          className="bg-ucap-blue w-10 border border-ucap-blue"
+          className="bg-ucap-blue w-4 border border-ucap-blue"
         />
       );
       return;
@@ -577,7 +741,7 @@ function buildStudentRow(
       row.push(
         <td
           key={`student-spacer-${node.title}-${index}`}
-          className="bg-white w-20 border border-gray-300"
+          className="bg-white w-20 border border-[#E9E6E6]"
         />
       );
       return;
@@ -592,12 +756,30 @@ function buildStudentRow(
     } else {
       const effectiveColSpan = node.colSpan || 1;
       if (node.isRowSpan) {
-        row.push(<td key={`student-no-${index}`} className="border border-gray-300 p-2 text-left">{index + 1}</td>);
-        row.push(<td key={`student-id-${index}`} className="border border-gray-300 p-2 text-left">{student.studentId}</td>);
-        row.push(<td key={`student-name-${index}`} className="border border-gray-300 p-2 text-left">{`${student.fName}, ${student.lName}`}</td>);
+        row.push(
+          <td
+            key={`student-no-${index}`}
+            className="border border-[#E9E6E6] p-2 w-1 text-left"
+          >
+            {index + 1}
+          </td>
+        );
+        row.push(
+          <td
+            key={`student-id-${index}`}
+            className="border border-[#E9E6E6] p-2 w-2 text-left"
+          >
+            {student.studentId}
+          </td>
+        );
+        row.push(
+          <td
+            key={`student-name-${index}`}
+            className="border border-[#E9E6E6] p-2 text-left"
+          >{`${student.fName}, ${student.lName}`}</td>
+        );
       } else {
         let content: JSX.Element | string = "";
-        let isCalculated = false;
         let textClass = "";
         let bgClass = getCalculatedBg(node.calculationType);
         if (node.calculationType === "assignment" && node.key) {
@@ -620,15 +802,17 @@ function buildStudentRow(
           );
         } else if (node.key && computedValues[node.key] !== undefined) {
           content = formatValue(computedValues[node.key], node.calculationType);
-          isCalculated = true;
           const value = computedValues[node.key];
           textClass = getTextClass(value, node.calculationType);
         } else if (node.calculationType === "computed" && node.key) {
           const mid = computedValues["midterm-total-grade"] || 0;
           const fin = computedValues["final-total-grade"] || 0;
-          const { content: compContent, textClass: compTextClass, bgClass: compBgClass } = computeComputedContent(mid, fin, node.key, true, index);
+          const {
+            content: compContent,
+            textClass: compTextClass,
+            bgClass: compBgClass,
+          } = computeComputedContent(mid, fin, node.key, true, index);
           content = compContent;
-          isCalculated = true;
           textClass = compTextClass;
           bgClass = compBgClass;
         }
@@ -636,7 +820,9 @@ function buildStudentRow(
           <td
             key={`student-${node.title}-${index}`}
             colSpan={effectiveColSpan}
-            className={`border border-gray-300 p-2 text-center ${bgClass} ${textClass} ${node.calculationType ? 'w-[3.75rem]' : ''}`}
+            className={`border border-[#E9E6E6] p-2 text-center ${bgClass} ${textClass} ${
+              node.calculationType ? "w-[3.75rem]" : ""
+            }`}
           >
             {content}
           </td>
@@ -649,35 +835,71 @@ function buildStudentRow(
   return <tr key={index}>{row}</tr>;
 }
 
-// Main component for rendering class record table
+function createResizeHandler(
+  setColumnWidths: React.Dispatch<React.SetStateAction<Record<string, number>>>,
+  columnKey: string
+) {
+  return (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const startX = e.clientX;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      setColumnWidths((prev) => ({
+        ...prev,
+        [columnKey]: Math.max((prev[columnKey] || 120) + deltaX, 40), // min width 40px
+      }));
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  };
+}
+
 export default function ClassRecordComponent({
   headerConfig,
 }: ClassRecordComponentProps) {
   const [showPopup, setShowPopup] = useState(false);
   const [currentItem, setCurrentItem] = useState("");
-  const [bloomSelections, setBloomSelections] = useState<Record<string, string[]>>({});
+  const [bloomSelections, setBloomSelections] = useState<
+    Record<string, string[]>
+  >({});
   const [maxScores, setMaxScores] = useState(collectMaxScores(headerConfig));
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
 
-  const assignmentKeys = useMemo(() => collectAssignmentKeys(headerConfig), []);
+  const assignmentKeys = useMemo(
+    () => collectAssignmentKeys(headerConfig),
+    [headerConfig]
+  );
 
   const students = crpInfo.students || [];
-  const [studentScores, setStudentScores] = useState(students.map((student) => {
-    const scoreObj: Record<string, number> = {};
-    assignmentKeys.forEach((key, idx) => {
-      scoreObj[key] = student.scores?.[idx] ?? 0;
-    });
-    return scoreObj;
-  }));
+  const [studentScores, setStudentScores] = useState(
+    students.map((student) => {
+      const scoreObj: Record<string, number> = {};
+      assignmentKeys.forEach((key, idx) => {
+        scoreObj[key] = student.scores?.[idx] ?? 0;
+      });
+      return scoreObj;
+    })
+  );
   const [remarks, setRemarks] = useState<string[]>(students.map(() => ""));
 
   const computedMaxValues = useMemo(
     () => computeValues(maxScores, maxScores, headerConfig),
-    [maxScores]
+    [maxScores, headerConfig]
   );
 
   const computedStudentValues = useMemo(
-    () => studentScores.map((scores) => computeValues(scores, maxScores, headerConfig)),
-    [studentScores, maxScores]
+    () =>
+      studentScores.map((scores) =>
+        computeValues(scores, maxScores, headerConfig)
+      ),
+    [studentScores, maxScores, headerConfig]
   );
 
   const openPopup = (title: string) => {
@@ -700,7 +922,11 @@ export default function ClassRecordComponent({
     });
   };
 
-  const updateStudentScore = (studentIndex: number, key: string, value: number) => {
+  const updateStudentScore = (
+    studentIndex: number,
+    key: string,
+    value: number
+  ) => {
     setStudentScores((prev) => {
       const newScores = [...prev];
       newScores[studentIndex] = { ...newScores[studentIndex], [key]: value };
@@ -716,10 +942,26 @@ export default function ClassRecordComponent({
     });
   };
 
-  const bloomLevels = ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"];
+  const bloomLevels = [
+    "Remember",
+    "Understand",
+    "Apply",
+    "Analyze",
+    "Evaluate",
+    "Create",
+  ];
 
   const originalMaxDepth = Math.max(...headerConfig.map(getMaxDepth));
-  const headerRows = buildHeaderRows(headerConfig, originalMaxDepth, openPopup, maxScores, setMaxScores, computedMaxValues);
+  const headerRows = buildHeaderRows(
+    headerConfig,
+    originalMaxDepth,
+    openPopup,
+    maxScores,
+    setMaxScores,
+    computedMaxValues,
+    columnWidths,
+    setColumnWidths
+  );
 
   return (
     <>
@@ -729,7 +971,7 @@ export default function ClassRecordComponent({
         ))}
       </thead>
       <tbody>
-        {students.map((student, i) => (
+        {students.map((student, i) =>
           buildStudentRow(
             student,
             i,
@@ -741,7 +983,7 @@ export default function ClassRecordComponent({
             remarks,
             updateRemark
           )
-        ))}
+        )}
       </tbody>
       {showPopup && (
         <div
@@ -752,7 +994,10 @@ export default function ClassRecordComponent({
         >
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
             <div className="flex items-center mb-4">
-              <button onClick={closePopup} className="text-gray-600 hover:text-gray-800">
+              <button
+                onClick={closePopup}
+                className="text-gray-600 hover:text-gray-800"
+              >
                 <svg
                   className="w-6 h-6"
                   fill="none"
@@ -760,18 +1005,24 @@ export default function ClassRecordComponent({
                   strokeWidth={2}
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
               </button>
               <h2 className="ml-2 text-lg font-semibold">Bloom's Taxonomy</h2>
             </div>
-            <hr className="border-t border-gray-300 mb-4" />
+            <hr className="border-t border-[#E9E6E6] mb-4" />
             <div className="grid grid-cols-3 gap-4">
               {bloomLevels.map((level) => (
                 <label key={level} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    checked={(bloomSelections[currentItem] || []).includes(level)}
+                    checked={(bloomSelections[currentItem] || []).includes(
+                      level
+                    )}
                     onChange={() => handleCheckboxChange(level)}
                     className="form-checkbox"
                   />

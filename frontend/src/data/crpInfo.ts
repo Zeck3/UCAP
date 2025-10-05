@@ -27,6 +27,12 @@ export interface Student {
   scores: number[];
 }
 
+export interface RawScore{
+  student_id: number;
+  assessment_id: number;
+  raw_score: number;
+}
+
 // Define CRPInfo interface for overall class record information
 export interface CRPInfo {
   info: {
@@ -93,12 +99,10 @@ export const crpInfo: CRPInfo = {
         { title: "Assign 5", maxScore: 10 },
         { title: "Seatwork 3", maxScore: 20 },
         { title: "Seatwork 4", maxScore: 10 },
-        { title: "Seatwork 5", maxScore: 10 },
       ],
       quizPrelim: [
         { title: "Quiz 5", maxScore: 20 },
         { title: "Quiz 6", maxScore: 30 },
-        { title: "Quiz 7", maxScore: 10 },
         { title: "Quiz 8", maxScore: 30 },
         { title: "SFinal Exam", maxScore: 50 },
       ],
@@ -126,68 +130,12 @@ export const crpInfo: CRPInfo = {
   },
   students: [
     {
-      studentId: "2025000000",
-      fName: "Dio",
-      lName: "Brando",
-      scores: [
-        15, 10, 8, 15, 8,
-        18, 25, 35, 40, 15,
-        48,
-        40, 40,
-        0, 40, 10, 9, 14,
-        30, 28, 21,
-        90,
-        10, 10, 20, 9, 8,
-        20, 15, 10, 15, 45,
-        40,
-        40, 40,
-        19, 20, 23, 9, 8,
-        27, 9, 25,
-        80,
-      ],
-    },
-    {
-      studentId: "2025000001",
-      fName: "Giorno",
-      lName: "Giovanna",
-      scores: [
-        15, 8, 10, 15, 4,
-        18, 25, 43, 50, 10,
-        42,
-        40, 40,
-        0, 40, 8, 10, 15,
-        30, 28, 21,
-        90,
-        10, 10, 20, 9, 6,
-        20, 20, 10, 20, 44,
-        47,
-        40, 40,
-        17, 19, 22, 9, 8,
-        28, 5, 10,
-        98,
-      ],
-    },
-    {
       studentId: "2025000002",
       fName: "Josuke",
       lName: "Higashikata",
       scores: [
-        15, 8, 10, 15, 5,
-        18, 25, 43, 55, 15,
-        20,
-        43, 42,
-        0, 40, 9, 9, 21,
-        30, 28, 26,
-        90,
-        10, 0, 20, 6, 9,
-        20, 15, 3, 20, 44,
-        29,
-        42, 45,
-        18, 17, 11, 8, 8,
-        20, 10, 10,
-        87,
+        15
       ],
     },
-    
   ],
 };

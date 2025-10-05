@@ -56,7 +56,6 @@ def create_class_record_service(section):
 
                 for title in titles:
                     assessment = Assessment.objects.create(
-                        section=section,
                         course_component=comp,
                         assessment_title=title
                     )
@@ -89,7 +88,6 @@ def create_class_record_service(section):
 
                 for title in titles:
                     assessment = Assessment.objects.create(
-                        section=section,
                         course_component=comp,
                         assessment_title=title
                     )
