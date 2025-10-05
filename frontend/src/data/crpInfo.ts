@@ -27,7 +27,7 @@ export interface Student {
   scores: number[];
 }
 
-export interface RawScore{
+export interface RawScore {
   student_id: number;
   assessment_id: number;
   raw_score: number;
@@ -133,9 +133,7 @@ export const crpInfo: CRPInfo = {
       studentId: "2025000002",
       fName: "Josuke",
       lName: "Higashikata",
-      scores: [
-        15
-      ],
+      scores: [15],
     },
   ],
 };

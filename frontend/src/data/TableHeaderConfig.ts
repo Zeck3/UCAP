@@ -1,7 +1,7 @@
 import { crpInfo } from "./crpInfo";
 
 // Define HeaderNode interface for table header structure
-export interface HeaderNode {
+export type HeaderNode = {
   title: string;
   children: HeaderNode[];
   isRowSpan?: boolean;
@@ -17,7 +17,10 @@ export interface HeaderNode {
   customRowSpan?: number;
   studentInfo?: boolean;
   computedGrades?: boolean;
-}
+} & (
+  | { calculationType: "assignment"; key: string }
+  | { calculationType?: Exclude<string, "assignment">; key?: string }
+);
 
 // Create spanning cell for class information display
 export function createSpanningCell(): HeaderNode {
@@ -396,13 +399,13 @@ export function createGradeSection(type: "Midterm" | "Final"): HeaderNode {
 // Export header configuration array for table structure
 export const headerConfig: HeaderNode[] = [
   createSpanningCell(),
-  { title: "", children: [], type: "v-separator" },
+  { title: "", children: [], type: "v-separator", key: "vsep-1" },
   createGradeSection("Midterm"),
-  { title: "", children: [], type: "spacer" },
-  { title: "", children: [], type: "v-separator" },
+  { title: "", children: [], type: "spacer", key: "spacer-1" },
+  { title: "", children: [], type: "v-separator", key: "vsep-2" },
   createGradeSection("Final"),
-  { title: "", children: [], type: "spacer" },
-  { title: "", children: [], type: "v-separator" },
+  { title: "", children: [], type: "spacer", key: "spacer-2" },
+  { title: "", children: [], type: "v-separator", key: "vsep-3" },
   createComputedSection(),
-  { title: "", children: [], type: "h-separator" },
+  { title: "", children: [], type: "h-separator", key: "hsep-1" },
 ];

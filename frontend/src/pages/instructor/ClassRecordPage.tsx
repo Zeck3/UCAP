@@ -1,10 +1,10 @@
 import AppLayout from "../../layout/AppLayout";
-import ClassRecordComponent from "../../components/ClassRecordComponent";
+import ClassRecordComponent from "../../components/classrecord/ClassRecordComponent";
 import { headerConfig } from "../../data/TableHeaderConfig";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import FileImportIcon from "../../assets/file-import-solid.svg?react"
-import FileExportIcon from "../../assets/file-export-solid.svg?react"
+import FileImportIcon from "../../assets/file-import-solid.svg?react";
+import FileExportIcon from "../../assets/file-export-solid.svg?react";
 
 export default function ClassRecordPage() {
   const navigate = useNavigate();
@@ -23,7 +23,6 @@ export default function ClassRecordPage() {
           className="absolute -top-10 right-10 w-12 h-10 rounded-tl-full rounded-tr-full bg-white flex items-center justify-center cursor-pointer border-t border-l border-r border-gray-300"
           onClick={() => setFooterOpen((o) => !o)}
         >
-          
           <svg
             className={`w-5 h-5 text-gray-600 transition-transform duration-300 ${
               footerOpen ? "" : "rotate-180"
@@ -45,11 +44,11 @@ export default function ClassRecordPage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-8 text-base text-gray-600">
               <button className="flex items-center space-x-4 hover:underline cursor-pointer">
-                <FileImportIcon className="w-4 h-4 text-[#767676]"/>
+                <FileImportIcon className="w-4 h-4 text-[#767676]" />
                 <span>Import Master List</span>
               </button>
               <button className="flex items-center space-x-4 hover:underline cursor-pointer">
-                <FileExportIcon className="w-4 h-4 text-[#767676]"/>
+                <FileExportIcon className="w-4 h-4 text-[#767676]" />
                 <span>Export Class Record</span>
               </button>
             </div>
@@ -59,7 +58,7 @@ export default function ClassRecordPage() {
               }
               className="flex items-center space-x-2 bg-ucap-yellow hover:bg-ucap-yellow-hover text-white font-semibold py-2 px-4 rounded-full transition-all duration-200"
             >
-              <FileExportIcon className="w-4 h-4 text-white"/>
+              <FileExportIcon className="w-4 h-4 text-white" />
               <span>Generate COA Result Sheet</span>
             </button>
           </div>
