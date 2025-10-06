@@ -45,16 +45,19 @@ urlpatterns = [
     # Department Chair Dashboard
     # ====================================================
     path("department_chair/department_details/<int:department_id>/", get_department_details_view),
-    path("department_chair/course_management/<int:department_id>/", get_department_courses,),
-
     path("department_chair/course_details/<int:department_id>/<int:loaded_course_id>/", get_department_course_details_view),
-    path("department_chair/sections/<int:department_id>/<int:loaded_course_id>/", get_department_course_sections,),
+
+    path("department_chair/course_management/<int:department_id>/", get_department_loaded_courses_view,),
+
+    path("department_chair/sections/<int:department_id>/<int:loaded_course_id>/", get_department_course_sections_view,),
     path("department_chair/not_loaded_courses/<int:department_id>/", get_department_courses_view),
     
-    path("department_chair/section/<int:section_id>/", get_section_details_delete),
-    path("department_chair/course/<int:course_id>/", get_course_details_view),
+    path("department_chair/delete_section/<int:loaded_course_id>/<int:section_id>/", delete_department_section),
+    path("department_chair/delete_loaded_course/<int:loaded_course_id>/", delete_loaded_course),
 
-    path("department_chair/load_courses/", load_course),
+    path("department_chair/load_department_courses/", load_course),
+    path("department_chair/section_management/", section_management),
+
 
     # ====================================================
     # Department Path

@@ -11,10 +11,10 @@ import PlusIcon from "../../assets/plus-solid.svg?react";
 import SidePanelComponent from "../../components/SidePanelComponent";
 import DropdownComponent from "../../components/DropDownComponent";
 import { useNavigate, useParams } from "react-router-dom";
-
+ 
 import type { AcademicYear } from "../../types/dropdownTypes";
 import { getAcademicYears } from "../../api/dropdownApi";
-import { fetchDepartmentLoadedCourses, fetchDepartmentDetails, fetchDeleteCourse, fetchDepartmentCourses } from "../../api/departmentChairCourseDashboardApi";
+import { fetchDepartmentLoadedCourses, fetchDepartmentDetails, fetchDeleteLoadedCourse, fetchDepartmentCourses, fetchLoadDepartmentCourse } from "../../api/departmentChairCourseDashboardApi";
 import type { DepartmentDetail, DepartmentLoadedCoursesDisplay, DepartmentCoursesDisplay, LoadDepartmentCourse } from "../../types/departmentChairDashboardTypes";
 
 export default function DepartmentChairCourseDashboard() {
@@ -31,6 +31,7 @@ export default function DepartmentChairCourseDashboard() {
   const [departmentCourses, setDepartmentCourses] = useState<DepartmentCoursesDisplay[]>([]);
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tableKey, setTableKey] = useState(0);
 
   const [selectedCourses, setSelectedCourses] = useState<DepartmentCoursesDisplay[]>([]);
 
@@ -91,23 +92,6 @@ export default function DepartmentChairCourseDashboard() {
   }, [departmentLoadedCourses, searchQuery]);
 
 
-  const handleDelete = async (id: number) => {
-      try {
-        console.log("Deleting section with id:", id);
-        const success = await fetchDeleteCourse(id);
-        console.log("API result:", success);
-  
-        setDepartmentLoadedCourses((prev) => {
-          console.log("Before delete:", prev);
-          const updated = prev.filter((u) => u.id !== id);
-          console.log("After delete:", updated);
-          return updated;
-        });
-      } catch (error) {
-        console.error("Failed to delete section", error);
-      }
-    };
-
   const handleSelectionChange = useCallback((selected: string[]) => {
     setSelectedCourses(
       departmentCourses.filter((course) => selected.includes(course.id))
@@ -115,7 +99,7 @@ export default function DepartmentChairCourseDashboard() {
     console.log("Selected:", selected);
   }, [departmentCourses]);
 
-  const handleLoadCourse = () => {
+  const handleLoadCourse = async () => {
   if (selectedCourses.length === 0) {
     alert("Please select at least one course.");
     return;
@@ -124,17 +108,41 @@ export default function DepartmentChairCourseDashboard() {
     alert("Please select an academic year.");
     return;
   }
-  selectedCourses.forEach((course) => {
-    const courseCode = course.id?.replace(/\s+/g, "") ?? "";
-    const academicYearId = selectedAcademicYear.toString();
+  try {
+    for (const course of selectedCourses) {
+      const courseCode = course.id?.replace(/\s+/g, "") ?? "";
+      const academicYearId = selectedAcademicYear;
 
-    const loadCourse: LoadDepartmentCourse = {
-      course: courseCode,
-      academic_year: parseInt(academicYearId),  
+      const loadCourse: LoadDepartmentCourse = {
+        course: courseCode,
+        academic_year: parseInt(academicYearId),
+      };
+
+      await fetchLoadDepartmentCourse(loadCourse);
+
     }
-    console.log(loadCourse);
-  });
+
+    const updatedCourses = await fetchDepartmentLoadedCourses(departmentId);
+    setDepartmentLoadedCourses(updatedCourses);
+
+    // Close the side panel after loading
+    setIsPanelOpen(false);
+    setSelectedCourses([]);
+    setSelectedAcademicYear(null);
+    setTableKey((prev) => prev + 1);
+    
+  } catch (error) {
+    console.error("Error loading courses:", error);
+    alert("An error occurred while loading the courses.");
+  }
 };
+
+  const handleDelete = async (id: number) => {
+    const success = await fetchDeleteLoadedCourse(id);
+
+    if (success) setDepartmentLoadedCourses((prev) => prev.filter((u) => u.id !== id));
+    };
+
 
   const goToDepartmentChairCoursePage = (course: DepartmentLoadedCoursesDisplay) => {
     const departmentName = course.department_name?.replace(/\s+/g, "") ?? "";
@@ -146,6 +154,7 @@ export default function DepartmentChairCourseDashboard() {
   return (
     <AppLayout activeItem={`/department/${department_name}`}>
       <InfoComponent
+        loading={loading}
         title={`Department of ${departmentDetails.map(d => d.department_name).join(", ")}`}
         subtitle={departmentDetails.map(d => d.college_name).join(", ")}
         details={`${departmentDetails.map(d => d.campus_name).join(", ")} Campus`}
@@ -223,6 +232,7 @@ export default function DepartmentChairCourseDashboard() {
         </div>
         <div className="mb-4">
           <TableComponent
+            key={tableKey}
             data={filteredDepartmentCourses}
             columns={[
               { key: "id", label: "Course Code" },

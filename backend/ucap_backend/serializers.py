@@ -368,7 +368,70 @@ class LoadDepartmentCourseSerializer(serializers.ModelSerializer):
     # def create(self, validated_data):
     #     # You can add extra logic here if needed before saving
     #     return super().create(validated_data)
+
+class CreateSectionSerializer(serializers.ModelSerializer):
+    instructor_assigned = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, allow_null=True)
+    loaded_course = serializers.PrimaryKeyRelatedField(queryset=LoadedCourse.objects.all(), required=True)
+    class Meta:
+        model = Section
+        fields = "__all__"  
     
+    def validate(self, values):
+        year_and_section = values.get("year_and_section")
+        instructor_assigned = values.get("instructor_assigned")
+        loaded_course = values.get("loaded_course")
+        if Section.objects.filter(year_and_section=year_and_section, instructor_assigned=instructor_assigned, loaded_course=loaded_course).exists():
+            raise serializers.ValidationError("Section already exists.")
+        if not year_and_section or not loaded_course:
+            raise serializers.ValidationError("All fields are required.")
+        return values
+    
+    def create(self, validated_data):
+        section = validated_data.pop("year_and_section")
+        instructor = validated_data.pop("instructor_assigned")
+        loaded_course = validated_data.pop("loaded_course")
+
+        section = Section.objects.create(year_and_section=section, instructor_assigned=instructor, loaded_course=loaded_course, **validated_data)
+        return section
+
+class UpdateSectionSerializer(serializers.ModelSerializer):
+    instructor_assigned = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, allow_null=True)
+    loaded_course = serializers.PrimaryKeyRelatedField(queryset=LoadedCourse.objects.all(), required=False, allow_null=True)
+    class Meta:
+        model = Section
+        fields = "__all__"   
+        extra_kwargs = {
+            "section_id": {"read_only": True}
+        }
+
+    def validate(self, attrs):
+        instance = getattr(self, "instance", None)
+        year_and_section = attrs.get("year_and_section", getattr(instance, "year_and_section", None))
+        instructor_assigned = attrs.get("instructor_assigned", getattr(instance, "instructor_assigned", None))
+        loaded_course = attrs.get("loaded_course", getattr(instance, "loaded_course", None))
+        if not year_and_section or not loaded_course:
+            raise serializers.ValidationError("Year and loaded course are required.")
+        duplicate = (
+            Section.objects.filter(
+                year_and_section=year_and_section,
+                instructor_assigned=instructor_assigned,
+                loaded_course=loaded_course,
+            )
+            .exclude(section_id=instance.section_id if instance else None)
+            .exists()
+        )
+
+        if duplicate:
+            raise serializers.ValidationError("Section with these details already exists.")
+
+        return attrs
+    
+    def update(self, instance, validated_data):
+        # Just update provided fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
 
 # ====================================================
 # Dropdown

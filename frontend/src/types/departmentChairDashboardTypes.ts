@@ -21,7 +21,7 @@ export interface DepartmentLoadedCoursesDisplay {
     lab_unit?: number 
     credit_unit?: number
 }
-
+ 
 export interface DepartmentLoadedCourses {
     loaded_course_id: number
     course_code: string
@@ -96,7 +96,15 @@ export interface DepartmentLoadedCourseSectionsDisplay {
     instructor_assigned: string
 };
 
+export interface CreateSection {
+    year_and_section: string
+    instructor_assigned: number | null
+    loaded_course: number
+}
 
+export interface CreateSectionMessage {
+    message: string
+}
 // ====================================================
 // Department Path Types
 // ====================================================

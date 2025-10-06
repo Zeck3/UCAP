@@ -26,8 +26,8 @@ function mapDepartmentCourses(course: DepartmentCourses): DepartmentCoursesDispl
 
 }
 
-export async function fetchLoadDepartmentCourse(load_department_course: LoadDepartmentCourse): Promise<LoadDepartmentCourseMessage> {
-  const response = await axiosClient.post<LoadDepartmentCourseMessage>(`department_chair/load_department_course/`, load_department_course);
+export async function fetchLoadDepartmentCourse(load_department_courses: LoadDepartmentCourse): Promise<LoadDepartmentCourseMessage> {
+  const response = await axiosClient.post<LoadDepartmentCourseMessage>(`department_chair/load_department_courses/`, load_department_courses);
   return response.data;
 }
 
@@ -46,7 +46,7 @@ export async function fetchDepartmentCourses(departmentId: number): Promise<Depa
   return response.data.map(mapDepartmentCourses);
 };
 
-export async function fetchDeleteCourse(sectionId: number): Promise<boolean> {
-  await axiosClient.delete(`department_chair/section/${sectionId}`);
+export async function fetchDeleteLoadedCourse(loadedCourseId: number): Promise<boolean> {
+  await axiosClient.delete(`department_chair/delete_loaded_course/${loadedCourseId}`);
   return true;
 }

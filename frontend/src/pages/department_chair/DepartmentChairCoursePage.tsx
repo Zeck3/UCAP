@@ -15,8 +15,8 @@ import UserInputComponent from "../../components/UserInputComponent";
 
 import { getInstructors } from "../../api/dropdownApi";
 import type { Instructor } from "../../types/dropdownTypes";
-import { fetchDepartmentLoadedCourseDetails, fetchDepartmentChairCourseSections, deleteCourseSection } from "../../api/departmentChairSectionsApi";
-import type { DepartmentLoadedCourseSectionsDisplay, DepartmentLoadedCourseDetailsDisplay } from "../../types/departmentChairDashboardTypes";
+import { fetchDepartmentLoadedCourseDetails, fetchDepartmentChairCourseSections, fetchDeleteLoadedCourseSection, fetchCreateSection, fetchUpdateSection } from "../../api/departmentChairSectionsApi";
+import type { DepartmentLoadedCourseSectionsDisplay, DepartmentLoadedCourseDetailsDisplay, CreateSection } from "../../types/departmentChairDashboardTypes";
 
 export default function DepartmentChairCoursePage() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -34,6 +34,8 @@ export default function DepartmentChairCoursePage() {
 
   const currentUserId = user?.user_id ?? null;
   const departmentId = user?.department_id ?? null;
+
+  const [sectionName, setSectionName] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     async function getAllCoursesSections() {
@@ -72,22 +74,69 @@ export default function DepartmentChairCoursePage() {
     label: `${inst.first_name} ${inst.last_name}`,
     value: inst.user_id.toString(), 
   }));
+//===============================================================================================================================
 
-  const handleDelete = async (id: DepartmentLoadedCourseSectionsDisplay["id"]) => {
-    try {
-      console.log("Deleting section with id:", id);
-      const success = await deleteCourseSection(id);
-      console.log("API result:", success);
+  const [sectionData, setSectionData] = useState({
+    year_and_section: "",
+    instructor_assigned: "",
+  })
 
-      setSections((prev) => {
-        console.log("Before delete:", prev);
-        const updated = prev.filter((u) => u.id !== id);
-        console.log("After delete:", updated);
-        return updated;
-      });
-    } catch (error) {
-      console.error("Failed to delete section", error);
-    }
+
+  const handlesInputChange = (name: string, value: string) => {
+    setSectionName((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+
+  const handleCreateSection = async () => {
+  if (!sectionName.year_and_section) {
+    alert("Please fill in all fields.");
+    return;
+  }
+  try {
+    const createSection: CreateSection = {
+      year_and_section: sectionName.year_and_section,
+      instructor_assigned: selectedInstructorId ? Number(selectedInstructorId) : null,
+      loaded_course: Number(loaded_course_id),
+    };
+    await fetchCreateSection(createSection);
+
+    const updatedSections = await fetchDepartmentChairCourseSections(Number(departmentId), Number(loaded_course_id));
+    setSections(updatedSections);
+
+    setIsPanelOpen(false);
+    setSectionName({ year_and_section: "" });
+    setSelectedInstructorId("");
+
+  } catch (error) {
+    console.error("Error creating sections:", error);
+  }
+
+  };
+
+  const handleUpdateSection = async (id: number) => {
+    setIsPanelOpen(true);
+    const updateSection = {
+      year_and_section: sectionName.year_and_section,
+      instructor_assigned: selectedInstructorId ? Number(selectedInstructorId) : null,
+      loaded_course: Number(loaded_course_id),
+    };
+    await fetchUpdateSection(Number(id), updateSection);
+    const updatedSections = await fetchDepartmentChairCourseSections(Number(departmentId), Number(loaded_course_id));
+    setSections(updatedSections);
+    setIsPanelOpen(false);
+    setSectionName({ year_and_section: "" });
+    setSelectedInstructorId("");
+  };
+  
+
+  
+
+  const handleDelete = async (id: number) => {
+    const success = await fetchDeleteLoadedCourseSection(Number(loaded_course_id), Number(id));
+    if (success) setSections((prev) => prev.filter((u) => u.id !== id));
   };
  
   const goToDepartmentChairAssessmentPage = (section: DepartmentLoadedCourseSectionsDisplay) => {
@@ -107,7 +156,8 @@ export default function DepartmentChairCoursePage() {
   return (
     <AppLayout activeItem={`/department/${department_name}`}>
       <InfoComponent
-        title={LoadedCourseDetails.map((cd) => cd.course_title).join(", ") || "N/A"}
+        loading={loading}
+        title={LoadedCourseDetails.map((cd) => cd.course_title).join(", ")}
         subtitle={`${LoadedCourseDetails.map((cd) => cd.academic_year)} ${
           LoadedCourseDetails.map((cd) => cd.semester_type)
         } | ${LoadedCourseDetails.map((cd) => cd.year_level).join(", ")}`}
@@ -156,7 +206,7 @@ export default function DepartmentChairCoursePage() {
             { key: "year_and_section", label: "Section" },
             { key: "instructor_assigned", label: "Instructor Assigned" },
           ]}
-          onEdit={(section) => console.log("Edit", section)}
+          onEdit={(section) => handleUpdateSection(section)}
           onDelete={handleDelete} 
           loading={loading}
           skeletonRows={2}
@@ -167,14 +217,15 @@ export default function DepartmentChairCoursePage() {
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}
         panelFunction="Add Section"
-        onSubmit={() => console.log("API Request POST")}
+        onSubmit={handleCreateSection}
         buttonFunction="Add Section"
+        loading={loading}
       >
         <UserInputComponent 
           label="Year and Section" 
           name="year_and_section" 
-          value={""} 
-          onChange={() => {}}
+          value={sectionName.year_and_section} 
+          onChange={handlesInputChange}
         />
         <DropdownComponent
           label="Instructor Assigned"

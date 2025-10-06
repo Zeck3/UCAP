@@ -229,16 +229,6 @@ def get_department_details_view(request, department_id):
     
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def get_department_courses(request, department_id):
-    try:
-        courses = LoadedCourse.objects.filter(course__program__department__department_id=department_id)
-        serializer = DepartmentLoadedCoursesSerializer(courses, many=True)
-        return JsonResponse(serializer.data, safe=False)
-    except Exception as e:
-        return JsonResponse({"message": str(e)}, status=500)
-
-@api_view(["GET"])
-@permission_classes([AllowAny])
 def get_department_course_details_view(request, department_id, loaded_course_id):
     try:
         courses = LoadedCourse.objects.filter(course__program__department__department_id=department_id, loaded_course_id=loaded_course_id)
@@ -249,7 +239,17 @@ def get_department_course_details_view(request, department_id, loaded_course_id)
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def get_department_course_sections(request, department_id, loaded_course_id):
+def get_department_loaded_courses_view(request, department_id):
+    try:
+        courses = LoadedCourse.objects.filter(course__program__department__department_id=department_id)
+        serializer = DepartmentLoadedCoursesSerializer(courses, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_department_course_sections_view(request, department_id, loaded_course_id):
     try:
         sections = Section.objects.filter(loaded_course__course__program__department__department_id=department_id, loaded_course_id=loaded_course_id)
         serializer = DepartmentChairSectionSerializer(sections, many=True)
@@ -257,31 +257,6 @@ def get_department_course_sections(request, department_id, loaded_course_id):
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500)
     
-@api_view(["DELETE"])
-@permission_classes([AllowAny])
-def get_section_details_delete(request, section_id):
-    try:
-        section = Section.objects.get(section_id=section_id)
-        section.delete()
-        return JsonResponse({"message": "Section deleted successfully"}, status=200)
-    except Section.DoesNotExist:
-        return JsonResponse({"message": "Section not found"}, status=404)
-    except Exception as e:
-        return JsonResponse({"message": str(e)}, status=500)
-
-@api_view(["DELETE"])
-@permission_classes([IsAuthenticated])
-def get_course_details_view(request, course_id):
-    try:
-        course = LoadedCourse.objects.get(loaded_course_id=course_id)
-        course.delete()
-        return JsonResponse({"message": "Course deleted successfully"}, status=200)
-    except LoadedCourse.DoesNotExist:
-        return JsonResponse({"message": "Course not found"}, status=404)
-    except Exception as e:
-        return JsonResponse({"message": str(e)}, status=500)
-    
-
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def get_department_courses_view(request, department_id):
@@ -292,6 +267,30 @@ def get_department_courses_view(request, department_id):
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500)
     
+@api_view(["DELETE"])
+@permission_classes([AllowAny])
+def delete_department_section(request, loaded_course_id, section_id):
+    try:
+        section = Section.objects.get(loaded_course=loaded_course_id, section_id=section_id)
+        section.delete()
+        return JsonResponse({"message": "Section deleted successfully"}, status=200)
+    except Section.DoesNotExist:
+        return JsonResponse({"message": "Section not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["DELETE"])
+@permission_classes([AllowAny])
+def delete_loaded_course(request, loaded_course_id):
+    try:
+        course = LoadedCourse.objects.get(loaded_course_id=loaded_course_id)
+        course.delete()
+        return JsonResponse({"message": "Course deleted successfully"}, status=200)
+    except LoadedCourse.DoesNotExist:
+        return JsonResponse({"message": "Course not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+        
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def load_course(request):
@@ -301,6 +300,42 @@ def load_course(request):
         return JsonResponse({"message": "Course loaded successfully", "data": serializers.data}, status=200)
     else:
         return JsonResponse({"message": serializers.errors}, status=400)
+
+
+@api_view(["POST", "PUT", "PATCH"])
+@permission_classes([AllowAny])
+def section_management(request):
+    try:
+        if request.method == "POST":
+            serializer = CreateSectionSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return JsonResponse({"message": "Section created successfully", "data": serializer.data}, status=200)
+            else:
+                return JsonResponse({"message": serializer.errors}, status=400)
+        
+        elif request.method in ["PUT", "PATCH"]:
+            section_id = request.data.get("section_id")
+            if not section_id:
+                return JsonResponse({"message": "Section ID is required for update."}, status=400)
+            
+            try:
+                section = Section.objects.get(section_id=section_id)
+            except Section.DoesNotExist:
+                return JsonResponse({"message": "Section not found"}, status=404)
+            
+            serializer = UpdateSectionSerializer(instance=section, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return JsonResponse(
+                    {"message": "Section updated successfully", "data": serializer.data},
+                    status=200
+                )
+            return JsonResponse({"message": serializer.errors}, status=400)
+    
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+
 
 # ====================================================
 # Dropdown
