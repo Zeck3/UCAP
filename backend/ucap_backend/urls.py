@@ -27,7 +27,7 @@ urlpatterns = [
     path("instructor/<int:instructor_id>/", instructor_loaded_courses_view,),
     path("instructor/<int:instructor_id>/<str:loaded_course_id>", instructor_assigned_sections_view,),
     # ====================================================
-    # Dropdown
+    # Dropdown 
     # ====================================================
     path("user_role/", user_role_list_view),
     path("department/", department_list_view),
@@ -36,11 +36,28 @@ urlpatterns = [
     path("semester/", semester_list_view),
     path("credit_unit/", credit_unit_list_view),
     path("academic_year/", academic_year_list_view),
+    path("instructors/", instructor_list_view),
     # # ============================================================================================================================
     # path("admin/course_management/section/create_section/", create_section),
     # # path('department_chair/course_management/<str:course_code>/load_course/', load_course),
-    # path("department_chair/course_management/<int:department_id>/courses/", get_department_courses,),
-    # path("department_chair/course_management/<int:department_id>/<str:course_code>/sections/", get_department_course_sections,),
-    # path("department_chair/course_management/<int:department_id>/instructors/", get_department_instructors,),
-    # path("department_chair/course_management/section/<int:section_id>/assign_instructor/", assign_instructor,),
+
+    # ====================================================
+    # Department Chair Dashboard
+    # ====================================================
+    path("department_chair/department_details/<int:department_id>/", get_department_details_view),
+    path("department_chair/course_management/<int:department_id>/", get_department_courses,),
+
+    path("department_chair/course_details/<int:department_id>/<int:loaded_course_id>/", get_department_course_details_view),
+    path("department_chair/sections/<int:department_id>/<int:loaded_course_id>/", get_department_course_sections,),
+    path("department_chair/not_loaded_courses/<int:department_id>/", get_department_courses_view),
+    
+    path("department_chair/section/<int:section_id>/", get_section_details_delete),
+    path("department_chair/course/<int:course_id>/", get_course_details_view),
+
+    path("department_chair/load_courses/", load_course),
+
+    # ====================================================
+    # Department Path
+    # ====================================================
+    path("department_chair/sections/<int:departmentId>/", department_path_view),
 ]

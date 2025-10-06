@@ -1,6 +1,6 @@
 import axiosClient from "./axiosClient";
 
-import type { UserRole, Department, Program, YearLevel, Semester, Credit } from "../types/dropdownTypes";
+import type { UserRole, Department, Program, YearLevel, Semester, Credit, Instructor, AcademicYear } from "../types/dropdownTypes";
 
 export async function getRoles(): Promise<UserRole[]> {
   try {
@@ -58,6 +58,26 @@ export async function getCreditUnits(): Promise<Credit[]> {
     return res.data;
   } catch (error) {
     console.error("Error fetching credit units:", error);
+    return [];
+  }
+}
+
+export async function getInstructors(): Promise<Instructor[]> {
+  try {
+    const res = await axiosClient.get("/instructors/");
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching instructors:", error);
+    return [];
+  }
+}
+
+export async function getAcademicYears(): Promise<AcademicYear[]> {
+  try {
+    const res = await axiosClient.get("/academic_year/");
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching academic years:", error);
     return [];
   }
 }

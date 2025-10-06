@@ -3,7 +3,8 @@ import CoursesIcon from "../assets/courses.svg?react";
 import HomeIcon from "../assets/house-solid.svg?react"
 import type { ReactNode } from "react";
 import { useAuth } from "../context/useAuth";
-import dummy from "../data/dummy";
+import { useEffect, useState } from "react";
+import { fetchDepartmentPathSections } from "../api/departmentPathApi";
 
 export const Roles = {
   Administrator: 1,
@@ -33,12 +34,18 @@ export const roleRoutes: Record<number, string> = {
 
 export function useRoleSideNav(): Record<number, { label: string; path: string; icon: ReactNode }[]> {
   const { user } = useAuth();
+  const [departmentPath, setDepartmentPath] = useState("");
 
-  const departmentPath = user?.department_id
-    ? dummy[0].department_tbl
-        .find((d) => d.department_id === user.department_id)
-        ?.department_name.replace(/\s+/g, "") ?? "department"
-    : "department";
+  useEffect(() => {
+  if (user?.department_id) {
+    fetchDepartmentPathSections(user.department_id)
+      .then((data) => {
+        const departmentName = data[0]?.department_name ?? "department";
+        setDepartmentPath(departmentName.replace(/\s+/g, ""));
+      })
+      .catch(() => setDepartmentPath("department"));
+  }
+}, [user?.department_id]);
 
   return {
     1: [

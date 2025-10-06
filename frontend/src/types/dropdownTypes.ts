@@ -29,3 +29,17 @@ export interface Credit {
   laboratory_unit: number;
   credit_unit: number;
 }
+
+export interface Instructor {
+  user_id: number;
+  first_name: string;
+  last_name: string;
+  role_id: number;
+  department_id: number;
+}
+
+export interface AcademicYear {
+  academic_year_id: number;
+  academic_year_start: number;
+  academic_year_end: number;
+}

@@ -6,15 +6,16 @@ import AppLayout from "../../layout/AppLayout";
 import emptyImage from "../../assets/undraw_file-search.svg";
 import { useLayout } from "../../context/useLayout";
 import { useAuth } from "../../context/useAuth";
-import { getDepartmentCourses } from "../../utils/getDepartmentCourses";
-import type { DepartmentCourse } from "../../utils/getDepartmentCourses";
-import { useMemo, useState } from "react";
-import { getUserDepartmentInfo } from "../../utils/getDepartmentInfo";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import PlusIcon from "../../assets/plus-solid.svg?react";
 import SidePanelComponent from "../../components/SidePanelComponent";
 import DropdownComponent from "../../components/DropDownComponent";
-import dummy from "../../data/dummy";
 import { useNavigate, useParams } from "react-router-dom";
+
+import type { AcademicYear } from "../../types/dropdownTypes";
+import { getAcademicYears } from "../../api/dropdownApi";
+import { fetchDepartmentLoadedCourses, fetchDepartmentDetails, fetchDeleteCourse, fetchDepartmentCourses } from "../../api/departmentChairCourseDashboardApi";
+import type { DepartmentDetail, DepartmentLoadedCoursesDisplay, DepartmentCoursesDisplay, LoadDepartmentCourse } from "../../types/departmentChairDashboardTypes";
 
 export default function DepartmentChairCourseDashboard() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -22,44 +23,120 @@ export default function DepartmentChairCourseDashboard() {
   const { layout } = useLayout();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const departmentInfo = getUserDepartmentInfo(user);
   const { department_name } = useParams();
-  const db = dummy[0];
 
-  const academicYearOptions = db.academic_year_tbl.map(
-    (ay) => `${ay.academic_year_start}-${ay.academic_year_end}`
-  );
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [departmentDetails, setDepartmentDetails] = useState<DepartmentDetail[]>([]);
+  const [departmentLoadedCourses, setDepartmentLoadedCourses] = useState<DepartmentLoadedCoursesDisplay[]>([]);
+  const [departmentCourses, setDepartmentCourses] = useState<DepartmentCoursesDisplay[]>([]);
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const currentUserId = user?.user_id ?? null;
+  const [selectedCourses, setSelectedCourses] = useState<DepartmentCoursesDisplay[]>([]);
 
-  const DepartmentCourses: DepartmentCourse[] = useMemo(() => {
-    if (!currentUserId) return [];
-    return getDepartmentCourses(currentUserId);
-  }, [currentUserId]);
+  const departmentId = user?.department_id ?? 0;
 
-  const mappedDepartmentCourses = useMemo(() => {
-    return DepartmentCourses.map((c) => ({
-      ...c,
-      academicYearAndSem: `${c.academic_year} ${c.semester_type
-        .toLowerCase()
-        .replace("semester", "sem")
-        .trim()}`,
-    }));
-  }, [DepartmentCourses]);
+  useEffect(() => {
+    async function fetchDepartmentDetailsData() {
+      setLoading(true);
+      const [details, courses, years, notLoaded] = await Promise.all([
+        fetchDepartmentDetails(departmentId),
+        fetchDepartmentLoadedCourses(departmentId),
+        getAcademicYears(),
+        fetchDepartmentCourses(departmentId),
+      ]);
+      setDepartmentDetails(details);
+      setDepartmentLoadedCourses(courses);
+      setAcademicYears(years);
+      setLoading(false);
+      setDepartmentCourses(notLoaded);
+    }
+    fetchDepartmentDetailsData();
+  }, [departmentId]);
+
+
+  const academicYearOptions = useMemo(() => {
+    return academicYears.map((ay) =>  ({
+    label: `${ay.academic_year_start} - ${ay.academic_year_end}`, 
+    value: ay.academic_year_id.toString(),   
+  }));
+  }, [academicYears]);
 
   const filteredDepartmentCourses = useMemo(() => {
-    if (!searchQuery.trim()) return mappedDepartmentCourses;
+    if (!searchQuery.trim()) return departmentCourses;
 
     const query = searchQuery.toLowerCase();
-    return mappedDepartmentCourses.filter(
+    return departmentCourses.filter(
+      (course) =>
+        course.id.toLowerCase().includes(query) ||
+        course.course_title.toLowerCase().includes(query) ||
+        course.lecture_unit.toString().includes(query) ||
+        course.lab_unit.toString().includes(query) ||
+        course.credit_unit.toString().includes(query)
+    );
+  
+  }, [departmentCourses, searchQuery]);
+  
+  const filteredDepartmentLoadedCourses = useMemo(() => {
+    if (!searchQuery.trim()) return departmentLoadedCourses;
+
+    const query = searchQuery.toLowerCase();
+    return departmentLoadedCourses.filter(
       (course) =>
         course.course_code.toLowerCase().includes(query) ||
         course.course_title.toLowerCase().includes(query) ||
         course.academicYearAndSem.toLowerCase().includes(query)
     );
-  }, [searchQuery, mappedDepartmentCourses]);
+  
+  }, [departmentLoadedCourses, searchQuery]);
 
-  const goToDepartmentChairCoursePage = (course: DepartmentCourse) => {
+
+  const handleDelete = async (id: number) => {
+      try {
+        console.log("Deleting section with id:", id);
+        const success = await fetchDeleteCourse(id);
+        console.log("API result:", success);
+  
+        setDepartmentLoadedCourses((prev) => {
+          console.log("Before delete:", prev);
+          const updated = prev.filter((u) => u.id !== id);
+          console.log("After delete:", updated);
+          return updated;
+        });
+      } catch (error) {
+        console.error("Failed to delete section", error);
+      }
+    };
+
+  const handleSelectionChange = useCallback((selected: string[]) => {
+    setSelectedCourses(
+      departmentCourses.filter((course) => selected.includes(course.id))
+    );
+    console.log("Selected:", selected);
+  }, [departmentCourses]);
+
+  const handleLoadCourse = () => {
+  if (selectedCourses.length === 0) {
+    alert("Please select at least one course.");
+    return;
+  }
+  if (!selectedAcademicYear) {
+    alert("Please select an academic year.");
+    return;
+  }
+  selectedCourses.forEach((course) => {
+    const courseCode = course.id?.replace(/\s+/g, "") ?? "";
+    const academicYearId = selectedAcademicYear.toString();
+
+    const loadCourse: LoadDepartmentCourse = {
+      course: courseCode,
+      academic_year: parseInt(academicYearId),  
+    }
+    console.log(loadCourse);
+  });
+};
+
+  const goToDepartmentChairCoursePage = (course: DepartmentLoadedCoursesDisplay) => {
     const departmentName = course.department_name?.replace(/\s+/g, "") ?? "";
     const loadedCourseId = course.id;
     const courseCode = course.course_code?.replace(/\s+/g, "") ?? "";
@@ -69,9 +146,9 @@ export default function DepartmentChairCourseDashboard() {
   return (
     <AppLayout activeItem={`/department/${department_name}`}>
       <InfoComponent
-        title={`Department of ${departmentInfo?.department_name || "Department"}`}
-        subtitle={departmentInfo?.college_name ?? "College"}
-        details={`${departmentInfo?.campus_name || "Department"} Campus`}
+        title={`Department of ${departmentDetails.map(d => d.department_name).join(", ")}`}
+        subtitle={departmentDetails.map(d => d.college_name).join(", ")}
+        details={`${departmentDetails.map(d => d.campus_name).join(", ")} Campus`}
       />
       <ToolBarComponent
         titleOptions={[
@@ -88,11 +165,12 @@ export default function DepartmentChairCourseDashboard() {
         buttonIcon={<PlusIcon className="text-white h-5 w-5" />}
         buttonLabel="Load Courses"
       />
-
+ 
       {layout === "cards" ? (
         <CardsGridComponent
-          items={filteredDepartmentCourses}
+          items={filteredDepartmentLoadedCourses}
           onCardClick={goToDepartmentChairCoursePage}
+          onDelete={(course) => handleDelete(Number(course))}
           emptyImageSrc={emptyImage}
           emptyMessage="No Courses Available!"
           aspectRatio="20/9"
@@ -100,16 +178,16 @@ export default function DepartmentChairCourseDashboard() {
           title={(c) => c.course_title}
           subtitle={(course) => {
             const semesterText = course.semester_type
-              .toLowerCase()
-              .replace("semester", "sem")
-              .trim();
-            return `${course.academic_year} ${semesterText} | ${course.program_name}`;
+              ? course.semester_type.toLowerCase().replace("semester", "sem").trim()
+              : "N/A";
+            return `${course.academic_year ?? "N/A"} ${semesterText} | ${course.program_name ?? ""}`;
           }}
+          loading={loading}
           enableOption
         />
       ) : (
         <TableComponent
-          data={filteredDepartmentCourses}
+          data={filteredDepartmentLoadedCourses}
           onRowClick={goToDepartmentChairCoursePage}
           emptyImageSrc={emptyImage}
           emptyMessage="No Courses Available!"
@@ -120,6 +198,10 @@ export default function DepartmentChairCourseDashboard() {
             { key: "academicYearAndSem", label: "Academic Year & Sem" },
             { key: "year_level", label: "Year Level" },
           ]}
+          onEdit={(course) => console.log("Edit course", course)}
+          onDelete={handleDelete}
+          loading={loading}
+          
           showActions
         />
       )}
@@ -127,14 +209,35 @@ export default function DepartmentChairCourseDashboard() {
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}
         panelFunction="Load Courses"
-        onSubmit={() => console.log("API Request POST")}
-        fullWidthRow={false}
+        onSubmit={handleLoadCourse}
         buttonFunction="Load Courses"
       >
-        <DropdownComponent
-          label="Academic Year"
-          options={academicYearOptions}
-        />
+        <div className="mb-4">
+          <DropdownComponent
+            label="Academic Year"
+            name="academic_year"
+            options={academicYearOptions}
+            value={selectedAcademicYear ?? ""}
+            onChange={(_, value) => setSelectedAcademicYear(value)}
+          />
+        </div>
+        <div className="mb-4">
+          <TableComponent
+            data={filteredDepartmentCourses}
+            columns={[
+              { key: "id", label: "Course Code" },
+              { key: "course_title", label: "Course Title" },
+              { key: "lecture_unit", label: "Lecture Unit" },
+              { key: "lab_unit", label: "Lab Unit" },
+              { key: "credit_unit", label: "Credit Unit" },
+            ]}
+            selectable
+            onSelectionChange={handleSelectionChange}
+            loading={loading}
+            showActions={false}
+          />
+        </div>
+
       </SidePanelComponent>
     </AppLayout>
   );

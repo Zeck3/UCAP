@@ -22,6 +22,11 @@ interface TableProps<T extends { id: string | number }> {
   showActions?: boolean;
   loading?: boolean;
   skeletonRows?: number;
+//================================
+// Add selectable props
+//================================
+  selectable?: boolean;
+  onSelectionChange?: (selectedIds: Array<T["id"]>) => void;
 }
 
 export default function TableComponent<T extends { id: string | number }>({
@@ -36,18 +41,46 @@ export default function TableComponent<T extends { id: string | number }>({
   showActions = false,
   loading = false,
   skeletonRows = 6,
+//================================
+// Add selectable props
+//================================
+  selectable = false,
+  onSelectionChange,
 }: TableProps<T>) {
   const [openMenuId, setOpenMenuId] = useState<T["id"] | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+//================================
+// Add selectable props
+//================================
+  const [selectedRows, setSelectedRows] = useState<Array<T["id"]>>([]);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = data.slice(startIndex, startIndex + itemsPerPage);
 
   const totalPages = Math.ceil(data.length / itemsPerPage);
+//================================
+// Add selectable props
+//================================
+  useEffect(() => {
+    onSelectionChange?.(selectedRows);
+  }, [selectedRows, onSelectionChange]);
 
+  const toggleSelectAll = () => {
+    if (selectedRows.length === paginatedData.length) {
+      setSelectedRows([]);
+    } else {
+      setSelectedRows(paginatedData.map((row) => row.id));
+    }
+  };
+  const toggleRow = (id: T["id"]) => {
+    setSelectedRows((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+//================================
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -114,6 +147,18 @@ export default function TableComponent<T extends { id: string | number }>({
       <table className="min-w-full text-left text-sm">
         <thead className="text-sm font-normal text-[#767676]">
           <tr>
+            {/* ================================
+             Add selectable props
+            ================================ */}
+            {selectable && (
+              <th className="px-4 py-4">
+                <input
+                  type="checkbox"
+                  checked={selectedRows.length === paginatedData.length && paginatedData.length > 0}
+                  onChange={toggleSelectAll}
+                />
+              </th>
+            )}
             {columns.map((col) => (
               <th key={String(col.key)} className="pr-6 py-4 font-normal">
                 {col.label}
@@ -128,6 +173,10 @@ export default function TableComponent<T extends { id: string | number }>({
         <tbody>
           {paginatedData.map((row, idx) => {
             const isClickable = !!onRowClick && !disableRowPointer;
+            //================================
+            // Add selectable props
+            //================================
+            const isChecked = selectedRows.includes(row.id);
             return (
               <tr
                 key={row.id ?? idx}
@@ -138,6 +187,21 @@ export default function TableComponent<T extends { id: string | number }>({
                   if (isClickable) onRowClick?.(row);
                 }}
               >
+                {/* ================================
+                 Add selectable props
+                ================================ */}
+                {selectable && (
+                  <td className="px-4 py-4">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleRow(row.id);
+                      }}
+                    />
+                  </td>
+                )}
                 {columns.map((col) => (
                   <td key={String(col.key)} className="pr-6 py-4">
                     {String(row[col.key])}
@@ -169,7 +233,9 @@ export default function TableComponent<T extends { id: string | number }>({
                         >
                           <div
                             className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100"
-                            onClick={() => {
+                            onClick={(e) => {
+                              // e.stopPropagation();
+                              e.stopPropagation();
                               onEdit?.(row.id);
                               setOpenMenuId(null);
                             }}
@@ -180,7 +246,9 @@ export default function TableComponent<T extends { id: string | number }>({
 
                           <div
                             className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-red-400"
-                            onClick={() => {
+                            onClick={(e) => {
+                              // e.stopPropagation();
+                              e.stopPropagation();
                               onDelete?.(row.id);
                               setOpenMenuId(null);
                             }}
