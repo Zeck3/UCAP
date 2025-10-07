@@ -188,6 +188,5 @@ export const crpInfo: CRPInfo = {
         87,
       ],
     },
-    
   ],
 };
