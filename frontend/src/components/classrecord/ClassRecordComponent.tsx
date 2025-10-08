@@ -1,5 +1,5 @@
 import type { HeaderNode } from "./HeaderConfig";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { crpInfo } from "./ClassRecordDummy";
 import {
   collectMaxScores,
@@ -20,7 +20,6 @@ export default function ClassRecordComponent({
   headerConfig,
 }: ClassRecordComponentProps) {
   // const [classRecord, setClassRecord] = useState(crpInfo);
-
   const [showPopup, setShowPopup] = useState(false);
   const [currentItem, setCurrentItem] = useState("");
   const [students, setStudents] = useState(() => crpInfo.students || []);
@@ -37,6 +36,45 @@ export default function ClassRecordComponent({
   const [maxScores, setMaxScores] = useState(() =>
     collectMaxScores(headerConfig)
   );
+
+  // Sync headerNodes with headerConfig prop changes (handles hot reload when headerConfig updates)
+  useEffect(() => {
+    setHeaderNodes(headerConfig);
+  }, [headerConfig]);
+
+  // When headerNodes change (e.g., via hot reload or title edits), sync maxScores and studentScores.
+  useEffect(() => {
+    // Sync maxScores
+    setMaxScores((prev) => {
+      const defaults = collectMaxScores(headerNodes);
+      return { ...defaults, ...prev };
+    });
+
+    // Sync studentScores
+    const assessmentNodes = getAllAssessmentNodes(headerNodes);
+    const currentKeys = new Set(assessmentNodes.map((n) => n.key!).filter(Boolean));
+    setStudentScores((prev) =>
+      prev.map((scores) => {
+        const newScores = { ...scores };
+
+        // Remove keys for deleted assessments (cleans up state)
+        for (let k in newScores) {
+          if (!currentKeys.has(k)) {
+            delete newScores[k];
+          }
+        }
+
+        // Add missing keys for new assessments (set to 0)
+        assessmentNodes.forEach((node) => {
+          if (node.key && newScores[node.key] === undefined) {
+            newScores[node.key] = 0;
+          }
+        });
+
+        return newScores;
+      })
+    );
+  }, [headerNodes]);
 
   const handleEditStart = (
     node: HeaderNode,
@@ -61,9 +99,9 @@ export default function ClassRecordComponent({
     window.setTimeout(() => setCanOpenPopup(true), 100);
   };
 
-  const handleEditSave = (nodeKey: string) => {
+  const handleEditSave = (nodeKey: string, newValue: string) => {
     setHeaderNodes((prev) =>
-      updateHeaderNodeTitle(prev, nodeKey, editingAssessment?.value || "")
+      updateHeaderNodeTitle(prev, nodeKey, newValue)
     );
     setEditingAssessment(null);
   };
@@ -91,7 +129,6 @@ export default function ClassRecordComponent({
       setStudents((prev) => {
         const updated = [...prev];
         updated[index] = { ...updated[index], [field]: value };
-
         return updated;
       });
     },
@@ -103,7 +140,12 @@ export default function ClassRecordComponent({
     term: "midterm" | "final"
   ) {
     return Object.keys(scores)
-      .filter((k) => k.startsWith(term + "-")) // match all relevant assessments
+      .filter((k) => {
+        const node = getAllAssessmentNodes(headerConfig).find(
+          (n) => n.key === k && n.termType === term
+        );
+        return !!node;
+      })
       .reduce((sum, k) => sum + (scores[k] || 0), 0);
   }
 
@@ -117,7 +159,6 @@ export default function ClassRecordComponent({
         // We know this node is an assessment, push it to the accumulator
         accumulator.push(node);
       }
-
       // Recursively check children
       if (node.children && node.children.length > 0) {
         getAllAssessmentNodes(node.children, accumulator);
@@ -126,48 +167,40 @@ export default function ClassRecordComponent({
     return accumulator;
   };
 
-  const [studentScores, setStudentScores] = useState<Record<string, number>[]>(
-    () => {
-  
-      const assessmentNodes = getAllAssessmentNodes(headerConfig as HeaderNode[]);
+  const [studentScores, setStudentScores] = useState<Record<string, number>[]>(() => {
+    const assessmentNodes = getAllAssessmentNodes(headerConfig);
 
-      return students.map((student) => {
-        const scores: Record<string, number> = {};
+    return students.map((student) => {
+      const scores: Record<string, number> = {};
 
-        student.scores.forEach((s) => {
-          const key = `${student.student_id}-${s.assessment_id}`;
-          scores[key] = s.value ?? 0;
-        });
-
-        assessmentNodes.forEach((node) => {
-          const assessId = Number(node.key?.split("-").pop());
- 
-          const key = `${student.student_id}-${assessId}`;
-         
-          if (scores[key] === undefined) {
-            scores[key] = 0;
-          }
-        });
-
-        return scores;
+      student.scores.forEach((s) => {
+        const key = `${s.assessment_id}`;
+        scores[key] = s.value ?? 0;
       });
-    }
-  );
+
+      assessmentNodes.forEach((node) => {
+        if (node.key && scores[node.key] === undefined) {
+          scores[node.key] = 0;
+        }
+      });
+
+      return scores;
+    });
+  });
 
   const [remarks, setRemarks] = useState<string[]>(students.map(() => ""));
 
   const computedMaxValues = useMemo(
-    () => computeValues(maxScores, maxScores, headerConfig),
-    [maxScores, headerConfig]
+    () => computeValues(maxScores, maxScores, headerNodes),
+    [maxScores, headerNodes]
   );
 
   const computedStudentValues = useMemo(
     () =>
-      studentScores.map((scores) => {
-        console.log(computeValues(scores, maxScores, headerConfig))
-        return computeValues(scores, maxScores, headerConfig);
-      }),
-    [studentScores, maxScores, headerConfig]
+      studentScores.map((scores) =>
+        computeValues(scores, maxScores, headerNodes)
+      ),
+    [studentScores, maxScores, headerNodes]
   );
 
   const openPopup = useCallback((title: string) => {
@@ -224,7 +257,7 @@ export default function ClassRecordComponent({
     <>
       <thead>
         <BuildHeaderRow
-          nodes={headerConfig}
+          nodes={headerNodes}
           originalMaxDepth={Math.max(...headerConfig.map(getMaxDepth))}
           openPopup={openPopup}
           maxScores={maxScores}
@@ -234,23 +267,21 @@ export default function ClassRecordComponent({
         />
       </thead>
       <tbody>
-        {students.map((student, i) => {
-          return (
-            <BuildStudentRow
-              key={student.student_id}
-              student={student}
-              index={i}
-              nodes={headerNodes}
-              studentScore={studentScores[i]}
-              computedValues={computedStudentValues[i]}
-              maxScores={maxScores}
-              remarks={remarks}
-              updateRemark={updateRemark}
-              handleInputChange={handleInputChange}
-              updateScoreProp={updateStudentScore}
-            />
-          );
-        })}
+        {students.map((student, i) => (
+          <BuildStudentRow
+            key={student.student_id}
+            student={student}
+            index={i}
+            nodes={headerNodes}
+            studentScore={studentScores[i]}
+            computedValues={computedStudentValues[i]}
+            maxScores={maxScores}
+            remarks={remarks}
+            updateRemark={updateRemark}
+            handleInputChange={handleInputChange}
+            updateScoreProp={updateStudentScore}
+          />
+        ))}
       </tbody>
       {showPopup && (
         <BloomPopup
@@ -262,7 +293,6 @@ export default function ClassRecordComponent({
           currentItem={currentItem}
         />
       )}
-
       {editingAssessment && (
         <EditAssessmentPopup
           editingAssessment={editingAssessment}

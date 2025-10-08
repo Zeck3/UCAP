@@ -183,13 +183,13 @@ function createAssessmentNodes(
 ): { nodes: HeaderNode[]; groupKeys: string[] } {
   const nodes: HeaderNode[] = component.assessments.map((assess) => ({
     title: assess.assessment_title || "",
-    key: `${termType}-${unitType}-${component.course_component_type}-${assess.assessment_id}`,
+    key: `${assess.assessment_id}`,
     children: [],
     needsButton: true,
     calculationType: "assignment",
     nodeType: "assessment",
     maxScore: assess.assessment_highest_score ?? 0,
-    termType: termType as "midterm" | "final"
+    termType: termType as "midterm" | "final",
   }));
 
   const groupKeys = nodes.map((n) => n.key!);

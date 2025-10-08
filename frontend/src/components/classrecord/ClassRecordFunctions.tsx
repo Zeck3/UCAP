@@ -91,8 +91,9 @@ export function computeValues(
       let value: number = 0;
       if (["sum", "percentage"].includes(node.calculationType)) {
         const groupSum =
-          node.groupKeys?.reduce((s, k) => s + (values[k] || 0), 0) ?? 0;
-          console.log(node.groupKeys)
+          node.groupKeys?.reduce((s, k) => {
+            return s + (values[k] || 0);
+          }, 0) ?? 0;
         if (node.calculationType === "sum") {
           value = groupSum;
         } else {
@@ -122,8 +123,8 @@ export function computeValues(
           Math.abs(curr - gp) < Math.abs(prev - gp)
             ? curr
             : Math.abs(curr - gp) === Math.abs(prev - gp)
-            ? Math.max(curr, prev)
-            : prev
+              ? Math.max(curr, prev)
+              : prev
         );
       }
       values[node.key] = value;
@@ -270,8 +271,8 @@ export function computeComputedContent(
         Math.abs(curr - value) < Math.abs(prev - value)
           ? curr
           : Math.abs(curr - value) === Math.abs(prev - value)
-          ? Math.max(curr, prev)
-          : prev,
+            ? Math.max(curr, prev)
+            : prev,
       grades[0]
     );
   };

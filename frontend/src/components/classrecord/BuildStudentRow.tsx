@@ -128,9 +128,7 @@ function BuildStudentRow({
 
   const buildRowCells = (nodes: HeaderNode[]): JSX.Element[] => {
     return nodes.flatMap((node) => {
-      const baseKey = `${student.student_id}-${node.key ?? node.title}-${
-        node.calculationType
-      }-${node.type}`;
+      const baseKey = `${node.key ?? node.title}-${node.calculationType}-${node.type}`;
 
       if (node.type === "v-separator") {
         return (
@@ -195,8 +193,7 @@ function BuildStudentRow({
 
       // Assignment input
       if (node.calculationType === "assignment" && node.key) {
-        const assessId = Number(node.key.split("-").pop());
-        const scoreKey = `${student.student_id}-${assessId}`;
+        const scoreKey = node.key;
         const value = studentScore[scoreKey] ?? 0;
         const max = maxScores[node.key] ?? 0;
 
@@ -208,7 +205,7 @@ function BuildStudentRow({
             value={value}
             onChange={(e) => {
               const newValue = Number(e.target.value);
-              if (newValue <= (max)) {
+              if (newValue <= max) {
                 updateScoreProp(index, scoreKey, newValue);
               }
             }}
@@ -216,7 +213,7 @@ function BuildStudentRow({
           />
         );
       } else if (node.calculationType === "computed" && node.key) {
-        const mid = computedValues["midterm-total-grade"] ;
+        const mid = computedValues["midterm-total-grade"];
         const fin = computedValues["final-total-grade"];
 
         const {
