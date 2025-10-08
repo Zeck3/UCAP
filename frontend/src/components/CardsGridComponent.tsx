@@ -162,7 +162,8 @@ export default function CardsGridComponent<T extends { id: string | number }>({
                     >
                       <div
                         className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-sm"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           onEdit?.(item.id);
                           setOpenMenuId(null);
                         }}
@@ -172,7 +173,8 @@ export default function CardsGridComponent<T extends { id: string | number }>({
                       </div>
                       <div
                         className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-sm text-red-400"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           onDelete?.(item.id);
                           setOpenMenuId(null);
                         }}

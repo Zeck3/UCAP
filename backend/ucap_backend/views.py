@@ -120,7 +120,7 @@ def user_detail_view(request, user_id):
             return JsonResponse({"message": "User deleted successfully"}, status=status.HTTP_200_OK)
         except Exception as e:
             return JsonResponse({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+ 
 # ====================================================
 # Course Management
 # ====================================================
@@ -307,6 +307,347 @@ class RawScoreUpdateView(APIView):
         return Response({"student_id": student_id, "assessment_id": assessment_id, "value": value})
     
 # ====================================================
+# Department Chair Dashboard
+# ====================================================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_department_details_view(request, department_id):
+    try:
+        department = Department.objects.filter(department_id=department_id)
+        serializer = DepartmentDetailsSerializer(department, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_department_course_details_view(request, department_id, loaded_course_id):
+    try:
+        courses = LoadedCourse.objects.filter(course__program__department__department_id=department_id, loaded_course_id=loaded_course_id)
+        serializer = DepartmentLoadedCourseDetailsSerializer(courses, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_department_loaded_courses_view(request, department_id):
+    try:
+        courses = LoadedCourse.objects.filter(course__program__department__department_id=department_id)
+        serializer = DepartmentLoadedCoursesSerializer(courses, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_department_course_sections_view(request, department_id, loaded_course_id):
+    try:
+        sections = Section.objects.filter(loaded_course__course__program__department__department_id=department_id, loaded_course_id=loaded_course_id)
+        serializer = DepartmentChairSectionSerializer(sections, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_department_courses_view(request, department_id):
+    try:
+        not_loaded_courses = Course.objects.filter(program__department__department_id=department_id)
+        serializer = DepartmentNotLoadedCoursesSerializer(not_loaded_courses, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["DELETE"])
+@permission_classes([AllowAny])
+def delete_department_section(request, loaded_course_id, section_id):
+    try:
+        section = Section.objects.get(loaded_course=loaded_course_id, section_id=section_id)
+        section.delete()
+        return JsonResponse({"message": "Section deleted successfully"}, status=200)
+    except Section.DoesNotExist:
+        return JsonResponse({"message": "Section not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["DELETE"])
+@permission_classes([AllowAny])
+def delete_loaded_course(request, loaded_course_id):
+    try:
+        course = LoadedCourse.objects.get(loaded_course_id=loaded_course_id)
+        course.delete()
+        return JsonResponse({"message": "Course deleted successfully"}, status=200)
+    except LoadedCourse.DoesNotExist:
+        return JsonResponse({"message": "Course not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+        
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def load_course(request):
+    serializers = LoadDepartmentCourseSerializer(data=request.data)
+    if serializers.is_valid():
+        serializers.save()
+        return JsonResponse({"message": "Course loaded successfully", "data": serializers.data}, status=200)
+    else:
+        return JsonResponse({"message": serializers.errors}, status=400)
+
+
+@api_view(["POST", "PUT", "PATCH"])
+@permission_classes([AllowAny])
+def section_management(request):
+    try:
+        if request.method == "POST":
+            serializer = CreateSectionSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return JsonResponse({"message": "Section created successfully", "data": serializer.data}, status=200)
+            else:
+                return JsonResponse({"message": serializer.errors}, status=400)
+        
+        elif request.method in ["PUT", "PATCH"]:
+            section_id = request.data.get("section_id")
+            if not section_id:
+                return JsonResponse({"message": "Section ID is required for update."}, status=400)
+            
+            try:
+                section = Section.objects.get(section_id=section_id)
+            except Section.DoesNotExist:
+                return JsonResponse({"message": "Section not found"}, status=404)
+            
+            serializer = UpdateSectionSerializer(instance=section, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return JsonResponse(
+                    {"message": "Section updated successfully", "data": serializer.data},
+                    status=200
+                )
+            return JsonResponse({"message": serializer.errors}, status=400)
+    
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+
+
+# ====================================================
+# Department Chair Dashboard
+# ====================================================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_department_details_view(request, department_id):
+    try:
+        department = Department.objects.filter(department_id=department_id)
+        serializer = DepartmentDetailsSerializer(department, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_department_course_details_view(request, department_id, loaded_course_id):
+    try:
+        courses = LoadedCourse.objects.filter(course__program__department__department_id=department_id, loaded_course_id=loaded_course_id)
+        serializer = DepartmentLoadedCourseDetailsSerializer(courses, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_department_loaded_courses_view(request, department_id):
+    try:
+        courses = LoadedCourse.objects.filter(course__program__department__department_id=department_id)
+        serializer = DepartmentLoadedCoursesSerializer(courses, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_department_course_sections_view(request, department_id, loaded_course_id):
+    try:
+        sections = Section.objects.filter(loaded_course__course__program__department__department_id=department_id, loaded_course_id=loaded_course_id)
+        serializer = DepartmentChairSectionSerializer(sections, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_department_courses_view(request, department_id):
+    try:
+        not_loaded_courses = Course.objects.filter(program__department__department_id=department_id)
+        serializer = DepartmentNotLoadedCoursesSerializer(not_loaded_courses, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["DELETE"])
+@permission_classes([AllowAny])
+def delete_department_section(request, loaded_course_id, section_id):
+    try:
+        section = Section.objects.get(loaded_course=loaded_course_id, section_id=section_id)
+        section.delete()
+        return JsonResponse({"message": "Section deleted successfully"}, status=200)
+    except Section.DoesNotExist:
+        return JsonResponse({"message": "Section not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
+@api_view(["DELETE"])
+@permission_classes([AllowAny])
+def delete_loaded_course(request, loaded_course_id):
+    try:
+        course = LoadedCourse.objects.get(loaded_course_id=loaded_course_id)
+        course.delete()
+        return JsonResponse({"message": "Course deleted successfully"}, status=200)
+    except LoadedCourse.DoesNotExist:
+        return JsonResponse({"message": "Course not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+        
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def load_course(request):
+    serializers = LoadDepartmentCourseSerializer(data=request.data)
+    if serializers.is_valid():
+        serializers.save()
+        return JsonResponse({"message": "Course loaded successfully", "data": serializers.data}, status=200)
+    else:
+        return JsonResponse({"message": serializers.errors}, status=400)
+
+
+@api_view(["POST", "PUT", "PATCH"])
+@permission_classes([AllowAny])
+def section_management(request):
+    try:
+        if request.method == "POST":
+            serializer = CreateSectionSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return JsonResponse({"message": "Section created successfully", "data": serializer.data}, status=200)
+            else:
+                return JsonResponse({"message": serializer.errors}, status=400)
+        
+        elif request.method in ["PUT", "PATCH"]:
+            section_id = request.data.get("section_id")
+            if not section_id:
+                return JsonResponse({"message": "Section ID is required for update."}, status=400)
+            
+            try:
+                section = Section.objects.get(section_id=section_id)
+            except Section.DoesNotExist:
+                return JsonResponse({"message": "Section not found"}, status=404)
+            
+            serializer = UpdateSectionSerializer(instance=section, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return JsonResponse(
+                    {"message": "Section updated successfully", "data": serializer.data},
+                    status=200
+                )
+            return JsonResponse({"message": serializer.errors}, status=400)
+    
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+
+
+# ====================================================
+# Class Record
+# ====================================================
+class ClassRecordViewSet(viewsets.ViewSet):
+    permission_classes = [AllowAny]
+
+    def retrieve(self, request, pk=None):
+        try:
+            section = (
+                Section.objects
+                .select_related(
+                    'loaded_course__course__program__department'
+                )
+                .prefetch_related(
+                    Prefetch(
+                        'courseterm_set',
+                        queryset=CourseTerm.objects.prefetch_related(
+                            Prefetch(
+                                'courseunit_set',
+                                queryset=CourseUnit.objects.prefetch_related(
+                                    Prefetch(
+                                        'coursecomponent_set',
+                                        queryset=CourseComponent.objects.prefetch_related('assessment_set')
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    Prefetch(
+                        'student_set',
+                        queryset=Student.objects.prefetch_related(
+                            Prefetch('rawscore_set', queryset=RawScore.objects.select_related('assessment'))
+                        )
+                    )
+                )
+                .get(pk=pk)
+            )
+        except Section.DoesNotExist:
+            return Response({"detail": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = ClassRecordSerializer(section)
+        return Response(serializer.data)
+
+class StudentViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
+    
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
+
+    def get_queryset(self):
+        section_id = self.request.query_params.get("section")
+        qs = self.queryset.select_related('section')
+        if section_id:
+            return qs.filter(section_id=section_id)
+        return qs
+
+class AssessmentViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
+    queryset = Assessment.objects.all()
+    serializer_class = AssessmentSerializer
+
+    def get_queryset(self):
+        qs = self.queryset.select_related('course_component')
+        component_id = self.request.query_params.get("component")
+        if component_id:
+            return qs.filter(course_component_id=component_id)
+        return qs
+    
+class CourseComponentViewSet(viewsets.ModelViewSet):
+    queryset = CourseComponent.objects.all()
+    serializer_class = CourseComponentSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        return Response({"detail": "Cannot delete a course component"}, status=status.HTTP_403_FORBIDDEN)
+    
+class CourseUnitViewSet(viewsets.ModelViewSet):
+    queryset = CourseUnit.objects.all()
+    serializer_class = CourseUnitSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        return Response({"detail": "Cannot delete a course unit"}, status=status.HTTP_403_FORBIDDEN)
+
+class RawScoreUpdateView(APIView):
+    permission_classes = [AllowAny]
+    def patch(self, request, student_id, assessment_id):
+        try:
+            rawscore = RawScore.objects.get(student_id=student_id, assessment_id=assessment_id)
+        except RawScore.DoesNotExist:
+            return Response({"detail": "RawScore not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        value = request.data.get("value")
+        rawscore.raw_score = value
+        rawscore.save()
+        return Response({"student_id": student_id, "assessment_id": assessment_id, "value": value})
+    
+# ====================================================
 # Dropdown
 # ====================================================
 @api_view(["GET"])
@@ -379,7 +720,30 @@ def academic_year_list_view(request):
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def instructor_list_view(request):
+    try:
+        instructors = User.objects.exclude(user_role_id=1) 
+        serializer = InstructorSerializer(instructors, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+# ====================================================
+# Department Path
+# ====================================================
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def department_path_view(request, departmentId):
+    try:
+        department = (Department.objects.filter(department_id=departmentId).values("department_name").distinct().first())
+        if not department:
+            return JsonResponse({"message": "Department not found"}, status=404)
+        return JsonResponse(department, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)
+    
 # @api_view(["POST"])
 # def load_course(request, course_code):
 #     try:
@@ -395,24 +759,26 @@ def academic_year_list_view(request):
 #         return JsonResponse({"message": str(e)}, status=500)
 
 # #===== DEPARTMENT CHAIR COURSE & SECTION MANAGEMENT =============================================================================================================================
+
+    
+
+
+
+#------------------------------------------------------------------------------------------------------------------------------------
+
+    
 # @api_view(["GET"])
-# def get_department_courses(request, department_id):
+# @permission_classes([AllowAny])
+# def get_all_department_courses_view(request, departmentId):
 #     try:
-#         courses = Course.objects.filter(course_program_id__program_department_id=department_id)
-#         serializer = CourseSerializer(courses, many=True)
+#         courses = Course.objects.filter(program__department__department_id=departmentId)
+#         serializer = DepartmentCoursesSerializer(courses, many=True)
 #         return JsonResponse(serializer.data, safe=False)
 #     except Exception as e:
 #         return JsonResponse({"message": str(e)}, status=500)
-    
-# @api_view(["GET"])
-# def get_department_course_sections(request, department_id, course_code):
-#     try:
-#         sections = Section.objects.filter(section_loaded_course_id__loaded_course_code__course_program_id__program_department_id=department_id, section_loaded_course_id__loaded_course_code__course_code=course_code)
-#         serializer = SectionSerializer(sections, many=True)
-#         return JsonResponse(serializer.data, safe=False)
-#     except Exception as e:
-#         return JsonResponse({"message": str(e)}, status=500)
-    
+
+
+
 # @api_view(["PUT"])
 # def assign_instructor(request, section_id):
 #     try:
