@@ -1,14 +1,16 @@
-import type { HeaderNode } from "../../data/TableHeaderConfig";
-import { useMemo, useState } from "react";
-import { crpInfo } from "../../data/crpInfo";
+import type { HeaderNode } from "./HeaderConfig";
+import { useCallback, useMemo, useState } from "react";
+import { crpInfo } from "./ClassRecordDummy";
 import {
-  collectAssignmentKeys,
   collectMaxScores,
   computeValues,
   getMaxDepth,
 } from "./ClassRecordFunctions";
 import BuildHeaderRow from "./BuildHeaderRow";
-import StudentRow from "./StudentRow";
+import BloomPopup from "./BloomPopup";
+import BuildStudentRow from "./BuildStudentRow";
+import type { Student } from "../../types/classRecordTypes";
+import EditAssessmentPopup from "./EditAssessmentPopup";
 
 interface ClassRecordComponentProps {
   headerConfig: HeaderNode[];
@@ -17,29 +19,141 @@ interface ClassRecordComponentProps {
 export default function ClassRecordComponent({
   headerConfig,
 }: ClassRecordComponentProps) {
+  // const [classRecord, setClassRecord] = useState(crpInfo);
+
   const [showPopup, setShowPopup] = useState(false);
   const [currentItem, setCurrentItem] = useState("");
+  const [students, setStudents] = useState(() => crpInfo.students || []);
+  const [headerNodes, setHeaderNodes] = useState<HeaderNode[]>(headerConfig);
+  const [canOpenPopup, setCanOpenPopup] = useState<boolean>(true);
+  const [editingAssessment, setEditingAssessment] = useState<{
+    nodeKey: string;
+    value: string;
+    coords: { top: number; left: number; width: number; height: number };
+  } | null>(null);
   const [bloomSelections, setBloomSelections] = useState<
     Record<string, string[]>
   >({});
-  const [maxScores, setMaxScores] = useState(collectMaxScores(headerConfig));
-  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
-
-  const assignmentKeys = useMemo(
-    () => collectAssignmentKeys(headerConfig),
-    [headerConfig]
+  const [maxScores, setMaxScores] = useState(() =>
+    collectMaxScores(headerConfig)
   );
 
-  const students = crpInfo.students || [];
-  const [studentScores, setStudentScores] = useState(
-    students.map((student) => {
-      const scoreObj: Record<string, number> = {};
-      assignmentKeys.forEach((key, idx) => {
-        scoreObj[key] = student.scores?.[idx] ?? 0;
+  const handleEditStart = (
+    node: HeaderNode,
+    event: React.MouseEvent<HTMLDivElement>
+  ) => {
+    if (!canOpenPopup) return;
+
+    setCanOpenPopup(false);
+
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
+
+    setEditingAssessment({
+      nodeKey: node.key!,
+      value: node.title || "",
+      coords: {
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+        height: rect.height,
+      },
+    });
+    window.setTimeout(() => setCanOpenPopup(true), 100);
+  };
+
+  const handleEditSave = (nodeKey: string) => {
+    setHeaderNodes((prev) =>
+      updateHeaderNodeTitle(prev, nodeKey, editingAssessment?.value || "")
+    );
+    setEditingAssessment(null);
+  };
+
+  const handleEditCancel = () => setEditingAssessment(null);
+
+  function updateHeaderNodeTitle(
+    nodes: HeaderNode[],
+    nodeKey: string,
+    newTitle: string
+  ): HeaderNode[] {
+    return nodes.map((n) => {
+      if (n.key === nodeKey) return { ...n, title: newTitle };
+      if (n.children)
+        return {
+          ...n,
+          children: updateHeaderNodeTitle(n.children, nodeKey, newTitle),
+        };
+      return n;
+    });
+  }
+
+  const handleInputChange = useCallback(
+    (index: number, field: keyof Student, value: string) => {
+      setStudents((prev) => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], [field]: value };
+
+        return updated;
       });
-      return scoreObj;
-    })
+    },
+    []
   );
+
+  function calculateTermTotal(
+    scores: Record<string, number>,
+    term: "midterm" | "final"
+  ) {
+    return Object.keys(scores)
+      .filter((k) => k.startsWith(term + "-")) // match all relevant assessments
+      .reduce((sum, k) => sum + (scores[k] || 0), 0);
+  }
+
+  const getAllAssessmentNodes = (
+    nodes: HeaderNode[],
+    accumulator: HeaderNode[] = []
+  ): HeaderNode[] => {
+    nodes.forEach((node) => {
+      // Check for assessment type and ensure it has a key
+      if (node.nodeType === "assessment" && node.key) {
+        // We know this node is an assessment, push it to the accumulator
+        accumulator.push(node);
+      }
+
+      // Recursively check children
+      if (node.children && node.children.length > 0) {
+        getAllAssessmentNodes(node.children, accumulator);
+      }
+    });
+    return accumulator;
+  };
+
+  const [studentScores, setStudentScores] = useState<Record<string, number>[]>(
+    () => {
+  
+      const assessmentNodes = getAllAssessmentNodes(headerConfig as HeaderNode[]);
+
+      return students.map((student) => {
+        const scores: Record<string, number> = {};
+
+        student.scores.forEach((s) => {
+          const key = `${student.student_id}-${s.assessment_id}`;
+          scores[key] = s.value ?? 0;
+        });
+
+        assessmentNodes.forEach((node) => {
+          const assessId = Number(node.key?.split("-").pop());
+ 
+          const key = `${student.student_id}-${assessId}`;
+         
+          if (scores[key] === undefined) {
+            scores[key] = 0;
+          }
+        });
+
+        return scores;
+      });
+    }
+  );
+
   const [remarks, setRemarks] = useState<string[]>(students.map(() => ""));
 
   const computedMaxValues = useMemo(
@@ -49,51 +163,53 @@ export default function ClassRecordComponent({
 
   const computedStudentValues = useMemo(
     () =>
-      studentScores.map((scores) =>
-        computeValues(scores, maxScores, headerConfig)
-      ),
+      studentScores.map((scores) => {
+        console.log(computeValues(scores, maxScores, headerConfig))
+        return computeValues(scores, maxScores, headerConfig);
+      }),
     [studentScores, maxScores, headerConfig]
   );
 
-  const openPopup = (title: string) => {
+  const openPopup = useCallback((title: string) => {
     setCurrentItem(title);
     setShowPopup(true);
-  };
+  }, []);
 
-  const closePopup = () => {
-    setShowPopup(false);
-  };
+  const closePopup = useCallback(() => setShowPopup(false), []);
 
-  const handleCheckboxChange = (level: string) => {
-    const selected = bloomSelections[currentItem] || [];
-    const newSelected = selected.includes(level)
-      ? selected.filter((l) => l !== level)
-      : [...selected, level];
-    setBloomSelections({
-      ...bloomSelections,
-      [currentItem]: newSelected,
-    });
-  };
+  const handleCheckboxChange = useCallback(
+    (level: string) => {
+      setBloomSelections((prev) => {
+        const selected = prev[currentItem] || [];
+        const newSelected = selected.includes(level)
+          ? selected.filter((l) => l !== level)
+          : [...selected, level];
+        return { ...prev, [currentItem]: newSelected };
+      });
+    },
+    [currentItem]
+  );
 
-  const updateStudentScore = (
-    studentIndex: number,
-    key: string,
-    value: number
-  ) => {
-    setStudentScores((prev) => {
-      const newScores = [...prev];
-      newScores[studentIndex] = { ...newScores[studentIndex], [key]: value };
-      return newScores;
-    });
-  };
+  const updateStudentScore = useCallback(
+    (i: number, key: string, value: number) => {
+      setStudentScores((prev) => {
+        const copy = [...prev];
+        copy[i] = { ...copy[i], [key]: value };
+        copy[i]["midterm-total-grade"] = calculateTermTotal(copy[i], "midterm");
+        copy[i]["final-total-grade"] = calculateTermTotal(copy[i], "final");
+        return copy;
+      });
+    },
+    []
+  );
 
-  const updateRemark = (studentIndex: number, value: string) => {
+  const updateRemark = useCallback((studentIndex: number, value: string) => {
     setRemarks((prev) => {
       const newRemarks = [...prev];
       newRemarks[studentIndex] = value;
       return newRemarks;
     });
-  };
+  }, []);
 
   const bloomLevels = [
     "Remember",
@@ -104,88 +220,56 @@ export default function ClassRecordComponent({
     "Create",
   ];
 
-  const originalMaxDepth = Math.max(...headerConfig.map(getMaxDepth));
-  const headerRows = BuildHeaderRow(
-    headerConfig,
-    originalMaxDepth,
-    openPopup,
-    maxScores,
-    setMaxScores,
-    computedMaxValues,
-    columnWidths,
-    setColumnWidths
-  );
-
   return (
     <>
       <thead>
-        {headerRows.map((row, idx) => (
-          <tr key={idx}>{row}</tr>
-        ))}
+        <BuildHeaderRow
+          nodes={headerConfig}
+          originalMaxDepth={Math.max(...headerConfig.map(getMaxDepth))}
+          openPopup={openPopup}
+          maxScores={maxScores}
+          setMaxScores={setMaxScores}
+          computedMaxValues={computedMaxValues}
+          handleEditStart={handleEditStart}
+        />
       </thead>
       <tbody>
-        {students.map((student, i) => (
-          <StudentRow
-            key={student.studentId}
-            student={student}
-            index={i}
-            nodes={headerConfig}
-            studentScore={studentScores[i]}
-            updateScore={(key, value) => updateStudentScore(i, key, value)}
-            computedValues={computedStudentValues[i]}
-            maxScores={maxScores}
-            remarks={remarks}
-            updateRemark={updateRemark}
-          />
-        ))}
+        {students.map((student, i) => {
+          return (
+            <BuildStudentRow
+              key={student.student_id}
+              student={student}
+              index={i}
+              nodes={headerNodes}
+              studentScore={studentScores[i]}
+              computedValues={computedStudentValues[i]}
+              maxScores={maxScores}
+              remarks={remarks}
+              updateRemark={updateRemark}
+              handleInputChange={handleInputChange}
+              updateScoreProp={updateStudentScore}
+            />
+          );
+        })}
       </tbody>
       {showPopup && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) closePopup();
-          }}
-        >
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-            <div className="flex items-center mb-4">
-              <button
-                onClick={closePopup}
-                className="text-gray-600 hover:text-gray-800"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-              <h2 className="ml-2 text-lg font-semibold">Bloom's Taxonomy</h2>
-            </div>
-            <hr className="border-t border-[#E9E6E6] mb-4" />
-            <div className="grid grid-cols-3 gap-4">
-              {bloomLevels.map((level) => (
-                <label key={level} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={(bloomSelections[currentItem] || []).includes(
-                      level
-                    )}
-                    onChange={() => handleCheckboxChange(level)}
-                    className="form-checkbox"
-                  />
-                  <span>{level}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
+        <BloomPopup
+          title="Bloom's Taxonomy"
+          levels={bloomLevels}
+          selections={bloomSelections}
+          onClose={closePopup}
+          onChange={handleCheckboxChange}
+          currentItem={currentItem}
+        />
+      )}
+
+      {editingAssessment && (
+        <EditAssessmentPopup
+          editingAssessment={editingAssessment}
+          setEditingAssessment={setEditingAssessment}
+          handleEditSave={handleEditSave}
+          handleEditCancel={handleEditCancel}
+        />
       )}
     </>
   );

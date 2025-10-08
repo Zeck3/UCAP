@@ -4,13 +4,12 @@ import json
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
+from rest_framework import status, viewsets
 from .serializers import *
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, login, logout
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.permissions import AllowAny
-from django.views.decorators.csrf import csrf_exempt
+from rest_framework.views import APIView
 
 # ====================================================
 # Login Authentication
@@ -145,7 +144,6 @@ def course_management_view(request):
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
 @permission_classes([AllowAny])
 def course_detail_view(request, course_code):
@@ -178,7 +176,6 @@ def course_detail_view(request, course_code):
             return Response({"message": "Course deleted successfully"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 # ====================================================
 # Instructor Dashboard
@@ -213,6 +210,101 @@ def instructor_assigned_sections_view(request, instructor_id, loaded_course_id):
         return Response(serializer.data, status=200)
     except User.DoesNotExist:
         return Response({"message": "Instructor not found"}, status=404)
+    
+# ====================================================
+# Class Record
+# ====================================================
+class ClassRecordViewSet(viewsets.ViewSet):
+    permission_classes = [AllowAny]
+
+    def retrieve(self, request, pk=None):
+        try:
+            section = (
+                Section.objects
+                .select_related(
+                    'loaded_course__course__program__department'
+                )
+                .prefetch_related(
+                    Prefetch(
+                        'courseterm_set',
+                        queryset=CourseTerm.objects.prefetch_related(
+                            Prefetch(
+                                'courseunit_set',
+                                queryset=CourseUnit.objects.prefetch_related(
+                                    Prefetch(
+                                        'coursecomponent_set',
+                                        queryset=CourseComponent.objects.prefetch_related('assessment_set')
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    Prefetch(
+                        'student_set',
+                        queryset=Student.objects.prefetch_related(
+                            Prefetch('rawscore_set', queryset=RawScore.objects.select_related('assessment'))
+                        )
+                    )
+                )
+                .get(pk=pk)
+            )
+        except Section.DoesNotExist:
+            return Response({"detail": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = ClassRecordSerializer(section)
+        return Response(serializer.data)
+
+class StudentViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
+    
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
+
+    def get_queryset(self):
+        section_id = self.request.query_params.get("section")
+        qs = self.queryset.select_related('section')
+        if section_id:
+            return qs.filter(section_id=section_id)
+        return qs
+
+class AssessmentViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
+    queryset = Assessment.objects.all()
+    serializer_class = AssessmentSerializer
+
+    def get_queryset(self):
+        qs = self.queryset.select_related('course_component')
+        component_id = self.request.query_params.get("component")
+        if component_id:
+            return qs.filter(course_component_id=component_id)
+        return qs
+    
+class CourseComponentViewSet(viewsets.ModelViewSet):
+    queryset = CourseComponent.objects.all()
+    serializer_class = CourseComponentSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        return Response({"detail": "Cannot delete a course component"}, status=status.HTTP_403_FORBIDDEN)
+    
+class CourseUnitViewSet(viewsets.ModelViewSet):
+    queryset = CourseUnit.objects.all()
+    serializer_class = CourseUnitSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        return Response({"detail": "Cannot delete a course unit"}, status=status.HTTP_403_FORBIDDEN)
+
+class RawScoreUpdateView(APIView):
+    permission_classes = [AllowAny]
+    def patch(self, request, student_id, assessment_id):
+        try:
+            rawscore = RawScore.objects.get(student_id=student_id, assessment_id=assessment_id)
+        except RawScore.DoesNotExist:
+            return Response({"detail": "RawScore not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        value = request.data.get("value")
+        rawscore.raw_score = value
+        rawscore.save()
+        return Response({"student_id": student_id, "assessment_id": assessment_id, "value": value})
     
 # ====================================================
 # Dropdown

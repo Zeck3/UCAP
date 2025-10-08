@@ -1,6 +1,7 @@
 import AppLayout from "../../layout/AppLayout";
 import ClassRecordComponent from "../../components/classrecord/ClassRecordComponent";
-import { headerConfig } from "../../data/TableHeaderConfig";
+
+import { headerConfig } from "../../components/classrecord/HeaderConfig";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FileImportIcon from "../../assets/file-import-solid.svg?react";
@@ -11,7 +12,7 @@ export default function ClassRecordPage() {
   const [footerOpen, setFooterOpen] = useState(false);
   return (
     <AppLayout activeItem="/instructor" disablePadding>
-      <table className="table-auto border-0 min-w-max text-center">
+      <table className="table-fixed border-collapse border-0 min-w-max ml-[-1px] mt-[-1px]">
         <ClassRecordComponent headerConfig={headerConfig} />
       </table>
       <footer

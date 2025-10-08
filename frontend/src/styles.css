@@ -52,6 +52,10 @@ body {
   border-color: var(--ucap-blue);
 }
 
+.border-ucap-yellow {
+  border-color: var(--ucap-blue);
+}
+
 .bg-ucap-yellow-hover:hover {
   background-color: #e6a400;
 }

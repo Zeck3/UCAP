@@ -1,6 +1,13 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from .views import *
-from rest_framework_simplejwt.views import TokenRefreshView
+
+router = DefaultRouter()
+router.register(r'instructor/students', StudentViewSet, basename='student')
+router.register(r'instructor/assessments', AssessmentViewSet, basename='assessment')
+router.register(r'instructor/course-components', CourseComponentViewSet, basename='course-component')
+router.register(r'instructor/course-units', CourseUnitViewSet, basename='course-unit')
+router.register(r'instructor/class-record', ClassRecordViewSet, basename='class-record')
 
 urlpatterns = [
     # ====================================================
@@ -16,7 +23,7 @@ urlpatterns = [
     # ====================================================
     path("admin/user_management/", user_management_view),
     path("admin/user_management/<int:user_id>", user_detail_view),
-    # ====================================================
+    # ================================d====================
     # Course Management
     # ====================================================
     path("admin/course_management/", course_management_view),
@@ -26,6 +33,11 @@ urlpatterns = [
     # ====================================================
     path("instructor/<int:instructor_id>/", instructor_loaded_courses_view,),
     path("instructor/<int:instructor_id>/<str:loaded_course_id>", instructor_assigned_sections_view,),
+    # ====================================================
+    # Class Record
+    # ====================================================
+    path('', include(router.urls)),
+    path('instructor/rawscores/<int:student_id>/<int:assessment_id>/', RawScoreUpdateView.as_view(), name='rawscore-update'),
     # ====================================================
     # Dropdown
     # ====================================================

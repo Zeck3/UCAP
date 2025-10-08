@@ -1,4 +1,4 @@
-import type { HeaderNode } from "../../data/TableHeaderConfig";
+import type { HeaderNode } from "./HeaderConfig";
 import type { JSX } from "react";
 
 type ComputedType = "computedWeighted" | "computedRounded" | undefined;
@@ -44,17 +44,17 @@ export function renderTitleLines(title: string): JSX.Element | string {
   return title;
 }
 
-export function collectAssignmentKeys(nodes: HeaderNode[]): string[] {
-  const keys: string[] = [];
-  function collect(node: HeaderNode) {
-    if (node.key && node.calculationType === "assignment") {
-      keys.push(node.key);
-    }
-    node.children.forEach(collect);
-  }
-  nodes.forEach(collect);
-  return keys;
-}
+// export function collectAssignmentKeys(nodes: HeaderNode[]): string[] {
+//   const keys: string[] = [];
+//   function collect(node: HeaderNode) {
+//     if (node.key && node.calculationType === "assignment") {
+//       keys.push(node.key);
+//     }
+//     node.children.forEach(collect);
+//   }
+//   nodes.forEach(collect);
+//   return keys;
+// }
 
 export function collectMaxScores(nodes: HeaderNode[]): Record<string, number> {
   const scores: Record<string, number> = {};
@@ -91,7 +91,8 @@ export function computeValues(
       let value: number = 0;
       if (["sum", "percentage"].includes(node.calculationType)) {
         const groupSum =
-          node.groupKeys?.reduce((s, k) => s + (baseScores[k] || 0), 0) ?? 0;
+          node.groupKeys?.reduce((s, k) => s + (values[k] || 0), 0) ?? 0;
+          console.log(node.groupKeys)
         if (node.calculationType === "sum") {
           value = groupSum;
         } else {
@@ -146,35 +147,73 @@ export function formatValue(value: number, type?: string): string {
 }
 
 export function getHeaderClass(node: HeaderNode): string {
-  const title = node.title;
-  if (title === "Computed Final Grade")
-    return "bg-ucap-green text-white text-lg";
-  if (
-    ["Midterm Grade", "Final Grade"].includes(title) &&
-    node.children.length > 0
-  )
-    return "bg-light-blue";
-  if (
-    ["Lecture (67%)", "Laboratory (33%)", "Midterm", "Final", ""].includes(
-      title
-    )
-  )
-    return "bg-ucap-yellow";
-  if (
-    title === "Class Standing Performance (10%)" ||
-    (title.includes("Quiz/") && title.endsWith(" Performance Item (40%)")) ||
-    title.endsWith(" Exam (30%)") ||
-    title === "Per Inno Task (20%)" ||
-    title === "Lecture" ||
-    title === "Lab Exercises/Reports (30%)" ||
-    title === "Hands-On Exercises (30%)" ||
-    title === "Lab Major Exam (40%)" ||
-    title === "Laboratory"
-  )
-    return "bg-coa-yellow";
-  if (node.calculationType === "roundedGrade") return "bg-ucap-yellow";
-  if (node.computedGrades) return "text-sm";
-  return "";
+  const baseBorder = "border border-[#E9E6E6]";
+
+  if (node.title === "" && node.nodeType !== "assessment") {
+    return `bg-ucap-yellow ${baseBorder}`;
+  }
+
+  if (["Midterm", "Final"].includes(node.title)) {
+    return `bg-ucap-yellow ${baseBorder}`;
+  }
+
+  if (node.calculationType === "roundedGrade") {
+    return `bg-ucap-yellow ${baseBorder}`;
+  }
+
+  if (["Lecture", "Laboratory"].includes(node.title)) {
+    return `bg-coa-yellow !text-center ${baseBorder}`;
+  }
+
+  switch (node.nodeType) {
+    case "term":
+      return `bg-light-blue ${baseBorder}`;
+    case "unit":
+      return `bg-ucap-yellow ${baseBorder}`;
+    case "component":
+      return `bg-coa-yellow ${baseBorder}`;
+    case "assessment":
+      return `bg-transparent font-normal ${baseBorder}`;
+    case "computed":
+      return `bg-ucap-green text-white text-2xl ${baseBorder}`;
+    default:
+      return "";
+  }
+}
+
+export function getHeaderWidth(node: HeaderNode): string {
+  let width = "min-w-[100px]";
+
+  switch (node.key) {
+    case "computed-half-weighted":
+    case "computed-third-weighted":
+      width = "w-[100px]";
+      break;
+
+    case "computed-half-for-removal":
+    case "computed-third-for-removal":
+      width = "w-[100px]";
+      break;
+
+    case "computed-half-after-removal":
+    case "computed-third-after-removal":
+      width = "w-[100px]";
+      break;
+
+    case "computed-half-desc":
+    case "computed-third-desc":
+      width = "w-[100px]";
+      break;
+
+    case "computed-remarks":
+      width = "w-[100px]";
+      break;
+
+    default:
+      break;
+  }
+
+  return width;
 }
 
 export function getCalculatedBg(type?: string): string {
@@ -207,32 +246,6 @@ export function getDesc(g: number): string {
   if (g <= 2.75) return "Average";
   if (g === 3.0) return "Passing";
   return "N/A";
-}
-
-export function createResizeHandler(
-  setColumnWidths: React.Dispatch<React.SetStateAction<Record<string, number>>>,
-  columnKey: string
-) {
-  return (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const startX = e.clientX;
-
-    const onMouseMove = (moveEvent: MouseEvent) => {
-      const deltaX = moveEvent.clientX - startX;
-      setColumnWidths((prev) => ({
-        ...prev,
-        [columnKey]: Math.max((prev[columnKey] || 120) + deltaX, 40), // min width 40px
-      }));
-    };
-
-    const onMouseUp = () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
-
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  };
 }
 
 export function computeComputedContent(

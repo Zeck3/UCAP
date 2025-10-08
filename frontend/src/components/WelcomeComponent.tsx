@@ -15,7 +15,7 @@ export default function WelcomeComponent() {
           <span className="font-tilt-warp text-ucap-yellow text-2xl lg:text-3xl">
             University{" "}
           </span>
-          <span className="font-tilt-warp text-ucap-blue text-2xl lg:text-3xl">
+          <span className="font-tilt-warp text-[#1A1851] text-2xl lg:text-3xl">
             Course Assessment Portal
           </span>
         </p>

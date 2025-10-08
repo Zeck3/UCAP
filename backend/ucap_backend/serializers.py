@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import *
-from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.hashers import make_password
+from django.db.models import Prefetch
     
 # ====================================================
 # Login Authentication
@@ -296,6 +297,103 @@ class InstructorAssignedSectionSerializer(serializers.ModelSerializer):
         model = Section
         fields = ["section_id", "year_and_section", "instructor_assigned", "course_title", "semester_type", "year_level", "department_name", "college_name", "campus_name", "academic_year"]
 
+# ====================================================
+# Class Record
+# ====================================================
+class AssessmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Assessment
+        fields = ['assessment_id', 'assessment_title', 'assessment_highest_score']
+        read_only_fields = ['assessment_id']
+
+class CourseComponentSerializer(serializers.ModelSerializer):
+    assessments = AssessmentSerializer(source='assessment_set', many=True)
+
+    class Meta:
+        model = CourseComponent
+        fields = ['course_component_id', 'course_component_type', 'course_component_percentage', 'assessments']
+        read_only_fields = ['course_component_id']
+    
+    
+
+class CourseUnitSerializer(serializers.ModelSerializer):
+    course_components = CourseComponentSerializer(source='coursecomponent_set', many=True)
+
+    class Meta:
+        model = CourseUnit
+        fields = ['course_unit_id', 'course_unit_type', 'course_unit_percentage', 'course_components']
+        read_only_fields = ['course_unit_id', 'course_unit_type']
+
+class CourseTermSerializer(serializers.ModelSerializer):
+    course_units = CourseUnitSerializer(source='courseunit_set', many=True)
+
+    class Meta:
+        model = CourseTerm
+        fields = ['course_term_id', 'course_term_type', 'section_id', 'course_units']
+        read_only_fields = ['course_term_id', 'course_term_type', 'section_id']
+
+class StudentScoreSerializer(serializers.Serializer):
+    assessment_id = serializers.IntegerField()
+    value = serializers.IntegerField(allow_null=True)
+
+class StudentSerializer(serializers.ModelSerializer):
+    scores = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Student
+        fields = ['student_id', 'id_number', 'student_name', 'scores', 'remarks', 'section_id']
+        read_only_fields = ['student_id', 'section_id']
+
+    def get_scores(self, obj):
+        raw_scores = obj.rawscore_set.all()
+        return [
+            {'assessment_id': rs.assessment.assessment_id, 'value': rs.raw_score}
+            for rs in raw_scores
+        ]
+
+class ClassRecordSerializer(serializers.Serializer):
+    info = serializers.SerializerMethodField()
+    course_terms = serializers.SerializerMethodField()
+    students = serializers.SerializerMethodField()
+
+    def get_info(self, obj):
+        course = obj.loaded_course.course
+        return {
+            'department': course.program.department.department_name,
+            'subject': course.course_title,
+            'yearSection': obj.year_and_section
+        }
+
+    def get_course_terms(self, obj):
+        from django.db.models import Prefetch
+        terms = (
+            CourseTerm.objects.filter(section=obj)
+            .select_related('section')
+            .prefetch_related(
+                Prefetch(
+                    'courseunit_set',
+                    queryset=CourseUnit.objects.prefetch_related(
+                        Prefetch(
+                            'coursecomponent_set',
+                            queryset=CourseComponent.objects.prefetch_related('assessment_set')
+                        )
+                    )
+                )
+            )
+        )
+        return CourseTermSerializer(terms, many=True).data
+
+    def get_students(self, obj):
+        students = (
+            Student.objects.filter(section=obj)
+            .select_related('section')
+            .prefetch_related(
+                Prefetch('rawscore_set', queryset=RawScore.objects.select_related('assessment'))
+            )
+        )
+        return StudentSerializer(students, many=True).data
+
+    
 # ====================================================
 # Dropdown
 # ====================================================

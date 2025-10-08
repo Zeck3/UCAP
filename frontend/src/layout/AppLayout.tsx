@@ -69,8 +69,8 @@ export default function AppLayout({
           </nav>
         </aside>
         <main
-          className={`flex-1 pr-44 transition-all duration-300 overflow-y-auto
-          ${disablePadding ? "" : isSidebarOpen ? "pl-8" : "pl-44"}`}
+          className={`flex-1 transition-all duration-300 overflow-y-auto
+          ${disablePadding ? "" : isSidebarOpen ? "pr-44 pl-8" : "pr-44 pl-44"}`}
         >
           {children}
         </main>
