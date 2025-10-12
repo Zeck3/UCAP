@@ -4,7 +4,6 @@ import type {
   CourseUnit,
   CourseComponent,
 } from "../../types/classRecordTypes";
-import { crpInfo } from "./ClassRecordDummy";
 
 type CalculationType =
   | "assignment"
@@ -22,6 +21,24 @@ export type HeaderNodeType =
   | "component"
   | "assessment"
   | "computed";
+
+export default function collectMaxScores(
+  nodes: HeaderNode[]
+): Record<string, number> {
+  const scores: Record<string, number> = {};
+  function collect(node: HeaderNode) {
+    if (
+      node.key &&
+      node.maxScore !== undefined &&
+      node.calculationType === "assignment"
+    ) {
+      scores[node.key] = node.maxScore ?? 0;
+    }
+    node.children.forEach(collect);
+  }
+  nodes.forEach(collect);
+  return scores;
+}
 
 export interface HeaderNode {
   title: string;
@@ -41,6 +58,7 @@ export interface HeaderNode {
   studentInfo?: boolean;
   computedGrades?: boolean;
   termType?: "midterm" | "final";
+  componentId?: number;
 }
 
 export function createSpanningCell(crp: ClassRecord): HeaderNode {
@@ -112,7 +130,6 @@ function createUnitSection(termType: string, unit: CourseUnit): HeaderNode {
   unit.course_components.forEach((comp) => {
     const { nodes: assignmentNodes, groupKeys } = createAssessmentNodes(
       termType,
-      unit.course_unit_type,
       comp
     );
 
@@ -136,6 +153,7 @@ function createUnitSection(termType: string, unit: CourseUnit): HeaderNode {
         },
       ],
       nodeType: "component",
+      componentId: comp.course_component_id,
     });
   });
 
@@ -178,10 +196,13 @@ function createUnitSection(termType: string, unit: CourseUnit): HeaderNode {
 
 function createAssessmentNodes(
   termType: string,
-  unitType: string,
   component: CourseComponent
 ): { nodes: HeaderNode[]; groupKeys: string[] } {
-  const nodes: HeaderNode[] = component.assessments.map((assess) => ({
+  const sortedAssessments = [...component.assessments].sort(
+    (a, b) => (a.assessment_id ?? 0) - (b.assessment_id ?? 0)
+  );
+
+  const nodes: HeaderNode[] = sortedAssessments.map((assess) => ({
     title: assess.assessment_title || "",
     key: `${assess.assessment_id}`,
     children: [],
@@ -271,5 +292,3 @@ export function generateHeaderConfig(crp: ClassRecord): HeaderNode[] {
 
   return header;
 }
-
-export const headerConfig: HeaderNode[] = generateHeaderConfig(crpInfo);

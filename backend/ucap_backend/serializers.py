@@ -302,10 +302,27 @@ class InstructorAssignedSectionSerializer(serializers.ModelSerializer):
 # Class Record
 # ====================================================
 class AssessmentSerializer(serializers.ModelSerializer):
+    blooms_classification = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=BloomsClassification.objects.all(),  # Replace with your model
+        required=False
+    )
+    course_outcome = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=CourseOutcome.objects.all(),  # Replace with your model
+        required=False
+    )
+
     class Meta:
         model = Assessment
-        fields = ['assessment_id', 'assessment_title', 'assessment_highest_score']
-        read_only_fields = ['assessment_id']
+        fields = [
+            "assessment_id",
+            "assessment_title",
+            "assessment_highest_score",
+            "course_component_id",
+            "blooms_classification",
+            "course_outcome",
+        ]
 
 class CourseComponentSerializer(serializers.ModelSerializer):
     assessments = AssessmentSerializer(source='assessment_set', many=True)
@@ -315,8 +332,6 @@ class CourseComponentSerializer(serializers.ModelSerializer):
         fields = ['course_component_id', 'course_component_type', 'course_component_percentage', 'assessments']
         read_only_fields = ['course_component_id']
     
-    
-
 class CourseUnitSerializer(serializers.ModelSerializer):
     course_components = CourseComponentSerializer(source='coursecomponent_set', many=True)
 
@@ -393,8 +408,58 @@ class ClassRecordSerializer(serializers.Serializer):
             )
         )
         return StudentSerializer(students, many=True).data
-
     
+    def get_course_terms(self, obj):
+        terms = obj.courseterm_set.all()
+        return CourseTermSerializer(terms, many=True).data
+    
+class BloomsClassificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BloomsClassification
+        fields = ["blooms_classification_id", "blooms_classification_type"]
+
+
+class CourseOutcomeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseOutcome
+        fields = ["course_outcome_id", "course_outcome_code", "course_outcome_description", "course"]
+
+class ProgramOutcomeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProgramOutcome
+        fields = [
+            "program_outcome_id",
+            "program_outcome_code",
+            "program_outcome_description",
+        ]
+
+# ====================================================    
+# Department Chair Dashboard
+# ====================================================
+class ClassworkSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    blooms = serializers.ListField(child=serializers.CharField())
+    maxScore = serializers.IntegerField()
+
+class CourseOutcomeDisplaySerializer(serializers.Serializer):
+    name = serializers.CharField()
+    classwork = ClassworkSerializer(many=True)
+
+class ProgramOutcomeDisplaySerializer(serializers.Serializer):
+    name = serializers.CharField()
+    cos = CourseOutcomeDisplaySerializer(many=True)
+
+class StudentScoreSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    name = serializers.CharField()
+    scores = serializers.DictField(child=serializers.ListField())
+
+class AssessmentPageSerializer(serializers.Serializer):
+    classInfo = serializers.DictField()
+    pos = ProgramOutcomeDisplaySerializer(many=True)
+    students = StudentScoreSerializer(many=True)
+
+# ====================================================    
 # Department Chair Dashboard
 # ====================================================
 class DepartmentDetailsSerializer(serializers.ModelSerializer):

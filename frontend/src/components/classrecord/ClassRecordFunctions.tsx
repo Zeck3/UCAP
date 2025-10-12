@@ -1,4 +1,5 @@
 import type { HeaderNode } from "./HeaderConfig";
+import type { Student } from "../../types/classRecordTypes";
 import type { JSX } from "react";
 
 type ComputedType = "computedWeighted" | "computedRounded" | undefined;
@@ -44,18 +45,6 @@ export function renderTitleLines(title: string): JSX.Element | string {
   return title;
 }
 
-// export function collectAssignmentKeys(nodes: HeaderNode[]): string[] {
-//   const keys: string[] = [];
-//   function collect(node: HeaderNode) {
-//     if (node.key && node.calculationType === "assignment") {
-//       keys.push(node.key);
-//     }
-//     node.children.forEach(collect);
-//   }
-//   nodes.forEach(collect);
-//   return keys;
-// }
-
 export function collectMaxScores(nodes: HeaderNode[]): Record<string, number> {
   const scores: Record<string, number> = {};
   function collect(node: HeaderNode) {
@@ -64,75 +53,12 @@ export function collectMaxScores(nodes: HeaderNode[]): Record<string, number> {
       node.maxScore !== undefined &&
       node.calculationType === "assignment"
     ) {
-      scores[node.key] = node.maxScore;
+      scores[node.key] = node.maxScore ?? 0;
     }
     node.children.forEach(collect);
   }
   nodes.forEach(collect);
   return scores;
-}
-
-export function computeValues(
-  baseScores: Record<string, number>,
-  maxScores: Record<string, number>,
-  nodes: HeaderNode[]
-): Record<string, number> {
-  const values: Record<string, number> = { ...baseScores };
-
-  function traverse(node: HeaderNode) {
-    node.children.forEach(traverse);
-
-    if (
-      node.key &&
-      node.calculationType &&
-      node.calculationType !== "assignment" &&
-      node.calculationType !== "computed"
-    ) {
-      let value: number = 0;
-      if (["sum", "percentage"].includes(node.calculationType)) {
-        const groupSum =
-          node.groupKeys?.reduce((s, k) => {
-            return s + (values[k] || 0);
-          }, 0) ?? 0;
-        if (node.calculationType === "sum") {
-          value = groupSum;
-        } else {
-          const maxGroupSum =
-            node.groupKeys?.reduce((s, k) => s + (maxScores[k] || 0), 0) ?? 0;
-          value = maxGroupSum > 0 ? (groupSum / maxGroupSum) * 100 : 0;
-        }
-      } else if (
-        ["weightedAverage", "totalGradePoint"].includes(node.calculationType)
-      ) {
-        value =
-          node.dependsOn?.reduce(
-            (s, k, i) => s + (values[k] || 0) * (node.weights?.[i] ?? 0),
-            0
-          ) ?? 0;
-      } else if (node.calculationType === "gradePoint") {
-        const mga = values[node.dependsOn?.[0] ?? ""] ?? 0;
-        const ratio = mga / 100;
-        value = mga >= 70 ? 23 / 3 - (20 / 3) * ratio : 5 - (20 / 7) * ratio;
-      } else if (node.calculationType === "roundedGrade") {
-        const gp = values[node.dependsOn?.[0] ?? ""] ?? 0;
-        const grades = [
-          1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0,
-          4.25, 4.5, 4.75, 5.0,
-        ];
-        value = grades.reduce((prev, curr) =>
-          Math.abs(curr - gp) < Math.abs(prev - gp)
-            ? curr
-            : Math.abs(curr - gp) === Math.abs(prev - gp)
-              ? Math.max(curr, prev)
-              : prev
-        );
-      }
-      values[node.key] = value;
-    }
-  }
-
-  nodes.forEach(traverse);
-  return values;
 }
 
 export function formatValue(value: number, type?: string): string {
@@ -248,6 +174,158 @@ export function getDesc(g: number): string {
   if (g === 3.0) return "Passing";
   return "N/A";
 }
+// ===================================================
+export function updateHeaderNodeTitle(
+  nodes: HeaderNode[],
+  nodeKey: string,
+  newTitle: string
+): HeaderNode[] {
+  return nodes.map((n) => {
+    if (n.key === nodeKey) return { ...n, title: newTitle };
+    if (n.children)
+      return {
+        ...n,
+        children: updateHeaderNodeTitle(n.children, nodeKey, newTitle),
+      };
+    return n;
+  });
+}
+
+export const getAllAssessmentNodesPure = (
+  nodes: HeaderNode[]
+): HeaderNode[] => {
+  const accumulator: HeaderNode[] = [];
+  const traverse = (currentNodes: HeaderNode[]) => {
+    currentNodes.forEach((node) => {
+      if (node.nodeType === "assessment" && node.key) {
+        accumulator.push(node);
+      }
+      if (node.children && node.children.length > 0) {
+        traverse(node.children);
+      }
+    });
+  };
+  traverse(nodes);
+  return accumulator;
+};
+
+export function calculateTermTotal(
+  scores: Record<string, number>,
+  term: "midterm" | "final",
+  headerNodes: HeaderNode[]
+): number {
+  const allAssessmentNodes = getAllAssessmentNodesPure(headerNodes);
+
+  return Object.keys(scores)
+    .filter((k) => {
+      const node = allAssessmentNodes.find(
+        (n) => n.key === k && n.termType === term
+      );
+      return !!node;
+    })
+    .reduce((sum, k) => sum + (scores[k] || 0), 0);
+}
+export function initializeStudentScores(
+  students: Student[],
+  headers: HeaderNode[]
+): Record<number, Record<string, number>> {
+  const assessmentNodes = getAllAssessmentNodesPure(headers);
+  const result: Record<number, Record<string, number>> = {};
+
+  students.forEach((student) => {
+    const scores: Record<string, number> = {};
+
+    // Fill in from backend
+    student.scores.forEach((s) => {
+      const key = `${s.assessment_id}`;
+      scores[key] = s.value ?? 0;
+    });
+
+    // Ensure all assessments exist even if missing in backend
+    assessmentNodes.forEach((node) => {
+      if (node.key && scores[node.key] === undefined) {
+        scores[node.key] = 0;
+      }
+    });
+
+    // Compute totals
+    scores["midterm-total-grade"] = calculateTermTotal(
+      scores,
+      "midterm",
+      headers
+    );
+    scores["final-total-grade"] = calculateTermTotal(scores, "final", headers);
+
+    result[student.student_id] = scores;
+  });
+
+  return result;
+}
+
+// ===================================================
+
+export function computeValues(
+  baseScores: Record<string, number>,
+  maxScores: Record<string, number>,
+  nodes: HeaderNode[]
+): Record<string, number> {
+  const values: Record<string, number> = { ...baseScores };
+
+  function traverse(node: HeaderNode) {
+    node.children.forEach(traverse);
+
+    if (
+      node.key &&
+      node.calculationType &&
+      node.calculationType !== "assignment" &&
+      node.calculationType !== "computed"
+    ) {
+      let value: number = 0;
+      if (["sum", "percentage"].includes(node.calculationType)) {
+        const groupSum =
+          node.groupKeys?.reduce((s, k) => {
+            return s + (values[k] || 0);
+          }, 0) ?? 0;
+        if (node.calculationType === "sum") {
+          value = groupSum;
+        } else {
+          const maxGroupSum =
+            node.groupKeys?.reduce((s, k) => s + (maxScores[k] || 0), 0) ?? 0;
+          value = maxGroupSum > 0 ? (groupSum / maxGroupSum) * 100 : 0;
+        }
+      } else if (
+        ["weightedAverage", "totalGradePoint"].includes(node.calculationType)
+      ) {
+        value =
+          node.dependsOn?.reduce(
+            (s, k, i) => s + (values[k] || 0) * (node.weights?.[i] ?? 0),
+            0
+          ) ?? 0;
+      } else if (node.calculationType === "gradePoint") {
+        const mga = values[node.dependsOn?.[0] ?? ""] ?? 0;
+        const ratio = mga / 100;
+        value = mga >= 70 ? 23 / 3 - (20 / 3) * ratio : 5 - (20 / 7) * ratio;
+      } else if (node.calculationType === "roundedGrade") {
+        const gp = values[node.dependsOn?.[0] ?? ""] ?? 0;
+        const grades = [
+          1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0,
+          4.25, 4.5, 4.75, 5.0,
+        ];
+        value = grades.reduce((prev, curr) =>
+          Math.abs(curr - gp) < Math.abs(prev - gp)
+            ? curr
+            : Math.abs(curr - gp) === Math.abs(prev - gp)
+            ? Math.max(curr, prev)
+            : prev
+        );
+      }
+      values[node.key] = value;
+    }
+  }
+
+  nodes.forEach(traverse);
+  return values;
+}
 
 export function computeComputedContent(
   mid: number,
@@ -271,8 +349,8 @@ export function computeComputedContent(
         Math.abs(curr - value) < Math.abs(prev - value)
           ? curr
           : Math.abs(curr - value) === Math.abs(prev - value)
-            ? Math.max(curr, prev)
-            : prev,
+          ? Math.max(curr, prev)
+          : prev,
       grades[0]
     );
   };

@@ -1,20 +1,24 @@
 import AppLayout from "../../layout/AppLayout";
 import ClassRecordComponent from "../../components/classrecord/ClassRecordComponent";
-
-import { headerConfig } from "../../components/classrecord/HeaderConfig";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import FileImportIcon from "../../assets/file-import-solid.svg?react";
 import FileExportIcon from "../../assets/file-export-solid.svg?react";
 
 export default function ClassRecordPage() {
   const navigate = useNavigate();
   const [footerOpen, setFooterOpen] = useState(false);
+  const { loaded_course_id, course_code, section_id, year_and_section } =
+    useParams();
+
+  const goToAssessmentPage = () => {
+    navigate(
+      `/instructor/${loaded_course_id}/${course_code}/${section_id}/${year_and_section}/assessment`
+    );
+  };
   return (
     <AppLayout activeItem="/instructor" disablePadding>
-      <table className="table-fixed border-collapse border-0 min-w-max ml-[-1px] mt-[-1px]">
-        <ClassRecordComponent headerConfig={headerConfig} />
-      </table>
+      <ClassRecordComponent />
       <footer
         className={`fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-gray-300 transition-transform duration-300 ${
           footerOpen ? "translate-y-0" : "translate-y-full"
@@ -54,9 +58,7 @@ export default function ClassRecordPage() {
               </button>
             </div>
             <button
-              onClick={() =>
-                navigate("/course_dashboard/section/course_outcome_assessment")
-              }
+              onClick={goToAssessmentPage}
               className="flex items-center space-x-2 bg-ucap-yellow hover:bg-ucap-yellow-hover text-white font-semibold py-2 px-4 rounded-full transition-all duration-200"
             >
               <FileExportIcon className="w-4 h-4 text-white" />

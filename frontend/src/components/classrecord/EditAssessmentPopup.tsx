@@ -2,7 +2,6 @@ import { useRef, useEffect, useState } from "react"; // <-- Import useState
 import { createPortal } from "react-dom";
 import type { Dispatch, SetStateAction } from "react";
 
-// (Interface definitions remain the same)
 export interface EditingAssessment {
   nodeKey: string;
   value: string;
@@ -12,21 +11,18 @@ export interface EditingAssessment {
 interface EditAssessmentPopupProps {
   editingAssessment: EditingAssessment | null; 
   setEditingAssessment: Dispatch<SetStateAction<EditingAssessment | null>>;
-  handleEditSave: (nodeKey: string, newValue: string) => void; // <-- Note: handler needs new value
+  handleEditSave: (nodeKey: string, newValue: string) => void;
   handleEditCancel: () => void;
 }
 
 export default function EditAssessmentPopup({
   editingAssessment,
-  // setEditingAssessment, // We no longer need to update the parent state on every keystroke
   handleEditSave,
   handleEditCancel,
 }: EditAssessmentPopupProps) {
   
-  // 1. LOCAL STATE for the input value
   const [inputValue, setInputValue] = useState(editingAssessment?.value || "");
 
-  // 2. SYNCHRONIZE local state with prop when editingAssessment changes
   useEffect(() => {
     if (editingAssessment) {
       setInputValue(editingAssessment.value);
@@ -34,11 +30,9 @@ export default function EditAssessmentPopup({
   }, [editingAssessment]);
 
 
-  // --- (Refs and Click-Outside logic remain the same) ---
   const containerRef = useRef<HTMLDivElement | null>(null); 
   const popupContentRef = useRef<HTMLDivElement | null>(null);
 
-  // Effect for creating and cleaning up the DOM node
   useEffect(() => {
     const portalNode = document.createElement("div");
     document.body.appendChild(portalNode);
@@ -48,9 +42,8 @@ export default function EditAssessmentPopup({
         portalNode.parentNode.removeChild(portalNode);
       }
     };
-  }, []); 
+  }, []);
 
-  // Effect for handling the "Click Outside" logic
   useEffect(() => {
     if (!editingAssessment) return;
     const handleClickOutside = (event: MouseEvent) => {
@@ -58,7 +51,6 @@ export default function EditAssessmentPopup({
         popupContentRef.current && 
         !popupContentRef.current.contains(event.target as Node)
       ) {
-        // When clicking outside, we treat it as a cancel
         handleEditCancel(); 
       }
     };
@@ -67,16 +59,13 @@ export default function EditAssessmentPopup({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [editingAssessment, handleEditCancel]);
-  // --------------------------------------------------------
 
 
   if (!editingAssessment || !containerRef.current) {
     return null;
   }
   
-  // 3. UPDATED HANDLERS to use local state
   const handleLocalSave = () => {
-    // Pass the local state value back to the parent component's save function
     handleEditSave(editingAssessment.nodeKey, inputValue);
   };
   
@@ -92,14 +81,13 @@ export default function EditAssessmentPopup({
     >
       <input
         type="text"
-        // Use the local state here
         value={inputValue} 
         autoFocus
+        onBlur={handleLocalSave}
         className="border-none outline-none p-2 px-4 rounded w-full"
-        // Update the local state here (fast re-render only within this component)
         onChange={(e) => setInputValue(e.target.value)} 
         onKeyDown={(e) => {
-          if (e.key === "Enter") handleLocalSave(); // Use the local save handler
+          if (e.key === "Enter") handleLocalSave();
           if (e.key === "Escape") handleEditCancel();
         }}
       />

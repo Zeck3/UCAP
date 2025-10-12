@@ -1,8 +1,16 @@
 import { createPortal } from "react-dom";
 
+const bloomLevels = [
+  "Remember",
+  "Understand",
+  "Apply",
+  "Analyze",
+  "Evaluate",
+  "Create",
+];
+
 interface BloomPopupProps {
   title: string;
-  levels: string[];
   selections: Record<string, string[]>;
   onClose: () => void;
   onChange: (level: string) => void;
@@ -11,7 +19,6 @@ interface BloomPopupProps {
 
 export default function BloomPopup({
   title,
-  levels,
   selections,
   onClose,
   onChange,
@@ -48,7 +55,7 @@ export default function BloomPopup({
         </div>
         <hr className="border-t border-[#E9E6E6] mb-4" />
         <div className="grid grid-cols-3 gap-4">
-          {levels.map((level) => (
+          {bloomLevels.map((level) => (
             <label key={level} className="flex items-center space-x-2">
               <input
                 type="checkbox"

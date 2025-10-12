@@ -43,3 +43,18 @@ export interface AcademicYear {
   academic_year_start: number;
   academic_year_end: number;
 }
+
+export interface BloomsClassification {
+  blooms_classification_id: number;
+  blooms_classification_type: string;
+}
+
+export interface CourseOutcomes {
+  course_outcome_id: number;
+  course_outcome_code: string;
+}
+
+export interface Option {
+  id: number;
+  name: string;
+}

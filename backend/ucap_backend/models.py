@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from django.core.validators import MinValueValidator, MaxValueValidator
 
 # ====================================================
 # Login Authentication and User Management
@@ -164,8 +163,8 @@ class CourseComponent(models.Model):
 class Assessment(models.Model):
     assessment_id = models.AutoField(primary_key=True)
     course_component = models.ForeignKey("CourseComponent", on_delete=models.CASCADE)
-    blooms_classification = models.ForeignKey("BloomsClassification", on_delete=models.SET_NULL, null=True, blank=True)
-    course_outcomes = models.ManyToManyField("CourseOutcome", through="AssessmentCourseOutcome")
+    blooms_classification = models.ManyToManyField("BloomsClassification", blank=True)
+    course_outcome = models.ManyToManyField("CourseOutcome", blank=True)
     assessment_title = models.CharField(max_length=225, null=True, blank=True)
     assessment_highest_score = models.IntegerField(null=True, blank=True)
 
@@ -183,23 +182,18 @@ class RawScore(models.Model):
 class CourseOutcome(models.Model):
     course_outcome_id = models.AutoField(primary_key=True)
     course = models.ForeignKey("Course", on_delete=models.CASCADE)
+    course_outcome_code = models.CharField(max_length=10)
     course_outcome_description = models.CharField(max_length=255)
 
 class ProgramOutcome(models.Model):
     program_outcome_id = models.AutoField(primary_key=True)
     program = models.ForeignKey("Program", on_delete=models.CASCADE)
+    program_outcome_code = models.CharField(max_length=10)
     program_outcome_description = models.CharField(max_length=255)
 
 class BloomsClassification(models.Model):
     blooms_classification_id = models.AutoField(primary_key=True)
     blooms_classification_type = models.CharField(max_length=255)
-
-class AssessmentCourseOutcome(models.Model):
-    assessment = models.ForeignKey("Assessment", on_delete=models.CASCADE)
-    course_outcome = models.ForeignKey("CourseOutcome", on_delete=models.CASCADE)
-
-    class Meta:
-        unique_together = ("assessment", "course_outcome")
 
 class OutcomeMapping(models.Model):
     program_outcome = models.ForeignKey("ProgramOutcome", on_delete=models.CASCADE)

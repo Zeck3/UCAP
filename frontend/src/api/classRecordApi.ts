@@ -1,5 +1,12 @@
 import axiosClient from "./axiosClient";
-import type { ClassRecord, Student, Assessment, CourseComponent, CourseUnit } from "../types/classRecordTypes";
+import type {
+  ClassRecord,
+  Student,
+  Assessment,
+  CourseComponent,
+  CourseUnit,
+  CreateAssessment,
+} from "../types/classRecordTypes";
 
 export async function getClassRecord(sectionId: number) {
   const { data } = await axiosClient.get<ClassRecord>(
@@ -8,15 +15,21 @@ export async function getClassRecord(sectionId: number) {
   return data;
 }
 
-export async function createStudent(student: Partial<Student>) {
+export async function createStudent(
+  student: Partial<Student>,
+  sectionId: number
+) {
   const { data } = await axiosClient.post<Student>(
-    `/instructor/students/`,
+    `/instructor/students/?section=${sectionId}`,
     student
   );
   return data;
 }
 
-export async function updateStudent(studentId: number, updates: Partial<Student>) {
+export async function updateStudent(
+  studentId: number,
+  updates: Partial<Student>
+) {
   const { data } = await axiosClient.patch<Student>(
     `/instructor/students/${studentId}/`,
     updates
@@ -28,7 +41,7 @@ export async function deleteStudent(studentId: number) {
   await axiosClient.delete(`/instructor/students/${studentId}/`);
 }
 
-export async function createAssessment(assessment: Partial<Assessment>) {
+export async function createAssessment(assessment: CreateAssessment) {
   const { data } = await axiosClient.post<Assessment>(
     `/instructor/assessments/`,
     assessment
@@ -36,7 +49,17 @@ export async function createAssessment(assessment: Partial<Assessment>) {
   return data;
 }
 
-export async function updateAssessment(assessmentId: number, updates: Partial<Assessment>) {
+export async function getAssessmentInfo(assessmentId: number) {
+  const response = await axiosClient.get(
+    `/instructor/assessments/${assessmentId}/info/`
+  );
+  return response.data;
+};
+
+export async function updateAssessment(
+  assessmentId: number,
+  updates: Partial<Assessment>
+) {
   const { data } = await axiosClient.patch<Assessment>(
     `/instructor/assessments/${assessmentId}/`,
     updates
@@ -53,10 +76,17 @@ export async function updateCourseComponent(
   updates: Partial<CourseComponent>
 ) {
   const validUpdates: Partial<CourseComponent> = {};
-  if (updates.course_component_percentage !== undefined && updates.course_component_percentage !== null) {
-    validUpdates.course_component_percentage = updates.course_component_percentage;
+  if (
+    updates.course_component_percentage !== undefined &&
+    updates.course_component_percentage !== null
+  ) {
+    validUpdates.course_component_percentage =
+      updates.course_component_percentage;
   }
-  if (updates.course_component_type && updates.course_component_type.trim() !== "") {
+  if (
+    updates.course_component_type &&
+    updates.course_component_type.trim() !== ""
+  ) {
     validUpdates.course_component_type = updates.course_component_type;
   }
 
@@ -73,7 +103,10 @@ export async function updateCourseUnit(
 ) {
   const validUpdates: Partial<CourseUnit> = {};
 
-  if (updates.course_unit_percentage !== undefined && updates.course_unit_percentage !== null) {
+  if (
+    updates.course_unit_percentage !== undefined &&
+    updates.course_unit_percentage !== null
+  ) {
     validUpdates.course_unit_percentage = updates.course_unit_percentage;
   }
 
@@ -93,9 +126,6 @@ export async function updateRawScore(
     student_id: number;
     assessment_id: number;
     value: number | null;
-  }>(
-    `/rawscores/${studentId}/${assessmentId}/`,
-    { value }
-  );
+  }>(`/instructor/rawscores/${studentId}/${assessmentId}/`, { value });
   return data;
 }

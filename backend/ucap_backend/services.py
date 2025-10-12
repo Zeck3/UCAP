@@ -12,9 +12,9 @@ def create_class_record_service(section):
     lecture_pct = round((lecture_units / total_units) * 100) if lecture_units > 0 else 0
     lab_pct = 100 - lecture_pct if lab_units > 0 else 0
 
-    course_terms = ["Midterm Grade", "Final Grade"]
+    course_terms = ["Midterm", "Final"]
 
-    for _ in range(40):
+    for _ in range(1):
         Student.objects.create(
             section=section,
             id_number=None,
@@ -38,10 +38,10 @@ def create_class_record_service(section):
             )
             lecture_components = [
                 ("Class Standing Performance Items", 10, 5, None),
-                ("Quiz/Prelim Performance Item" if term_type == "Midterm Grade" else "Quiz/Pre-final Performance Item", 40, 4,
-                 "Prelim Exam" if term_type == "Midterm Grade" else "SFinal Exam"),
-                ("Midterm Exam" if term_type == "Midterm Grade" else "Final Exam", 30, 0,
-                 "Mid Written Exam" if term_type == "Midterm Grade" else "SFinal Exam"),
+                ("Quiz/Prelim Performance Item" if term_type == "Midterm" else "Quiz/Pre-final Performance Item", 40, 4,
+                 "Prelim Exam" if term_type == "Midterm" else "SFinal Exam"),
+                ("Midterm Exam" if term_type == "Midterm" else "Final Exam", 30, 0,
+                 "Mid Written Exam" if term_type == "Midterm" else "SFinal Exam"),
                 ("Per Inno Task", 20, 2, None),
             ]
             for comp_name, comp_percentage, empty_assessments, special_assessment in lecture_components:
@@ -74,7 +74,7 @@ def create_class_record_service(section):
                 ("Lab Exercises/Reports", 30, 5, None),
                 ("Hands on Exercises", 30, 3, None),
                 ("Lab Major Exam", 40, 0,
-                 "Mid Lab Exam" if term_type == "Midterm Grade" else "Fin Lab Exam"),
+                 "Mid Lab Exam" if term_type == "Midterm" else "Fin Lab Exam"),
             ]
             for comp_name, comp_percentage, empty_assessments, special_assessment in lab_components:
                 comp = CourseComponent.objects.create(

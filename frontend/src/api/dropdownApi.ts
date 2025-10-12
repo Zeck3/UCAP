@@ -1,6 +1,15 @@
 import axiosClient from "./axiosClient";
 
-import type { UserRole, Department, Program, YearLevel, Semester, Credit, Instructor, AcademicYear } from "../types/dropdownTypes";
+import type {
+  UserRole,
+  Department,
+  Program,
+  YearLevel,
+  Semester,
+  Credit,
+  Instructor,
+  AcademicYear,
+} from "../types/dropdownTypes";
 
 export async function getRoles(): Promise<UserRole[]> {
   try {
@@ -80,4 +89,14 @@ export async function getAcademicYears(): Promise<AcademicYear[]> {
     console.error("Error fetching academic years:", error);
     return [];
   }
+}
+
+export async function getBloomsOptions() {
+  const { data } = await axiosClient.get("/blooms_classification/");
+  return data;
+}
+
+export async function getCourseOutcomes(courseCode: string) {
+  const { data } = await axiosClient.get(`/course_outcomes/${courseCode}`);
+  return data;
 }

@@ -11,11 +11,15 @@ import {
   getCalculatedBg,
 } from "./ClassRecordFunctions";
 import type { JSX } from "react";
+import type { Assessment } from "../../types/classRecordTypes";
 
 interface BuildHeaderRowProps {
   nodes: HeaderNode[];
   originalMaxDepth: number;
-  openPopup: (title: string) => void;
+  openAssessmentInfoContextMenu: (
+    e: React.MouseEvent,
+    assessmentId: number
+  ) => void;
   maxScores: Record<string, number>;
   setMaxScores: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   computedMaxValues: Record<string, number>;
@@ -23,16 +27,23 @@ interface BuildHeaderRowProps {
     node: HeaderNode,
     event: React.MouseEvent<HTMLDivElement>
   ) => void;
+  onRightClickNode?: (e: React.MouseEvent, node: HeaderNode) => void;
+  handleUpdateAssessment: (
+    assessmentId: number,
+    updates: Partial<Assessment>
+  ) => Promise<void>;
 }
 
 function BuildHeaderRow({
   nodes,
   originalMaxDepth,
-  openPopup,
+  openAssessmentInfoContextMenu,
   maxScores,
   setMaxScores,
   computedMaxValues,
   handleEditStart,
+  onRightClickNode,
+  handleUpdateAssessment,
 }: BuildHeaderRowProps) {
   const [leafRowHeight, setLeafRowHeight] = React.useState(40);
 
@@ -125,7 +136,9 @@ function BuildHeaderRow({
         <th
           key={
             node.key ||
-            `${level}-${node.nodeType || node.type}-${node.title}-${rows[level].length}`
+            `${level}-${node.nodeType || node.type}-${node.title}-${
+              rows[level].length
+            }`
           }
           colSpan={colSpan}
           rowSpan={rowSpan}
@@ -139,11 +152,19 @@ function BuildHeaderRow({
               ? `[writing-mode:vertical-rl] border border-[#E9E6E6] rotate-180 text-left truncate overflow-hidden text-ellipsis w-[3.75rem] max-w-[3.75rem]`
               : `whitespace-normal ${headerWidth} w-[3.75rem]`
           }`}
+          onContextMenu={
+            node.nodeType === "assessment" || node.nodeType === "component"
+              ? (e) => {
+                  e.preventDefault();
+                  onRightClickNode?.(e, node);
+                }
+              : undefined
+          }
         >
           {node.nodeType === "assessment" ? (
             <div
               onClick={(e) => handleEditStart(node, e)}
-              className="w-full h-full flex items-center py-7 truncate overflow-hidden text-ellipsis"
+              className="w-full h-full flex items-center py-7 truncate overflow-hidden text-ellipsis cursor-vertical-text"
             >
               {node.title?.trim() ? renderTitleLines(node.title) : ""}
             </div>
@@ -179,7 +200,9 @@ function BuildHeaderRow({
               }`}
             >
               <button
-                onClick={() => openPopup(node.title)}
+                onClick={(e) =>
+                  openAssessmentInfoContextMenu(e, Number(node.key))
+                }
                 className="w-full h-full bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs py-1.5 px-2"
               >
                 Info...
@@ -275,38 +298,82 @@ function BuildHeaderRow({
 
       if (node.calculationType === "assignment" && node.key) {
         const key = node.key as string;
+        const displayValue = maxScores[key] === 0 ? "" : maxScores[key] ?? "";
+
         content = (
           <input
             type="number"
-            value={maxScores[key] ?? ""}
-            onChange={(e) =>
+            min={0}
+            value={displayValue === 0 ? "" : displayValue}
+            onChange={(e) => {
+              const val = e.target.value;
+              const newValue = val === "" ? 0 : Number(val);
               setMaxScores((prev) => ({
                 ...prev,
-                [key]: Number(e.target.value),
-              }))
-            }
+                [key]: newValue,
+              }));
+            }}
+            onBlur={(e) => {
+              const val = e.target.value;
+              const newValue = val === "" ? 0 : Number(val);
+              handleUpdateAssessment(Number(key), {
+                assessment_highest_score: newValue,
+              });
+            }}
+            onKeyDown={(e) => {
+              // ⛔ Prevent non-numeric characters
+              if (["e", "E", "+", "-"].includes(e.key)) {
+                e.preventDefault();
+              }
+
+              // 💾 Save on Enter
+              if (e.key === "Enter") {
+                const val = (e.target as HTMLInputElement).value;
+                const newValue = val === "" ? 0 : Number(val);
+                handleUpdateAssessment(Number(key), {
+                  assessment_highest_score: newValue,
+                });
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            onPaste={(e) => {
+              const paste = e.clipboardData.getData("text");
+              if (!/^\d*$/.test(paste)) {
+                e.preventDefault();
+              }
+            }}
             className="w-full h-full py-2.25 px-2 text-center bg-transparent border-none focus:outline-none text-coa-blue"
           />
         );
       } else if (node.key && computedMaxValues[node.key] !== undefined) {
-        content = formatValue(computedMaxValues[node.key], node.calculationType);
+        content = formatValue(
+          computedMaxValues?.[node.key],
+          node.calculationType
+        );
         textClass = "text-coa-blue";
       } else if (node.calculationType === "computed" && node.key) {
         const mid = computedMaxValues["midterm-total-grade"] || 0;
         const fin = computedMaxValues["final-total-grade"] || 0;
-        const { content: compContent, type } = computeComputedContent(
-          mid,
-          fin,
-          node.key
-        );
-        content = compContent;
-        bgClass = getCalculatedBg(type);
-        textClass = "text-coa-blue";
+
+        if (mid === 0 && fin === 0) {
+          content = "";
+          bgClass = "";
+          textClass = "";
+        } else {
+          const { content: compContent, type } = computeComputedContent(
+            mid,
+            fin,
+            node.key
+          );
+          content = compContent;
+          bgClass = getCalculatedBg(type);
+          textClass = "text-coa-blue";
+        }
       }
 
       subRow.push(
         <th
-          key={`sub-${node.key || node.title || Math.random()}`}
+          key={`sub-${node.key}`}
           className={`border border-[#E9E6E6] text-center ${bgClass} ${textClass} ${
             node.calculationType ? "w-[3.75rem]" : ""
           }`}
@@ -326,10 +393,12 @@ function BuildHeaderRow({
     leafRowHeight,
     handleHResizeStart,
     handleEditStart,
-    openPopup,
+    openAssessmentInfoContextMenu,
     maxScores,
     setMaxScores,
     computedMaxValues,
+    onRightClickNode,
+    handleUpdateAssessment,
   ]);
 
   return (

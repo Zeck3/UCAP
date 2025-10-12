@@ -10,6 +10,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
+from rest_framework.decorators import action
 
 # ====================================================
 # Login Authentication
@@ -562,9 +563,7 @@ class ClassRecordViewSet(viewsets.ViewSet):
         try:
             section = (
                 Section.objects
-                .select_related(
-                    'loaded_course__course__program__department'
-                )
+                .select_related('loaded_course__course__program__department')
                 .prefetch_related(
                     Prefetch(
                         'courseterm_set',
@@ -574,7 +573,9 @@ class ClassRecordViewSet(viewsets.ViewSet):
                                 queryset=CourseUnit.objects.prefetch_related(
                                     Prefetch(
                                         'coursecomponent_set',
-                                        queryset=CourseComponent.objects.prefetch_related('assessment_set')
+                                        queryset=CourseComponent.objects.prefetch_related(
+                                            Prefetch('assessment_set', queryset=Assessment.objects.prefetch_related('blooms_classification', 'course_outcome'))
+                                        )
                                     )
                                 )
                             )
@@ -589,6 +590,7 @@ class ClassRecordViewSet(viewsets.ViewSet):
                 )
                 .get(pk=pk)
             )
+
         except Section.DoesNotExist:
             return Response({"detail": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
         
@@ -597,16 +599,30 @@ class ClassRecordViewSet(viewsets.ViewSet):
 
 class StudentViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
-    
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
 
     def get_queryset(self):
         section_id = self.request.query_params.get("section")
-        qs = self.queryset.select_related('section')
+        qs = self.queryset.select_related("section")
         if section_id:
             return qs.filter(section_id=section_id)
         return qs
+
+    def perform_create(self, serializer):
+        section_id = self.request.query_params.get("section")
+        if section_id is None:
+            raise serializers.ValidationError("Section is required")
+        student = serializer.save(section_id=section_id)
+
+        assessments = Assessment.objects.filter(course_component__course_unit__course_term__section_id=section_id)
+        raw_scores = [
+            RawScore(student=student, assessment=assessment, raw_score=0)
+            for assessment in assessments
+        ]
+        RawScore.objects.bulk_create(raw_scores)
+
+        return student
 
 class AssessmentViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
@@ -619,6 +635,39 @@ class AssessmentViewSet(viewsets.ModelViewSet):
         if component_id:
             return qs.filter(course_component_id=component_id)
         return qs
+    
+    def perform_create(self, serializer):
+        assessment = serializer.save()
+        section = assessment.course_component.course_unit.course_term.section
+        students = Student.objects.filter(section=section)
+        raw_scores = [
+            RawScore(student=student, assessment=assessment, raw_score=0)
+            for student in students
+        ]
+        RawScore.objects.bulk_create(raw_scores)
+
+        return assessment
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        assessment = self.perform_create(serializer)
+        output_serializer = self.get_serializer(assessment)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["get"], url_path="info")
+    def get_assessment_info(self, request, pk=None):
+        try:
+            assessment = self.get_object()
+        except Assessment.DoesNotExist:
+            return Response({"error": "Assessment not found"}, status=404)
+
+        serializer = self.get_serializer(assessment)
+        return Response({
+            "id": assessment.assessment_id,
+            "blooms_classification": serializer.data.get("blooms_classification", []),
+            "course_outcome": serializer.data.get("course_outcome", []),
+        })
     
 class CourseComponentViewSet(viewsets.ModelViewSet):
     queryset = CourseComponent.objects.all()
@@ -646,7 +695,267 @@ class RawScoreUpdateView(APIView):
         rawscore.raw_score = value
         rawscore.save()
         return Response({"student_id": student_id, "assessment_id": assessment_id, "value": value})
-    
+
+# ====================================================
+# Assessment Page
+# ====================================================
+class AssessmentPageAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, section_id):
+        try:
+            section = (
+                Section.objects
+                .select_related(
+                    "loaded_course__course__program",
+                    "loaded_course__academic_year",
+                    "instructor_assigned",
+                )
+                .get(pk=section_id)
+            )
+        except Section.DoesNotExist:
+            return Response({"detail": "Section not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # ========== classInfo ==========
+        loaded_course = section.loaded_course
+        course = loaded_course.course
+        program = course.program
+        academic_year = loaded_course.academic_year
+
+        # Build cacode: Campus / College / Department (use department via program->department->college->campus)
+        # We attempt best-effort traversal
+        cacode_parts = []
+        # try department -> college -> campus via program -> department
+        try:
+            department = program.department
+        except Exception:
+            department = None
+
+        # Fallback: try to pull department via course -> program -> department presence
+        if not department:
+            # maybe Course->program->department not set; leave empty
+            department = None
+
+        # Try to build a readable cacode: campus / college / department
+        campus_name = None
+        college_name = None
+        department_name = None
+        if department:
+            department_name = getattr(department, "department_name", None)
+            if hasattr(department, "college") and department.college:
+                college_name = getattr(department.college, "college_name", None)
+            if hasattr(department, "campus") and department.campus:
+                campus_name = getattr(department.campus, "campus_name", None)
+
+        # if missing, try program -> department -> college -> campus (some structure)
+        if not campus_name:
+            # attempt to find via course.program.department.campus, or course.program.department.college.campus
+            try:
+                dept = program.department
+                if dept:
+                    department_name = department_name or dept.department_name
+                    if getattr(dept, "campus", None):
+                        campus_name = getattr(dept.campus, "campus_name", None)
+                    if getattr(dept, "college", None):
+                        college_name = getattr(dept.college, "college_name", None)
+            except Exception:
+                pass
+
+        # If still missing, try course -> ??? (best effort)
+        cacode = " / ".join([p for p in [campus_name, college_name, department_name] if p])
+
+        classInfo = {
+            "cacode": cacode or "",
+            "program": getattr(program, "program_name", "") or "",
+            "course": f"{getattr(course, 'course_code', '')} - {getattr(course, 'course_title', '')}".strip(" -"),
+            "aySemester": f"{getattr(academic_year, 'academic_year_start', '')}-{getattr(academic_year, 'academic_year_end', '')} / {getattr(course.semester, 'semester_type', '')}",
+            "faculty": (
+                f"{section.instructor_assigned.last_name}, "
+                f"{section.instructor_assigned.first_name}"
+                if section.instructor_assigned else ""
+            ),
+        }
+
+        # ========== POS (Program Outcomes) ==========
+        # Find program outcomes for the course's program
+        program_outcomes_qs = ProgramOutcome.objects.filter(program=program).prefetch_related(
+            Prefetch(
+                "outcomemapping_set__course_outcome",
+                queryset=CourseOutcome.objects.filter(course=course),
+                to_attr="course_outcomes_for_course"
+            )
+        )
+
+        pos_list = []
+        # Pre-fetch all assessments for this section for speed
+        assessments_qs = Assessment.objects.filter(
+            course_component__course_unit__course_term__section=section
+        ).prefetch_related("blooms_classification", "course_outcome").order_by("assessment_id")
+
+        # Build a helper: map course outcome id -> assessments list (filtered by assessment.course_outcome M2M)
+        co_to_assessments = {}
+        for a in assessments_qs:
+            # for each course_outcome associated
+            for co in a.course_outcome.all():
+                co_to_assessments.setdefault(co.course_outcome_id, []).append(a)
+
+        for po in program_outcomes_qs:
+            # for each program outcome, get mapped course outcomes via OutcomeMapping
+            # We prefer course outcomes that belong to this course (we prefetch above)
+            mapped_cos = []
+            # find OutcomeMapping entries linking this po to course outcomes
+            mappings = OutcomeMapping.objects.filter(program_outcome=po).select_related("course_outcome")
+            for m in mappings:
+                co = m.course_outcome
+                # ensure the CO belongs to this course, otherwise skip
+                if co.course_id != course.course_code and getattr(co, "course_id", None) is not None:
+                    # course_id vs course foreign key name: CourseOutcome has FK "course"
+                    # (we used co.course in model) So check properly:
+                    pass
+                # Only include COs for this specific course:
+                if co.course_id == course.course_code if hasattr(co, "course_id") else (co.course == course):
+                    pass
+                # Simpler: include COs if co.course == course
+                try:
+                    if co.course != course:
+                        continue
+                except Exception:
+                    continue
+
+                # Build classwork list for this CO using co_to_assessments
+                assessments_for_co = co_to_assessments.get(co.course_outcome_id, [])
+                classwork = []
+                for a in assessments_for_co:
+                    classwork.append({
+                        "name": a.assessment_title or "",
+                        "blooms": [b.blooms_classification_type for b in a.blooms_classification.all()],
+                        "maxScore": a.assessment_highest_score or 0,
+                    })
+                mapped_cos.append({
+                    "name": f"{co.course_outcome_code} - {co.course_outcome_description}" if co.course_outcome_code else co.course_outcome_description,
+                    "classwork": classwork
+                })
+
+            # If OutcomeMapping doesn't provide COs for this program but there exist course_outcomes for the course,
+            # fallback to include all COs that are linked to any assessment in this section
+            if not mapped_cos:
+                # gather unique COs that appear in assessments for this section
+                cos_ids_seen = set()
+                for a in assessments_qs:
+                    for co in a.course_outcome.all():
+                        if co.course == course and co.course_outcome_id not in cos_ids_seen:
+                            cos_ids_seen.add(co.course_outcome_id)
+                # fetch CO objects
+                cos_objs = CourseOutcome.objects.filter(pk__in=cos_ids_seen)
+                for co in cos_objs:
+                    assessments_for_co = co_to_assessments.get(co.course_outcome_id, [])
+                    classwork = []
+                    for a in assessments_for_co:
+                        classwork.append({
+                            "name": a.assessment_title or "",
+                            "blooms": [b.blooms_classification_type for b in a.blooms_classification.all()],
+                            "maxScore": a.assessment_highest_score or 0,
+                        })
+                    mapped_cos.append({
+                        "name": f"{co.course_outcome_code} - {co.course_outcome_description}" if co.course_outcome_code else co.course_outcome_description,
+                        "classwork": classwork
+                    })
+
+            pos_list.append({
+                "name": f"{po.program_outcome_code} - {po.program_outcome_description}" if po.program_outcome_code else po.program_outcome_description,
+                "cos": mapped_cos
+            })
+
+        # If there are no program outcomes (pos_list empty), attempt a fallback:
+        if not pos_list:
+            # include a single entry grouping all COs and their assessments
+            # gather COs used in assessments
+            cos_seen = {}
+            for a in assessments_qs:
+                for co in a.course_outcome.all():
+                    if co.course == course:
+                        cos_seen.setdefault(co.course_outcome_id, co)
+            fallback_cos = []
+            for co_id, co in cos_seen.items():
+                assessments_for_co = co_to_assessments.get(co.course_outcome_id, [])
+                classwork = []
+                for a in assessments_for_co:
+                    classwork.append({
+                        "name": a.assessment_title or "",
+                        "blooms": [b.blooms_classification_type for b in a.blooms_classification.all()],
+                        "maxScore": a.assessment_highest_score or 0,
+                    })
+                fallback_cos.append({
+                    "name": f"{co.course_outcome_code} - {co.course_outcome_description}" if co.course_outcome_code else co.course_outcome_description,
+                    "classwork": classwork
+                })
+            pos_list = [{
+                "name": "",
+                "cos": fallback_cos
+            }]
+
+        # ========== Students ==========
+        students_qs = Student.objects.filter(section=section).order_by("student_id")
+        # Pre-fetch raw scores for these students for the assessments in this section
+        raw_scores_qs = RawScore.objects.filter(assessment__in=assessments_qs).select_related("assessment", "student")
+        # Build mapping (student_id -> assessment_id -> raw_score)
+        student_assessment_score = {}
+        for rs in raw_scores_qs:
+            sid = rs.student_id
+            aid = rs.assessment.assessment_id
+            student_assessment_score.setdefault(sid, {})[aid] = rs.raw_score
+
+        students_list = []
+        # For ordering assessments per CO, we'll use co_to_assessments lists
+        for s in students_qs:
+            scores_obj = {}
+            # For each CO (as we defined in pos_list), give list of raw scores matching the CO's classwork order
+            # But pos_list might contain PO-level grouping; iterate through all COs across all POs
+            all_cos = []
+            for po in pos_list:
+                for co in po.get("cos", []):
+                    all_cos.append(co)
+            # Use CO 'name' field as key (matches dummy structure)
+            # For each CO, we need corresponding assessments (classwork) and map to student's raw
+            for co in all_cos:
+                co_name = co.get("name", "")
+                classwork = co.get("classwork", [])
+                raw_list = []
+                # classwork list items are dicts with name and maybe no ID; but we can map via assessment titles -> NOT guaranteed unique
+                # Better approach: use co_to_assessments mapping by CourseOutcome. But we lack direct courseOutcome object in this loop.
+                # We'll attempt to find course outcome object by matching name back to CourseOutcome entries.
+                # Fallback: assume order is same as classwork array, and we reconstruct by searching assessments_qs for matches by title and maxScore.
+                for cw in classwork:
+                    # Find matching assessment in assessments_qs
+                    matching_assessment = None
+                    for a in assessments_qs:
+                        if (a.assessment_title or "") == (cw.get("name") or "") and (a.assessment_highest_score or 0) == (cw.get("maxScore") or 0):
+                            matching_assessment = a
+                            break
+                    if matching_assessment:
+                        aid = matching_assessment.assessment_id
+                        raw = student_assessment_score.get(s.student_id, {}).get(aid)
+                        raw_list.append({"raw": raw if raw is not None else None})
+                    else:
+                        # no matching assessment found — append null
+                        raw_list.append({"raw": None})
+                scores_obj[co_name] = raw_list
+
+            students_list.append({
+                "id": str(getattr(s, "id_number", s.student_id) or s.student_id),
+                "name": s.student_name or "",
+                "scores": scores_obj
+            })
+
+        response = {
+            "classInfo": classInfo,
+            "pos": pos_list,
+            "students": students_list
+        }
+
+        return Response(response, status=status.HTTP_200_OK)
+
+
 # ====================================================
 # Dropdown
 # ====================================================
@@ -726,6 +1035,26 @@ def instructor_list_view(request):
     try:
         instructors = User.objects.exclude(user_role_id=1) 
         serializer = InstructorSerializer(instructors, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def blooms_classification_list_view(request):
+    try:
+        blooms = BloomsClassification.objects.all().order_by("blooms_classification_id")
+        serializer = BloomsClassificationSerializer(blooms, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def course_outcome_list_view(request, course_code):
+    try:
+        outcomes = CourseOutcome.objects.filter(course__course_code=course_code).order_by("course_outcome_id")
+        serializer = CourseOutcomeSerializer(outcomes, many=True)
         return JsonResponse(serializer.data, safe=False)
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

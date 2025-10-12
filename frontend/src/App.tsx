@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { Roles } from "./config/Roles";
 import ProtectedRoute from "./components/routes/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
-import NotFoundPage from "./pages/NotFoundPage";
+import NotFoundPage from "./pages/ErrorPage";
 import CourseDashboard from "./pages/instructor/CourseDashboard";
 import CoursePage from "./pages/instructor/CoursePage";
 import ClassRecordPage from "./pages/instructor/ClassRecordPage";
@@ -14,6 +14,7 @@ import DepartmentChairAssessmentPage from "./pages/department_chair/DepartmentCh
 import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext";
 import { useHeartbeat } from "./context/useHeartbeat";
+import AssessmentPage from "./pages/instructor/AssessmentPage";
 
 export default function App() {
   const auth = useContext(AuthContext);
@@ -34,6 +35,7 @@ export default function App() {
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={[Roles.Instructor]} />}>
+        <Route path="/instructor/:loaded_course_id/:course_code/:section_id/:year_and_section/assessment" element={<AssessmentPage />} />
         <Route path="/instructor/:loaded_course_id/:course_code/:section_id/:year_and_section" element={<ClassRecordPage />} />
         <Route path="/instructor/:loaded_course_id/:course_code" element={<CoursePage />} />
         <Route path="/instructor" element={<CourseDashboard />} />
