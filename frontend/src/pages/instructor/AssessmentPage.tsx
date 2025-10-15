@@ -1,13 +1,12 @@
-// src/pages/ResultSheetPage.tsx
+// Imports necessary React hooks, router utilities, and custom types/components/APIs
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { classInfo, pos, students } from "../../data/rspInfo";
 import type { JSX } from "react";
 import AppLayout from "../../layout/AppLayout";
 import type { AssessmentPageData } from "../../types/assessmentPageTypes";
 import { getAssessmentPageData } from "../../api/assessmentPageApi";
 
-// Array defining the order of Bloom's taxonomy levels for sorting.
+// Defines order of Bloom's taxonomy levels for sorting
 const bloomOrder = [
   "Remember",
   "Understand",
@@ -17,38 +16,38 @@ const bloomOrder = [
   "Create",
 ];
 
-// Function to get the rank of a Bloom's level for sorting purposes.
+// Returns rank of a Bloom's level for sorting
 function bloomRank(b: string): number {
   const idx = bloomOrder.indexOf(b);
   return idx === -1 ? bloomOrder.length : idx;
 }
 
-// Function to normalize and sort Bloom's levels into a string.
+// Normalizes and sorts Bloom's levels into a string
 function normalizeBlooms(blooms: string[]): string {
   return [...blooms].sort((a, b) => bloomRank(a) - bloomRank(b)).join("/");
 }
 
-// Utility function to count columns needed for a course outcome, including extras.
-function countClasswork(co: (typeof pos)[0]["cos"][0]) {
+// Counts columns needed for a course outcome including extras
+function countClasswork(co: AssessmentPageData["pos"][0]["cos"][0]) {
   return Math.max(1, co.classwork.length) + 3; // +3 for Total, 70%, 80%
 }
 
-// Utility function to calculate total classwork columns across all POs.
-function totalClassworkColumns() {
+// Calculates total classwork columns across all POs
+function totalClassworkColumns(pos: AssessmentPageData["pos"]) {
   return pos.reduce(
     (sum, po) => sum + po.cos.reduce((s, co) => s + countClasswork(co), 0),
     0
   );
 }
 
-// Type for expanded classwork items with additional metadata.
+// Type for expanded classwork with metadata
 type ExpandedCW = {
   name: string;
   blooms: string;
   coIndex: number;
 };
 
-// Function to sort classwork items by normalized Bloom's levels using rank comparison.
+// Sorts classwork by normalized Bloom's levels
 function clusterBlooms(items: ExpandedCW[]): ExpandedCW[] {
   if (!items.length) return [];
   return [...items].sort((a, b) => {
@@ -63,7 +62,7 @@ function clusterBlooms(items: ExpandedCW[]): ExpandedCW[] {
   });
 }
 
-// Component for rendering classwork name cells with vertical orientation.
+// Renders classwork name cell with vertical text
 function ClassworkNameCell({
   cw,
   pIdx,
@@ -89,7 +88,7 @@ function ClassworkNameCell({
   );
 }
 
-// Component for rendering student score cells.
+// Renders student score cell
 function StudentScoreCell({
   val,
   studentId,
@@ -113,18 +112,17 @@ function StudentScoreCell({
   );
 }
 
-// Main component for rendering the result sheet page.
+// Main component for result sheet page
 export default function ResultSheetPage(): JSX.Element {
   const navigate = useNavigate();
   const { section_id } = useParams<{ section_id: string }>();
   const [isOpen, setIsOpen] = useState(false);
-  const [footerOpen, setFooterOpen] = useState(true);
-  const totalColumns = 4 + totalClassworkColumns();
-  const studentCount = students.length;
+  const [footerOpen, setFooterOpen] = useState(false);
   const [data, setData] = useState<AssessmentPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetches assessment data on mount or section_id change
   useEffect(() => {
     const fetchAssessmentPage = async () => {
       try {
@@ -146,24 +144,124 @@ export default function ResultSheetPage(): JSX.Element {
     fetchAssessmentPage();
   }, [section_id]);
 
-  const layout = useMemo(
-    () =>
-      pos.map((po) => ({
-        ...po,
-        cos: po.cos.map((co) => {
-          const expanded: ExpandedCW[] = co.classwork.map((cw, idx) => ({
-            name: cw.name,
-            blooms: normalizeBlooms(cw.blooms),
-            coIndex: idx,
-          }));
-          const clustered = clusterBlooms(expanded);
-          return { ...co, clustered };
-        }),
-      })),
-    []
-  );
+  const studentCount = data?.students.length ?? 0;
+  const totalColumns = 4 + totalClassworkColumns(data?.pos ?? []);
 
-  // Memoized totals and thresholds for each CO.
+  // Computes merged and sorted layout for POs and COs
+  const layout = useMemo(() => {
+    const pos = data?.pos ?? [];
+
+    // Filters valid POs and COs
+    const filteredPOs = pos
+      .map((po) => {
+        const filteredCOs = po.cos
+          .map((co) => {
+            const validClasswork =
+              co.classwork?.filter((cw) => cw && cw.name && cw.maxScore != null) ??
+              [];
+
+            if (validClasswork.length === 0) return null;
+
+            const expanded: ExpandedCW[] = validClasswork.map((cw, idx) => ({
+              name: cw.name,
+              blooms: normalizeBlooms(cw.blooms),
+              coIndex: idx,
+            }));
+
+            const clustered = clusterBlooms(expanded);
+
+            return { ...co, classwork: validClasswork, clustered };
+          })
+          .filter((co): co is NonNullable<typeof co> => co != null);
+
+        if (filteredCOs.length === 0) return null;
+
+        return { ...po, cos: filteredCOs };
+      })
+      .filter((po): po is NonNullable<typeof po> => po != null);
+
+    // Merges POs sharing COs using union-find
+    const numPOs = filteredPOs.length;
+    const parent = Array.from({ length: numPOs }, (_, i) => i);
+
+    function find(x: number): number {
+      if (parent[x] !== x) parent[x] = find(parent[x]);
+      return parent[x];
+    }
+
+    function union(x: number, y: number) {
+      const px = find(x),
+        py = find(y);
+      if (px !== py) parent[px] = py;
+    }
+
+    const coToPOs: Map<string, number[]> = new Map();
+    for (let i = 0; i < numPOs; i++) {
+      for (const co of filteredPOs[i].cos) {
+        const name = co.name;
+        if (!coToPOs.has(name)) coToPOs.set(name, []);
+        coToPOs.get(name)!.push(i);
+      }
+    }
+
+    for (const poList of coToPOs.values()) {
+      for (let j = 1; j < poList.length; j++) {
+        union(poList[0], poList[j]);
+      }
+    }
+
+    const components: Map<number, number[]> = new Map();
+    for (let i = 0; i < numPOs; i++) {
+      const root = find(i);
+      if (!components.has(root)) components.set(root, []);
+      components.get(root)!.push(i);
+    }
+
+    // Creates merged POs from components
+    const mergedLayout: typeof filteredPOs = [];
+    for (const poIndices of components.values()) {
+      const posInComp = poIndices.map((idx) => filteredPOs[idx]);
+
+      const shortNames = posInComp
+        .map((po) => {
+          const match = po.name.match(/^([a-zA-Z])\s*-\s*/);
+          return match ? `PO-${match[1]}` : po.name;
+        })
+        .sort();
+
+      const mergedName = shortNames.join(", ");
+
+      const coMap: Map<string, (typeof filteredPOs)[0]["cos"][0]> = new Map();
+      for (const po of posInComp) {
+        for (const co of po.cos) {
+          if (!coMap.has(co.name)) {
+            coMap.set(co.name, co);
+          }
+        }
+      }
+
+      let uniqueCos = Array.from(coMap.values());
+
+      uniqueCos.sort((a, b) => {
+        const aNum = parseInt(a.name.match(/\d+/)?.[0] || "0");
+        const bNum = parseInt(b.name.match(/\d+/)?.[0] || "0");
+        return aNum - bNum;
+      });
+
+      mergedLayout.push({ name: mergedName, cos: uniqueCos });
+    }
+
+    // Sorts merged POs by first short name
+    mergedLayout.sort((a, b) => {
+      const aFirst = a.name.split(", ")[0];
+      const bFirst = b.name.split(", ")[0];
+      return aFirst.localeCompare(bFirst);
+    });
+
+    return mergedLayout;
+  }, [data]);
+
+  // Computes totals and thresholds for each CO
   const coTotalsMemo = useMemo(
     () =>
       layout.flatMap((po) =>
@@ -180,12 +278,12 @@ export default function ResultSheetPage(): JSX.Element {
     [layout, studentCount]
   );
 
-  // Memoized CO analytics data.
+  // Computes CO analytics data
   const coAnalytics = useMemo(() => {
     const allCos = layout.flatMap((po) => po.cos);
     return allCos.map((co, idx) => {
       const pass70Threshold = coTotalsMemo[idx].pass70;
-      const achieved = students.filter((s) => {
+      const achieved = (data?.students ?? []).filter((s) => {
         const scores = s.scores[co.name] ?? [];
         const total = scores.reduce((sum, sc) => sum + (sc?.raw ?? 0), 0);
         return total >= pass70Threshold;
@@ -199,10 +297,12 @@ export default function ResultSheetPage(): JSX.Element {
         notAchieved: `${notAchieved} (${pctNot}%)`,
       };
     });
-  }, [layout, coTotalsMemo, studentCount]);
+  }, [layout, coTotalsMemo, studentCount, data]);
 
-  // Early return if no data is available.
-  if (!pos.length || !students.length) {
+  // Handles loading/error/no data states
+  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (error) return <div className="p-6 text-red-500">{error}</div>;
+  if (!data || !data.pos.length || !data.students.length) {
     return (
       <div className="px-6 py-6 text-center text-coa-red">
         No data available to display.
@@ -210,43 +310,50 @@ export default function ResultSheetPage(): JSX.Element {
     );
   }
 
-  // Precompute PO cells for rendering.
+  // Precomputes PO header cells
   const poCells = layout.map((po, pIdx) => {
     const span = po.cos.reduce((s, co) => s + countClasswork(co), 0);
+
+    const match = po.name.match(/^([a-zA-Z])\s*-\s*/);
+    const shortLabel = match ? `PO-${match[1]}` : po.name;
+
     return (
       <td
         key={`po-${pIdx}`}
         colSpan={span}
-        className="border border-coa-gray px-3 py-2 text-center font-semibold break-words whitespace-normal"
+        className="border border-coa-gray px-3 py-2 text-center font-semibold whitespace-nowrap"
       >
-        {po.name}
+        {shortLabel}
       </td>
     );
   });
-
-  // Precompute CO cells for rendering.
+  
+  // Precomputes CO header cells with sequential labeling
+  let coCounter = 1;
   const coCells = layout.flatMap((po, pIdx) =>
     po.cos.map((co, cIdx) => {
       const span = countClasswork(co);
+
+      const shortLabel =
+        co.name.match(/CO\d+/i)?.[0]?.toUpperCase() ?? `CO${coCounter++}`;
+
       return (
         <td
           key={`co-${pIdx}-${cIdx}`}
           colSpan={span}
-          className="border border-coa-gray px-3 py-2 text-center font-semibold text-coa-red bg-coa-yellow break-words whitespace-normal"
+          className="border border-coa-gray px-3 py-2 text-center font-semibold text-coa-red bg-coa-yellow whitespace-nowrap"
+          title={co.name}
         >
-          {co.name}
+          {shortLabel}
         </td>
       );
     })
   );
 
-  if (loading) return <div className="p-6 text-center">Loading...</div>;
-  if (error) return <div className="p-6 text-red-500">{error}</div>;
-  if (!data) return <div className="p-6">No data available.</div>;
-
+  // Renders main layout with table and footer/sidebar
   return (
     <AppLayout activeItem="/instructor" disablePadding>
-      <div className="bg-gray-50 text-gray-700 min-h-screen flex flex-col">
+      <div className="text-gray-700 min-h-screen flex flex-col overflow-x-auto">
         <div className="fixed top-0 left-0 right-0 z-20 bg-white h-20 flex items-center px-6 border border-gray-200 ">
           <button
             onClick={() => navigate(-1)}
@@ -269,17 +376,17 @@ export default function ResultSheetPage(): JSX.Element {
           <h1 className="text-xl font-semibold ml-4">COA Result Sheet</h1>
         </div>
 
-        <div className="pt-19.5 flex-grow">
+        <div className="pt-4">
           <div className="bg-white">
             <table className="table-auto border-collapse w-full">
               <tbody>
-                {/* Rows for displaying class information. */}
+                {/* Class information rows */}
                 {[
-                  ["Campus/College/Department:", classInfo.cacode],
-                  ["Program:", classInfo.program],
-                  ["Course:", classInfo.course],
-                  ["AY/Semester:", classInfo.aySemester],
-                  ["Faculty:", classInfo.faculty],
+                  ["Campus/College/Department:", data.classInfo.cacode],
+                  ["Program:", data.classInfo.program],
+                  ["Course:", data.classInfo.course],
+                  ["AY/Semester:", data.classInfo.aySemester],
+                  ["Faculty:", data.classInfo.faculty],
                 ].map(([label, value], idx) => (
                   <tr key={idx}>
                     <td
@@ -297,15 +404,7 @@ export default function ResultSheetPage(): JSX.Element {
                   </tr>
                 ))}
 
-                {/* Spacer row for visual separation. */}
-                <tr>
-                  <td
-                    colSpan={totalColumns}
-                    className="border border-coa-gray px-3 py-6"
-                  />
-                </tr>
-
-                {/* Title row for the assessment result sheet. */}
+                {/* Assessment title row */}
                 <tr>
                   <td
                     colSpan={totalColumns}
@@ -315,7 +414,7 @@ export default function ResultSheetPage(): JSX.Element {
                   </td>
                 </tr>
 
-                {/* Row for program outcomes (POs). */}
+                {/* PO header row */}
                 <tr>
                   <td
                     className="border border-coa-gray px-3 py-2 font-medium min-w-[220px]"
@@ -323,17 +422,14 @@ export default function ResultSheetPage(): JSX.Element {
                   >
                     Result Status: (Completed or Not)
                   </td>
-
-                  {/* Empty cell for alignment. */}
                   <td
                     className="border border-coa-gray px-2 py-2 text-center font-medium align-top min-w-[35px]"
                     rowSpan={5 + studentCount}
                   ></td>
-
                   {poCells}
                 </tr>
 
-                {/* Row for course outcomes (COs). */}
+                {/* CO header row */}
                 <tr>
                   <td
                     className="border border-coa-gray px-3 py-2 font-medium align-top min-w-[220px]"
@@ -345,7 +441,7 @@ export default function ResultSheetPage(): JSX.Element {
                   {coCells}
                 </tr>
 
-                {/* Row for Bloom's levels and KPI headers. */}
+                {/* Bloom's levels and KPI row */}
                 <tr>
                   {layout.flatMap((po, pIdx) =>
                     po.cos.flatMap((co, cIdx) => {
@@ -383,7 +479,7 @@ export default function ResultSheetPage(): JSX.Element {
                   )}
                 </tr>
 
-                {/* Row for classwork names with vertical text orientation. */}
+                {/* Classwork names row */}
                 <tr>
                   {layout.flatMap((po, pIdx) =>
                     po.cos.flatMap((co, cIdx) => {
@@ -423,7 +519,7 @@ export default function ResultSheetPage(): JSX.Element {
                   )}
                 </tr>
 
-                {/* Row for maximum scores and thresholds. */}
+                {/* Maximum scores row */}
                 <tr>
                   <td className="border border-coa-gray px-3 py-2 text-center font-medium">
                     No.
@@ -434,17 +530,14 @@ export default function ResultSheetPage(): JSX.Element {
                   <td className="border border-coa-gray px-3 py-2 text-center font-medium">
                     Name
                   </td>
-
                   {(() => {
                     let index = 0;
                     return layout.flatMap((po, pIdx) =>
                       po.cos.flatMap((co, cIdx) => {
-                        const { totalMax, pass70, pass80Count } =
-                          coTotalsMemo[index++];
+                        const { totalMax, pass70, pass80Count } = coTotalsMemo[index++];
 
                         const maxCells = co.clustered.map((cw, cwIdx) => {
-                          const maxVal =
-                            co.classwork[cw.coIndex]?.maxScore ?? "";
+                          const maxVal = co.classwork[cw.coIndex]?.maxScore ?? "";
                           return (
                             <td
                               key={`max-${pIdx}-${cIdx}-${cwIdx}`}
@@ -482,26 +575,18 @@ export default function ResultSheetPage(): JSX.Element {
                   })()}
                 </tr>
 
-                {/* Rows for student data, scores, and pass/fail indicators. */}
-                {students.map((student, sIdx) => (
+                {/* Student data rows */}
+                {data.students.map((student, sIdx) => (
                   <tr key={student.id}>
-                    <td className="border border-coa-gray px-3 py-2 text-center">
-                      {sIdx + 1}
-                    </td>
-                    <td className="border border-coa-gray px-3 py-2 text-center">
-                      {student.id}
-                    </td>
-                    <td className="border border-coa-gray px-3 py-2 whitespace-nowrap">
-                      {student.name}
-                    </td>
-
+                    <td className="border border-coa-gray px-3 py-2 text-center">{sIdx + 1}</td>
+                    <td className="border border-coa-gray px-3 py-2 text-center">{student.id}</td>
+                    <td className="border border-coa-gray px-3 py-2 whitespace-nowrap">{student.name}</td>
                     {(() => {
                       let index = 0;
                       return layout.flatMap((po, pIdx) =>
                         po.cos.flatMap((co, cIdx) => {
                           const studentScores = student.scores[co.name] ?? [];
-                          const { pass70: pass70Threshold, pass80Count } =
-                            coTotalsMemo[index++];
+                          const { pass70: pass70Threshold, pass80Count } = coTotalsMemo[index++];
 
                           const scoreCells = co.clustered.map((cw, cwIdx) => {
                             const val = studentScores[cw.coIndex]?.raw ?? "";
@@ -524,7 +609,7 @@ export default function ResultSheetPage(): JSX.Element {
                             );
                             const pass70 = studentTotal >= pass70Threshold;
 
-                            const pass70Count = students.filter((s) => {
+                            const pass70Count = data.students.filter((s) => {
                               const total = (s.scores[co.name] ?? []).reduce(
                                 (sum, sc) => sum + (sc?.raw ?? 0),
                                 0
@@ -600,22 +685,20 @@ export default function ResultSheetPage(): JSX.Element {
           </div>
         </div>
 
+        {/* Footer with toggle */}
         <footer
           className={`fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-gray-200
-              transition-transform duration-300 ${
-                footerOpen ? "translate-y-0" : "translate-y-full"
-              }`}
+              transition-transform duration-300 ${footerOpen ? "translate-y-0" : "translate-y-full"
+            }`}
         >
-          {/* Toggle button */}
           <div
             className="absolute -top-10 right-10 w-12 h-10 rounded-tl-full rounded-tr-full
                bg-white flex items-center justify-center cursor-pointer border-t border-l border-r border-gray-300"
             onClick={() => setFooterOpen((o) => !o)}
           >
             <svg
-              className={`w-5 h-5 -scale-y-100 text-gray-600 transition-transform duration-300 ${
-                footerOpen ? "rotate-180" : ""
-              }`}
+              className={`w-5 h-5 -scale-y-100 text-gray-600 transition-transform duration-300 ${footerOpen ? "rotate-180" : ""
+                }`}
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
@@ -629,7 +712,6 @@ export default function ResultSheetPage(): JSX.Element {
             </svg>
           </div>
 
-          {/* Footer content */}
           <div className="px-8 py-8">
             <div className="flex justify-between items-center">
               <button
@@ -642,7 +724,7 @@ export default function ResultSheetPage(): JSX.Element {
           </div>
         </footer>
 
-        {/* Overlay */}
+        {/* Overlay for sidebar */}
         {isOpen && (
           <div
             className="fixed inset-0 bg-black/50 z-40"
@@ -650,7 +732,7 @@ export default function ResultSheetPage(): JSX.Element {
           />
         )}
 
-        {/* Sidebar */}
+        {/* Analytics sidebar */}
         {isOpen && (
           <div className="fixed right-0 top-0 h-full w-250 bg-white z-50 p-4 overflow-y-auto shadow-xl border-l border-gray-200">
             <div className="flex items-center mb-4 pt-8 px-8">
