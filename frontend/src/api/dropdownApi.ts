@@ -9,6 +9,8 @@ import type {
   Credit,
   Instructor,
   AcademicYear,
+  BloomsClassification,
+  CourseOutcomes,
 } from "../types/dropdownTypes";
 
 export async function getRoles(): Promise<UserRole[]> {
@@ -91,12 +93,12 @@ export async function getAcademicYears(): Promise<AcademicYear[]> {
   }
 }
 
-export async function getBloomsOptions() {
+export async function getBloomsOptions(): Promise<BloomsClassification[]> {
   const { data } = await axiosClient.get("/blooms_classification/");
   return data;
 }
 
-export async function getCourseOutcomes(courseCode: string) {
+export async function getCourseOutcomes(courseCode: string): Promise<CourseOutcomes[]> {
   const { data } = await axiosClient.get(`/course_outcomes/${courseCode}`);
   return data;
 }

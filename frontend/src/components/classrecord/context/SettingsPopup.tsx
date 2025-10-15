@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
-interface ContextMenuProps {
+interface SettingsPopupProps {
   visible: boolean;
   x: number;
   y: number;
@@ -12,7 +12,7 @@ interface ContextMenuProps {
   onClose?: () => void;
 }
 
-export default function ContextMenu({
+export default function SettingsPopup({
   visible,
   x,
   y,
@@ -21,7 +21,7 @@ export default function ContextMenu({
   addLabel = "Add",
   deleteLabel = "Delete",
   onClose,
-}: ContextMenuProps) {
+}: SettingsPopupProps) {
   useEffect(() => {
     if (!visible) return;
 

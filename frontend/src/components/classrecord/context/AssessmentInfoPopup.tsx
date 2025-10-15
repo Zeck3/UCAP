@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { Assessment } from "../../types/classRecordTypes";
+import type { Assessment } from "../../../types/classRecordTypes";
 
 interface Props {
   x: number;
@@ -17,7 +17,7 @@ interface Props {
   initialOutcomes?: number[];
 }
 
-const AssessmentInfoContextMenu: React.FC<Props> = ({
+export default function AssessmentInfoContextMenu({
   x,
   y,
   onClose,
@@ -27,7 +27,7 @@ const AssessmentInfoContextMenu: React.FC<Props> = ({
   handleUpdateAssessment,
   initialBlooms = [],
   initialOutcomes = [],
-}) => {
+}: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [selectedBlooms, setSelectedBlooms] = useState<string[]>(
     initialBlooms.map(String)
@@ -53,8 +53,8 @@ const AssessmentInfoContextMenu: React.FC<Props> = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
-  
-  const handleBloomToggle = (id: string) => {
+
+  function handleBloomToggle(id: string) {
     setSelectedBlooms((prev) => {
       const updated = prev.includes(id)
         ? prev.filter((b) => b !== id)
@@ -62,24 +62,21 @@ const AssessmentInfoContextMenu: React.FC<Props> = ({
       handleUpdateAssessment(assessmentId, {
         blooms_classification: updated.map(Number),
       });
-
       return updated;
     });
-  };
+  }
 
-  const handleOutcomeToggle = (id: string) => {
+  function handleOutcomeToggle(id: string) {
     setSelectedOutcomes((prev) => {
       const updated = prev.includes(id)
         ? prev.filter((o) => o !== id)
         : [...prev, id];
-
       handleUpdateAssessment(assessmentId, {
         course_outcome: updated.map(Number),
       });
-
       return updated;
     });
-  };
+  }
 
   const menu = (
     <div
@@ -130,6 +127,4 @@ const AssessmentInfoContextMenu: React.FC<Props> = ({
   );
 
   return createPortal(menu, document.body);
-};
-
-export default AssessmentInfoContextMenu;
+}

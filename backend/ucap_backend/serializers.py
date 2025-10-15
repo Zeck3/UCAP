@@ -319,7 +319,7 @@ class AssessmentSerializer(serializers.ModelSerializer):
             "assessment_id",
             "assessment_title",
             "assessment_highest_score",
-            "course_component_id",
+            "course_component",
             "blooms_classification",
             "course_outcome",
         ]

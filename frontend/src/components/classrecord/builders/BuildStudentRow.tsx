@@ -1,12 +1,12 @@
 import React, { useEffect, useState, type JSX } from "react";
-import type { HeaderNode } from "./HeaderConfig";
-import type { Student } from "../../types/classRecordTypes";
+import type { HeaderNode } from "../types/headerConfigTypes";
+import type { Student } from "../../../types/classRecordTypes";
 import {
   formatValue,
   getCalculatedBg,
   getDesc,
   getTextClass,
-} from "./ClassRecordFunctions";
+} from "../utils/ClassRecordFunctions";
 
 interface BuildStudentRowProps {
   student: Student;

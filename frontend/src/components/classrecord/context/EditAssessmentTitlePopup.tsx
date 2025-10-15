@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from "react";
 
-interface EditableCellProps {
+interface EditAssessmentTitlePopupProps {
   value: string | number | null;
   onChange: (value: string) => void;
   isSelected: boolean;
   onSelect: () => void;
 }
-export default function EditableCell({
+
+export default function EditAssessmentTitlePopup({
   value,
   onChange,
   isSelected,
   onSelect,
-}: EditableCellProps) {
+}: EditAssessmentTitlePopupProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(String(value ?? ""));
 

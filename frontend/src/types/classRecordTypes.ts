@@ -1,9 +1,6 @@
-export interface CreateAssessment extends Partial<Assessment> {
-  course_component_id: number;
-}
-
 export interface Assessment {
   assessment_id: number;
+  course_component: number;
   assessment_title: string | null;
   assessment_highest_score: number | null;
   blooms_classification?: number[];

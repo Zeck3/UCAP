@@ -1,17 +1,17 @@
 import React from "react";
-import type { HeaderNode } from "./HeaderConfig";
+import type { HeaderNode } from "../types/headerConfigTypes";
 import {
   countLeaves,
   getTotalLeafCount,
   getHeaderClass,
-  renderTitleLines,
   getHeaderWidth,
   computeComputedContent,
   formatValue,
   getCalculatedBg,
-} from "./ClassRecordFunctions";
+} from "../utils/ClassRecordFunctions";
 import type { JSX } from "react";
-import type { Assessment } from "../../types/classRecordTypes";
+import type { Assessment } from "../../../types/classRecordTypes";
+import { renderTitleLines } from "../utils/ClassRecordRenderers";
 
 interface BuildHeaderRowProps {
   nodes: HeaderNode[];
@@ -149,7 +149,7 @@ function BuildHeaderRow({
           }}
           className={`border border-[#E9E6E6] p-2 text-center ${headerClass} ${
             isLeafDeep
-              ? `[writing-mode:vertical-rl] border border-[#E9E6E6] rotate-180 text-left truncate overflow-hidden text-ellipsis w-[3.75rem] max-w-[3.75rem]`
+              ? `[writing-mode:vertical-rl] rotate-180 text-left truncate overflow-hidden text-ellipsis w-[3.75rem] max-w-[3.75rem]`
               : `whitespace-normal ${headerWidth} w-[3.75rem]`
           }`}
           onContextMenu={
@@ -304,41 +304,42 @@ function BuildHeaderRow({
           <input
             type="number"
             min={0}
+            max={999}
             value={displayValue === 0 ? "" : displayValue}
             onChange={(e) => {
               const val = e.target.value;
-              const newValue = val === "" ? 0 : Number(val);
+              const num = val === "" ? 0 : Number(val);
+              if (num > 999) return;
+
               setMaxScores((prev) => ({
                 ...prev,
-                [key]: newValue,
+                [key]: num,
               }));
             }}
             onBlur={(e) => {
               const val = e.target.value;
-              const newValue = val === "" ? 0 : Number(val);
+              const num = val === "" ? 0 : Number(val);
+
               handleUpdateAssessment(Number(key), {
-                assessment_highest_score: newValue,
+                assessment_highest_score: Math.min(num, 999),
               });
             }}
             onKeyDown={(e) => {
-              // ⛔ Prevent non-numeric characters
               if (["e", "E", "+", "-"].includes(e.key)) {
                 e.preventDefault();
               }
-
-              // 💾 Save on Enter
               if (e.key === "Enter") {
                 const val = (e.target as HTMLInputElement).value;
-                const newValue = val === "" ? 0 : Number(val);
+                const num = val === "" ? 0 : Number(val);
                 handleUpdateAssessment(Number(key), {
-                  assessment_highest_score: newValue,
+                  assessment_highest_score: Math.min(num, 999),
                 });
                 (e.target as HTMLInputElement).blur();
               }
             }}
             onPaste={(e) => {
               const paste = e.clipboardData.getData("text");
-              if (!/^\d*$/.test(paste)) {
+              if (!/^\d*$/.test(paste) || Number(paste) > 999) {
                 e.preventDefault();
               }
             }}

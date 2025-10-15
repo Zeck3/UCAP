@@ -5,7 +5,6 @@ import type {
   Assessment,
   CourseComponent,
   CourseUnit,
-  CreateAssessment,
 } from "../types/classRecordTypes";
 
 export async function getClassRecord(sectionId: number) {
@@ -41,7 +40,7 @@ export async function deleteStudent(studentId: number) {
   await axiosClient.delete(`/instructor/students/${studentId}/`);
 }
 
-export async function createAssessment(assessment: CreateAssessment) {
+export async function createAssessment(assessment: Partial<Assessment>) {
   const { data } = await axiosClient.post<Assessment>(
     `/instructor/assessments/`,
     assessment

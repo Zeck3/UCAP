@@ -3,24 +3,8 @@ import type {
   CourseTerm,
   CourseUnit,
   CourseComponent,
-} from "../../types/classRecordTypes";
-
-type CalculationType =
-  | "assignment"
-  | "sum"
-  | "percentage"
-  | "weightedAverage"
-  | "gradePoint"
-  | "totalGradePoint"
-  | "roundedGrade"
-  | "computed";
-
-export type HeaderNodeType =
-  | "term"
-  | "unit"
-  | "component"
-  | "assessment"
-  | "computed";
+} from "../../../types/classRecordTypes";
+import type { HeaderNode } from "../types/headerConfigTypes";
 
 export default function collectMaxScores(
   nodes: HeaderNode[]
@@ -38,27 +22,6 @@ export default function collectMaxScores(
   }
   nodes.forEach(collect);
   return scores;
-}
-
-export interface HeaderNode {
-  title: string;
-  key?: string;
-  type?: "normal" | "v-separator" | "spacer" | "h-separator";
-  children: HeaderNode[];
-  nodeType?: HeaderNodeType;
-  isRowSpan?: boolean;
-  needsButton?: boolean;
-  maxScore?: number;
-  colSpan?: number;
-  calculationType?: CalculationType;
-  groupKeys?: string[];
-  dependsOn?: string[];
-  weights?: number[];
-  customRowSpan?: number;
-  studentInfo?: boolean;
-  computedGrades?: boolean;
-  termType?: "midterm" | "final";
-  componentId?: number;
 }
 
 export function createSpanningCell(crp: ClassRecord): HeaderNode {

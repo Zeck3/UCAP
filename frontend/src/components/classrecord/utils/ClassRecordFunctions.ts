@@ -1,6 +1,5 @@
-import type { HeaderNode } from "./HeaderConfig";
-import type { Student } from "../../types/classRecordTypes";
-import type { JSX } from "react";
+import type { HeaderNode } from "../types/headerConfigTypes";
+import type { Assessment, Student } from "../../../types/classRecordTypes";
 
 type ComputedType = "computedWeighted" | "computedRounded" | undefined;
 
@@ -28,21 +27,6 @@ export function getTotalLeafCount(nodes: HeaderNode[]): number {
     .filter((node) => node.type !== "h-separator")
     .map(countLeaves)
     .reduce((a, b) => a + b, 0);
-}
-
-export function renderTitleLines(title: string): JSX.Element | string {
-  if (title.includes("\n")) {
-    return (
-      <div className="text-left">
-        {title.split("\n").map((line, i) => (
-          <div key={i} className="leading-tight whitespace-normal">
-            {line}
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return title;
 }
 
 export function collectMaxScores(nodes: HeaderNode[]): Record<string, number> {
@@ -398,4 +382,57 @@ export function computeComputedContent(
     type,
     textClass,
   };
+}
+
+export function updateAssessmentInTree(
+  nodes: HeaderNode[],
+  assessmentId: number,
+  updates: Partial<Assessment>
+): HeaderNode[] {
+  return nodes.map((node) => {
+    if (node.key === String(assessmentId)) {
+      const mappedUpdates: Partial<HeaderNode> = {};
+
+      if (
+        updates.assessment_title !== undefined &&
+        updates.assessment_title !== null
+      ) {
+        mappedUpdates.title = updates.assessment_title;
+      }
+
+      if (
+        updates.assessment_highest_score !== undefined &&
+        updates.assessment_highest_score !== null
+      ) {
+        mappedUpdates.maxScore = updates.assessment_highest_score;
+      }
+      return { ...node, ...mappedUpdates };
+    }
+
+    if (node.children && node.children.length > 0) {
+      return {
+        ...node,
+        children: updateAssessmentInTree(node.children, assessmentId, updates),
+      };
+    }
+
+    return node;
+  });
+}
+
+export function findParentComponentNode(
+  nodes: HeaderNode[],
+  targetKey?: string
+): HeaderNode | null {
+  for (const node of nodes) {
+    if (
+      node.nodeType === "component" &&
+      node.children.some((c) => c.key === targetKey)
+    ) {
+      return node;
+    }
+    const nested = findParentComponentNode(node.children, targetKey);
+    if (nested) return nested;
+  }
+  return null;
 }
