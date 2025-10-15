@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
+import AddIcon from "../../../assets/plus-solid.svg?react"
+import DeleteIcon from "../../../assets/trash-solid.svg?react";
 
 interface SettingsPopupProps {
   visible: boolean;
@@ -37,23 +39,25 @@ export default function SettingsPopup({
 
   return createPortal(
     <div
-      className="fixed z-50 bg-white border rounded-md shadow-lg text-sm w-48"
+      className="fixed right-0 top-12 w-52 bg-white border border-[#E9E6E6] rounded-lg z-20"
       style={{ top: y, left: x }}
     >
       {onAdd && (
         <button
           onClick={onAdd}
-          className="w-full text-left px-4 py-2 hover:bg-gray-100"
+          className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-sm w-full"
         >
-          ➕ {addLabel}
+          <AddIcon className="h-5 w-5 ml-4 mr-2 text-[#767676]" />
+          <span>{addLabel}</span>
         </button>
       )}
       {onDelete && (
         <button
           onClick={onDelete}
-          className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
+          className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-sm text-red-400 w-full"
         >
-          🗑️ {deleteLabel}
+          <DeleteIcon className="h-5 w-5 ml-4 mr-2" />
+          <span>{deleteLabel}</span>
         </button>
       )}
     </div>,

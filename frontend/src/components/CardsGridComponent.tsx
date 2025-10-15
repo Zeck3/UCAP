@@ -160,7 +160,7 @@ export default function CardsGridComponent<T extends { id: string | number }>({
                       ref={dropdownRef}
                       className="absolute right-0 top-12 w-40 bg-white border border-[#E9E6E6] rounded-lg z-20"
                     >
-                      <div
+                      <button
                         className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-sm"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -170,8 +170,8 @@ export default function CardsGridComponent<T extends { id: string | number }>({
                       >
                         <EditIcon className="h-5 w-5 ml-4 mr-2" />
                         <span>Edit</span>
-                      </div>
-                      <div
+                      </button>
+                      <button
                         className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-sm text-red-400"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -181,7 +181,7 @@ export default function CardsGridComponent<T extends { id: string | number }>({
                       >
                         <DeleteIcon className="h-5 w-5 ml-4 mr-2" />
                         <span>Delete</span>
-                      </div>
+                      </button>
                     </div>
                   )}
                 </div>

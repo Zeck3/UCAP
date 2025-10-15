@@ -1,4 +1,10 @@
-import { useCallback, useMemo, useState, useEffect, startTransition } from "react";
+import {
+  useCallback,
+  useMemo,
+  useState,
+  useEffect,
+  startTransition,
+} from "react";
 import { useParams } from "react-router-dom";
 import { generateHeaderConfig } from "../utils/HeaderConfig";
 import type { Assessment, Student } from "../../../types/classRecordTypes";
@@ -41,7 +47,7 @@ export function useClassRecord() {
   const [editingAssessment, setEditingAssessment] = useState<{
     nodeKey: string;
     value: string;
-    coords: { top: number; left: number; width: number; height: number };
+    coords: { x: number; y: number };
   } | null>(null);
 
   const [bloomsOptions, setBloomsOptions] = useState<
@@ -70,6 +76,7 @@ export function useClassRecord() {
     y: number;
     studentId?: number;
   }>({ visible: false, x: 0, y: 0, studentId: undefined });
+
   const [assessmentContextMenu, setAssessmentContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -649,27 +656,26 @@ export function useClassRecord() {
       setCurrentAssessmentOutcomes,
     ]
   );
-
   const handleEditAssessmentTitle = useCallback(
     (node: HeaderNode, event: React.MouseEvent<HTMLDivElement>) => {
       if (!canOpenPopup) return;
       setCanOpenPopup(false);
 
-      const rect = (event.target as HTMLElement).getBoundingClientRect();
+      const target = event.currentTarget as HTMLElement;
+      const rect = target.getBoundingClientRect();
 
       setEditingAssessment({
         nodeKey: node.key!,
         value: node.title || "",
         coords: {
-          top: rect.bottom,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height,
+          x: rect.left - 0.5,
+          y: rect.bottom - 0.5,
         },
       });
-      window.setTimeout(() => setCanOpenPopup(true), 100);
+
+      setTimeout(() => setCanOpenPopup(true), 100);
     },
-    [canOpenPopup, setCanOpenPopup, setEditingAssessment]
+    [canOpenPopup]
   );
 
   const handleUpdateAssessmentTitle = useCallback(
@@ -745,6 +751,7 @@ export function useClassRecord() {
   const handleRightClickRow = useCallback(
     (e: React.MouseEvent, studentId: number) => {
       e.preventDefault();
+      setAssessmentContextMenu((prev) => ({ ...prev, visible: false }));
       setStudentContextMenu({
         visible: true,
         x: e.clientX,
@@ -755,13 +762,15 @@ export function useClassRecord() {
     [setStudentContextMenu]
   );
 
-  const handleCloseContextMenu = useCallback(() => {
-    setStudentContextMenu({ visible: false, x: 0, y: 0 });
-  }, []);
+  const handleCloseMenus = () => {
+    setStudentContextMenu((prev) => ({ ...prev, visible: false }));
+    setAssessmentContextMenu((prev) => ({ ...prev, visible: false }));
+    setComponentContextMenu((prev) => ({ ...prev, visible: false }));
+  };
 
   const handleRightClickNode = (e: React.MouseEvent, node: HeaderNode) => {
     e.preventDefault();
-
+    setStudentContextMenu((prev) => ({ ...prev, visible: false }));
     setAssessmentContextMenu((prev) => ({ ...prev, visible: false }));
     setComponentContextMenu((prev) => ({ ...prev, visible: false }));
 
@@ -809,7 +818,7 @@ export function useClassRecord() {
     handleUpdateAssessmentTitle,
     handleEditAssessmentTitleCancel,
     handleOpenAssessmentInfo,
-    handleCloseContextMenu,
+    handleCloseMenus,
     handleCloseAssessmentInfo,
     handleRightClickNode,
     handleRightClickRow,

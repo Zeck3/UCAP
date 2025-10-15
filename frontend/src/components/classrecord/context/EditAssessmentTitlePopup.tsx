@@ -1,71 +1,94 @@
-import React, { useState, useEffect } from "react";
+import { useRef, useEffect, useState } from "react"; // <-- Import useState
+import { createPortal } from "react-dom";
+import type { Dispatch, SetStateAction } from "react";
+
+export interface EditingAssessment {
+  nodeKey: string;
+  value: string;
+  coords: { x: number; y: number };
+}
 
 interface EditAssessmentTitlePopupProps {
-  value: string | number | null;
-  onChange: (value: string) => void;
-  isSelected: boolean;
-  onSelect: () => void;
+  editingAssessment: EditingAssessment | null;
+  setEditingAssessment: Dispatch<SetStateAction<EditingAssessment | null>>;
+  handleEditSave: (nodeKey: string, newValue: string) => void;
+  handleEditCancel: () => void;
 }
 
 export default function EditAssessmentTitlePopup({
-  value,
-  onChange,
-  isSelected,
-  onSelect,
+  editingAssessment,
+  handleEditSave,
+  handleEditCancel,
 }: EditAssessmentTitlePopupProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [tempValue, setTempValue] = useState(String(value ?? ""));
+  const [inputValue, setInputValue] = useState(editingAssessment?.value || "");
 
   useEffect(() => {
-    setTempValue(String(value ?? ""));
-  }, [value]);
-
-  const handleSingleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onSelect();
-  };
-
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsEditing(true);
-  };
-
-  const handleBlur = () => {
-    setIsEditing(false);
-    onChange(tempValue);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === "Tab") {
-      setIsEditing(false);
-      onChange(tempValue);
-    } else if (e.key === "Escape") {
-      setIsEditing(false);
-      setTempValue(String(value ?? ""));
+    if (editingAssessment) {
+      setInputValue(editingAssessment.value);
     }
+  }, [editingAssessment]);
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const popupContentRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const portalNode = document.createElement("div");
+    document.body.appendChild(portalNode);
+    containerRef.current = portalNode;
+    return () => {
+      if (portalNode.parentNode) {
+        portalNode.parentNode.removeChild(portalNode);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!editingAssessment) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        popupContentRef.current &&
+        !popupContentRef.current.contains(event.target as Node)
+      ) {
+        handleEditCancel();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [editingAssessment, handleEditCancel]);
+
+  if (!editingAssessment || !containerRef.current) {
+    return null;
+  }
+
+  const handleLocalSave = () => {
+    handleEditSave(editingAssessment.nodeKey, inputValue);
   };
 
-  return (
+  return createPortal(
     <div
-      onClick={handleSingleClick}
-      onDoubleClick={handleDoubleClick}
-      className={`w-full h-full px-2 py-1 flex items-center transition-all duration-75 ${
-        isSelected ? "ring-1 ring-blue-400" : ""
-      }`}
+      ref={popupContentRef}
+      style={{
+        position: "absolute",
+        top: editingAssessment.coords.y,
+        left: editingAssessment.coords.x,
+      }}
+      className="z-40 bg-white border border-[#E9E6E6] rounded-sm"
     >
-      {isEditing ? (
-        <input
-          autoFocus
-          type="text"
-          value={tempValue}
-          onChange={(e) => setTempValue(e.target.value)}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-          className="w-full h-full bg-transparent border-none outline-none"
-        />
-      ) : (
-        <span className="w-full truncate select-none">{value ?? ""}</span>
-      )}
-    </div>
+      <input
+        type="text"
+        value={inputValue}
+        autoFocus
+        onBlur={handleLocalSave}
+        className="border-none outline-none p-2 px-4 rounded w-full"
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleLocalSave();
+          if (e.key === "Escape") handleEditCancel();
+        }}
+      />
+    </div>,
+    containerRef.current
   );
 }

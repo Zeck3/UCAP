@@ -1,7 +1,7 @@
 import { useClassRecord } from "./utils/useClassRecord";
 import BuildHeaderRow from "./builders/BuildHeaderRow";
 import BuildStudentRow from "./builders/BuildStudentRow";
-import EditAssessmentPopup from "./context/EditAssessmentPopup";
+import EditAssessmentTitlePopup from "./context/EditAssessmentTitlePopup";
 import ContextMenu from "./context/SettingsPopup";
 import AssessmentInfoPopup from "./context/AssessmentInfoPopup";
 import ClassRecordLoading from "../../pages/ClassRecordLoading";
@@ -21,11 +21,8 @@ export default function ClassRecordComponent() {
     currentAssessmentBlooms,
     currentAssessmentOutcomes,
     studentContextMenu,
-    setStudentContextMenu,
     assessmentContextMenu,
-    setAssessmentContextMenu,
     componentContextMenu,
-    setComponentContextMenu,
     assessmentInfoContextMenu,
     editingAssessment,
     setEditingAssessment,
@@ -34,6 +31,7 @@ export default function ClassRecordComponent() {
     handleEditAssessmentTitleCancel,
     handleOpenAssessmentInfo,
     handleCloseAssessmentInfo,
+    handleCloseMenus,
     handleRightClickNode,
     handleRightClickRow,
     handleUpdateAssessment,
@@ -92,7 +90,7 @@ export default function ClassRecordComponent() {
         ))}
       </tbody>
       {editingAssessment && (
-        <EditAssessmentPopup
+        <EditAssessmentTitlePopup
           editingAssessment={editingAssessment}
           setEditingAssessment={setEditingAssessment}
           handleEditSave={handleUpdateAssessmentTitle}
@@ -121,10 +119,8 @@ export default function ClassRecordComponent() {
           onAdd={() => handleAddStudent()}
           onDelete={() => handleDeleteStudent(studentContextMenu.studentId!)}
           addLabel="Add Student"
-          deleteLabel="Delete Assessment"
-          onClose={() =>
-            setStudentContextMenu((prev) => ({ ...prev, visible: false }))
-          }
+          deleteLabel="Delete Student"
+          onClose={handleCloseMenus}
         />
       )}
       {assessmentContextMenu.visible && (
@@ -138,9 +134,7 @@ export default function ClassRecordComponent() {
           onDelete={() =>
             handleDeleteAssessment(assessmentContextMenu.assessmentId!)
           }
-          onClose={() =>
-            setAssessmentContextMenu((prev) => ({ ...prev, visible: false }))
-          }
+          onClose={handleCloseMenus}
         />
       )}
       {componentContextMenu.visible && (
@@ -150,9 +144,7 @@ export default function ClassRecordComponent() {
           y={componentContextMenu.y}
           onAdd={() => handleAddAssessment()}
           addLabel="Add Assessment"
-          onClose={() =>
-            setComponentContextMenu((prev) => ({ ...prev, visible: false }))
-          }
+          onClose={handleCloseMenus}
         />
       )}
     </table>

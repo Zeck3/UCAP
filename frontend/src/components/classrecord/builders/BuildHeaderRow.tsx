@@ -142,6 +142,11 @@ function BuildHeaderRow({
           }
           colSpan={colSpan}
           rowSpan={rowSpan}
+          onClick={
+            node.nodeType === "assessment"
+              ? (e) => handleEditStart(node, e)
+              : undefined
+          }
           style={{
             height: level === 3 ? leafRowHeight : "auto",
             maxHeight: level === 3 ? leafRowHeight : "none",
@@ -161,16 +166,7 @@ function BuildHeaderRow({
               : undefined
           }
         >
-          {node.nodeType === "assessment" ? (
-            <div
-              onClick={(e) => handleEditStart(node, e)}
-              className="w-full h-full flex items-center py-7 truncate overflow-hidden text-ellipsis cursor-vertical-text"
-            >
-              {node.title?.trim() ? renderTitleLines(node.title) : ""}
-            </div>
-          ) : (
-            renderTitleLines(node.title)
-          )}
+          {node.title?.trim() ? renderTitleLines(node.title) : ""}
         </th>
       );
 
