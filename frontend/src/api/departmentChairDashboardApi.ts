@@ -1,41 +1,44 @@
 import axiosClient from "./axiosClient";
 import type {
-  DepartmentDetail,
   DepartmentLoadedCourses,
   DepartmentLoadedCoursesDisplay,
   LoadDepartmentCourseMessage,
-  DepartmentLoadedCourseDetails,
-  DepartmentLoadedCourseDetailsDisplay,
   DepartmentLoadedCourseSections,
   DepartmentLoadedCourseSectionsDisplay,
   CreateSection,
   CreateSectionMessage,
+  DepartmentCourses,
   LoadDepartmentCourse,
 } from "../types/departmentChairDashboardTypes";
 
-// ✅ Department Details
-export async function fetchDepartmentDetails(departmentId: number): Promise<DepartmentDetail[]> {
-  const response = await axiosClient.get<DepartmentDetail[]>(`department_chair/department_detail/${departmentId}/`);
+export async function getDepartmentCourses(
+  departmentId: number
+): Promise<DepartmentCourses[]> {
+  const response = await axiosClient.get<DepartmentCourses[]>(
+    `department_chair/department_course_list/${departmentId}/`
+  );
   return response.data;
 }
 
-// ✅ Loaded Courses (GET + POST)
-export async function fetchDepartmentLoadedCourses(departmentId: number): Promise<DepartmentLoadedCoursesDisplay[]> {
-  const response = await axiosClient.get<DepartmentLoadedCourses[]>(`department_chair/department_course_management/${departmentId}/`);
+export async function getDepartmentLoadedCourses(
+  departmentId: number
+): Promise<DepartmentLoadedCoursesDisplay[]> {
+  const response = await axiosClient.get<DepartmentLoadedCourses[]>(
+    `department_chair/department_course_management/${departmentId}/`
+  );
   return response.data.map((course) => ({
     id: course.loaded_course_id,
     course_code: course.course_code,
     course_title: course.course_title,
     program_name: course.program_name,
-    year_level: course.year_level,
+    year_level: course.year_level_type,
     semester_type: course.semester_type,
-    department_name: course.department_name,
     academic_year: `${course.academic_year_start}-${course.academic_year_end}`,
     academicYearAndSem: `${course.academic_year_start}-${course.academic_year_end} ${course.semester_type}`,
   }));
 }
 
-export async function fetchLoadDepartmentCourse(
+export async function addLoadedCourse(
   departmentId: number,
   data: LoadDepartmentCourse
 ): Promise<LoadDepartmentCourseMessage> {
@@ -46,40 +49,21 @@ export async function fetchLoadDepartmentCourse(
   return response.data;
 }
 
-// ✅ Course Details (GET + DELETE)
-export async function fetchDepartmentLoadedCourseDetails(
-  departmentId: number,
-  loadedCourseId: number
-): Promise<DepartmentLoadedCourseDetailsDisplay[]> {
-  const response = await axiosClient.get<DepartmentLoadedCourseDetails[]>(
-    `department_chair/department_course_management/${departmentId}/${loadedCourseId}/`
-  );
-  return response.data.map((details) => ({
-    course_title: details.course_title,
-    department_name: details.department_name,
-    college_name: details.college_name,
-    campus_name: details.campus_name,
-    semester_type: details.semester_type,
-    year_level: details.year_level,
-    academic_year: `${details.academic_year_start} - ${details.academic_year_end}`,
-  }));
-}
 
-export async function fetchDeleteLoadedCourse(
-  departmentId: number,
+export async function deleteLoadedCourse(
   loadedCourseId: number
 ): Promise<boolean> {
-  await axiosClient.delete(`department_chair/department_course_management/${departmentId}/${loadedCourseId}/`);
+  await axiosClient.delete(
+    `department_chair/department_course_management/${loadedCourseId}/`
+  );
   return true;
 }
 
-// ✅ Section Management (GET + POST)
-export async function fetchDepartmentChairCourseSections(
-  departmentId: number,
+export async function getSections(
   loadedCourseId: number
 ): Promise<DepartmentLoadedCourseSectionsDisplay[]> {
   const response = await axiosClient.get<DepartmentLoadedCourseSections[]>(
-    `department_chair/department_section_management/${departmentId}/${loadedCourseId}/`
+    `department_chair/section_management/${loadedCourseId}/`
   );
   return response.data.map((s) => ({
     id: s.section_id,
@@ -91,37 +75,29 @@ export async function fetchDepartmentChairCourseSections(
   }));
 }
 
-export async function fetchCreateSection(
-  departmentId: number,
+export async function addSection(
   loadedCourseId: number,
   section: CreateSection
 ): Promise<CreateSectionMessage> {
   const response = await axiosClient.post<CreateSectionMessage>(
-    `department_chair/department_section_management/${departmentId}/${loadedCourseId}/`,
+    `department_chair/section_management/${loadedCourseId}/`,
     section
   );
   return response.data;
 }
 
-// ✅ Section Update / Delete
-export async function fetchUpdateSection(
-  departmentId: number,
-  loadedCourseId: number,
+export async function editSection(
   sectionId: number,
   updatedSection: Partial<CreateSection>
 ): Promise<CreateSectionMessage> {
   const response = await axiosClient.put<CreateSectionMessage>(
-    `department_chair/department_section_management/${departmentId}/${loadedCourseId}/${sectionId}/`,
+    `department_chair/section_management/${sectionId}/`,
     updatedSection
   );
   return response.data;
 }
 
-export async function fetchDeleteLoadedCourseSection(
-  departmentId: number,
-  loadedCourseId: number,
-  sectionId: number
-): Promise<boolean> {
-  await axiosClient.delete(`department_chair/department_section_management/${departmentId}/${loadedCourseId}/${sectionId}/`);
+export async function deleteSection(sectionId: number): Promise<boolean> {
+  await axiosClient.delete(`department_chair/section_management/${sectionId}/`);
   return true;
 }

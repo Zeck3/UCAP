@@ -45,13 +45,13 @@ urlpatterns = [
     # ====================================================
     # Department Chair Dashboard
     # ====================================================
-    path("department_chair/department_detail/<int:department_id>/", department_detail_view),
+    path("department_chair/department_course_list/<int:department_id>/", department_course_list_view),
 
     path("department_chair/department_course_management/<int:department_id>/", department_course_management_view),
-    path("department_chair/department_course_management/<int:department_id>/<int:loaded_course_id>/", department_course_detail_view),
+    path("department_chair/department_course_management/<int:loaded_course_id>/", department_course_detail_view),
 
-    path("department_chair/department_section_management/<int:department_id>/<int:loaded_course_id>/", department_section_management_view),
-    path("department_chair/department_section_management/<int:department_id>/<int:loaded_course_id>/<int:section_id>/", department_section_detail_view),
+    path("department_chair/section_management/<int:loaded_course_id>/", department_section_management_view),
+    path("department_chair/section_management/<int:section_id>/", department_section_detail_view),
     # ====================================================
     # Dropdown
     # ====================================================

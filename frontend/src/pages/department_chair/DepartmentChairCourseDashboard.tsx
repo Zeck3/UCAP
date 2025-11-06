@@ -1,4 +1,4 @@
-import InfoComponent from "../../components/InfoComponent";
+// import InfoComponent from "../../components/InfoComponent";
 import ToolBarComponent from "../../components/ToolBarComponent";
 import CardsGridComponent from "../../components/CardsGridComponent";
 import TableComponent from "../../components/TableComponent";
@@ -14,8 +14,8 @@ import { useNavigate, useParams } from "react-router-dom";
  
 import type { AcademicYear } from "../../types/dropdownTypes";
 import { getAcademicYears } from "../../api/dropdownApi";
-import { fetchDepartmentLoadedCourses, fetchDepartmentDetails, fetchDeleteLoadedCourse, fetchDepartmentCourses, fetchLoadDepartmentCourse } from "../../api/departmentChairDashboardApi";
-import type { DepartmentDetail, DepartmentLoadedCoursesDisplay, DepartmentCoursesDisplay, LoadDepartmentCourse } from "../../types/departmentChairDashboardTypes";
+import { getDepartmentLoadedCourses, getDepartmentCourses, addLoadedCourse, deleteLoadedCourse } from "../../api/departmentChairDashboardApi";
+import type { DepartmentCourses, DepartmentLoadedCoursesDisplay, LoadDepartmentCourse } from "../../types/departmentChairDashboardTypes";
 
 export default function DepartmentChairCourseDashboard() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -26,31 +26,29 @@ export default function DepartmentChairCourseDashboard() {
   const { department_id, department_name } = useParams();
 
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
-  const [departmentDetails, setDepartmentDetails] = useState<DepartmentDetail[]>([]);
   const [departmentLoadedCourses, setDepartmentLoadedCourses] = useState<DepartmentLoadedCoursesDisplay[]>([]);
-  const [departmentCourses, setDepartmentCourses] = useState<DepartmentCoursesDisplay[]>([]);
+  const [departmentCourses, setDepartmentCourses] = useState<DepartmentCourses[]>([]);
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [tableKey, setTableKey] = useState(0);
 
-  const [selectedCourses, setSelectedCourses] = useState<DepartmentCoursesDisplay[]>([]);
+  const [selectedCourses, setSelectedCourses] = useState<DepartmentCourses[]>([]);
 
   const departmentId = user?.department_id ?? 0;
 
   useEffect(() => {
     async function fetchDepartmentDetailsData() {
       setLoading(true);
-      const [details, courses, years, notLoaded] = await Promise.all([
-        fetchDepartmentDetails(departmentId),
-        fetchDepartmentLoadedCourses(departmentId),
-        getAcademicYears(),
-        fetchDepartmentCourses(departmentId),
-      ]);
-      setDepartmentDetails(details);
-      setDepartmentLoadedCourses(courses);
-      setAcademicYears(years);
-      setLoading(false);
-      setDepartmentCourses(notLoaded);
+   const [loadedCourses, allCourses, years] = await Promise.all([
+     getDepartmentLoadedCourses(departmentId),
+     getDepartmentCourses(departmentId),
+     getAcademicYears(),
+   ]);
+   setDepartmentLoadedCourses(loadedCourses);
+   setDepartmentCourses(allCourses);
+   setAcademicYears(years);
+   setLoading(false);
+
     }
     fetchDepartmentDetailsData();
   }, [departmentId]);
@@ -69,14 +67,14 @@ export default function DepartmentChairCourseDashboard() {
     const query = searchQuery.toLowerCase();
     return departmentCourses.filter(
       (course) =>
-        course.id.toLowerCase().includes(query) ||
+        course.course_code.toLowerCase().includes(query) ||
         course.course_title.toLowerCase().includes(query) ||
         course.lecture_unit.toString().includes(query) ||
-        course.lab_unit.toString().includes(query) ||
+        course.laboratory_unit.toString().includes(query) ||
         course.credit_unit.toString().includes(query)
     );
-  
   }, [departmentCourses, searchQuery]);
+
   
   const filteredDepartmentLoadedCourses = useMemo(() => {
     if (!searchQuery.trim()) return departmentLoadedCourses;
@@ -94,7 +92,7 @@ export default function DepartmentChairCourseDashboard() {
 
   const handleSelectionChange = useCallback((selected: string[]) => {
     setSelectedCourses(
-      departmentCourses.filter((course) => selected.includes(course.id))
+      departmentCourses.filter((course) => selected.includes(course.course_code))
     );
   }, [departmentCourses]);
 
@@ -109,7 +107,7 @@ export default function DepartmentChairCourseDashboard() {
   }
   try {
     for (const course of selectedCourses) {
-      const courseCode = course.id?.replace(/\s+/g, "") ?? "";
+      const courseCode = course.course_code?.replace(/\s+/g, "") ?? "";
       const academicYearId = selectedAcademicYear;
 
       const loadCourse: LoadDepartmentCourse = {
@@ -117,11 +115,11 @@ export default function DepartmentChairCourseDashboard() {
         academic_year: parseInt(academicYearId),
       };
 
-      await fetchLoadDepartmentCourse(loadCourse);
+      await addLoadedCourse(departmentId, loadCourse);
 
     }
 
-    const updatedCourses = await fetchDepartmentLoadedCourses(departmentId);
+    const updatedCourses = await getDepartmentLoadedCourses(departmentId);
     setDepartmentLoadedCourses(updatedCourses);
 
     // Close the side panel after loading
@@ -137,27 +135,26 @@ export default function DepartmentChairCourseDashboard() {
 };
 
   const handleDelete = async (id: number) => {
-    const success = await fetchDeleteLoadedCourse(id);
+    const success = await deleteLoadedCourse(id);
 
     if (success) setDepartmentLoadedCourses((prev) => prev.filter((u) => u.id !== id));
     };
 
 
   const goToDepartmentChairCoursePage = (course: DepartmentLoadedCoursesDisplay) => {
-    const departmentName = course.department_name?.replace(/\s+/g, "") ?? "";
     const loadedCourseId = course.id;
     const courseCode = course.course_code?.replace(/\s+/g, "") ?? "";
-    navigate(`/department/${department_id}/${departmentName}/${loadedCourseId}/${courseCode}`);
+    navigate(`/department/${department_id}/${department_name}/${loadedCourseId}/${courseCode}`);
   };
 
   return (
     <AppLayout activeItem={`/department/${department_id}/${department_name}`}>
-      <InfoComponent
+      {/* <InfoComponent
         loading={loading}
         title={`Department of ${departmentDetails.map(d => d.department_name).join(", ")}`}
         subtitle={departmentDetails.map(d => d.college_name).join(", ")}
         details={`${departmentDetails.map(d => d.campus_name).join(", ")} Campus`}
-      />
+      /> */}
       <ToolBarComponent
         titleOptions={[
           {
@@ -232,12 +229,12 @@ export default function DepartmentChairCourseDashboard() {
         <div className="mb-4">
           <TableComponent
             key={tableKey}
-            data={filteredDepartmentCourses}
+            data={filteredDepartmentCourses.map((c) => ({ ...c, id: c.course_code }))} 
             columns={[
               { key: "id", label: "Course Code" },
               { key: "course_title", label: "Course Title" },
               { key: "lecture_unit", label: "Lecture Unit" },
-              { key: "lab_unit", label: "Lab Unit" },
+              { key: "laboratory_unit", label: "Lab Unit" },
               { key: "credit_unit", label: "Credit Unit" },
             ]}
             selectable

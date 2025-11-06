@@ -500,80 +500,63 @@ class AssessmentPageSerializer(serializers.Serializer):
 # ====================================================    
 # Department Chair Dashboard
 # ====================================================
-class DepartmentLoadedCoursesSerializer(serializers.ModelSerializer):
-    course_code = serializers.CharField(source="course.course_code", read_only=True)
-    course_title = serializers.CharField(source="course.course_title", read_only=True)
-    program_name = serializers.CharField(source="course.program.program_name", read_only=True)
-    year_level = serializers.CharField(source="course.year_level.year_level_type", read_only=True)
-    semester_type = serializers.CharField(source="course.semester.semester_type", read_only=True)
-    year_level = serializers.CharField(source="course.year_level.year_level_type", read_only=True)
-    department_name = serializers.CharField(source="course.program.department.department_name", read_only=True)
-    academic_year_start = serializers.IntegerField(source="academic_year.academic_year_start", read_only=True)
-    academic_year_end = serializers.IntegerField(source="academic_year.academic_year_end", read_only=True)
-    class Meta:
-        model = LoadedCourse
-        fields = [
-            "loaded_course_id", 
-            "course_code", 
-            "course_title", 
-            "program_name", 
-            "year_level", 
-            "semester_type", 
-            "department_name", 
-            "academic_year_start", 
-            "academic_year_end"
-        ]
-
-class DepartmentLoadedCourseDetailsSerializer(serializers.ModelSerializer):
-    course_title = serializers.CharField(source="course.course_title", read_only=True)
-    semester_type = serializers.CharField(source="course.semester.semester_type", read_only=True)
-    year_level = serializers.CharField(source="course.year_level.year_level_type", read_only=True)    
-    department_name = serializers.CharField(source="course.program.department.department_name", read_only=True)
-    college_name = serializers.CharField(source="course.program.department.college.college_name", read_only=True)
-    campus_name = serializers.CharField(source="course.program.department.campus.campus_name", read_only=True)
-    academic_year_start = serializers.IntegerField(source="academic_year.academic_year_start", read_only=True)
-    academic_year_end = serializers.IntegerField(source="academic_year.academic_year_end", read_only=True)
-    class Meta:
-        model = LoadedCourse
-        fields = [
-            "loaded_course_id", 
-            "course_title", 
-            "semester_type", 
-            "year_level", 
-            "department_name", 
-            "college_name", 
-            "campus_name", 
-            "academic_year_start", 
-            "academic_year_end"
-        ]
-
-class DepartmentCoursesSerializer(serializers.ModelSerializer):
-    lecture_unit = serializers.IntegerField(source="credit.lecture_unit", read_only=True)
-    lab_unit = serializers.IntegerField(source="credit.laboratory_unit", read_only=True)
-    credit_unit = serializers.IntegerField(source="credit.credit_unit", read_only=True)
-    year_level = serializers.CharField(source="year_level.year_level_type", read_only=True)
+class DepartmentCourseSerializer(serializers.ModelSerializer):
+    year_level_type = serializers.CharField(source="year_level.year_level_type", read_only=True)
     semester_type = serializers.CharField(source="semester.semester_type", read_only=True)
-    program_name = serializers.CharField(source="program.program_name", read_only=True)
+
+    lecture_unit = serializers.IntegerField(source="credit.lecture_unit", read_only=True)
+    laboratory_unit = serializers.IntegerField(source="credit.laboratory_unit", read_only=True)
+    credit_unit = serializers.IntegerField(source="credit.credit_unit", read_only=True)
 
     class Meta:
         model = Course
         fields = [
             "course_code",
             "course_title",
-            "program_name",
-            "year_level",
+            "year_level_type",
             "semester_type",
             "lecture_unit",
-            "lab_unit",
+            "laboratory_unit",
             "credit_unit",
         ]
 
-class LoadDepartmentCourseSerializer(serializers.ModelSerializer):
-    academic_year = serializers.PrimaryKeyRelatedField(queryset=AcademicYear.objects.all(), required=True)
-    course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), required=True)
+class DepartmentLoadedCourseSerializer(serializers.ModelSerializer):
+    course_code = serializers.CharField(source="course.course_code", read_only=True)
+    course_title = serializers.CharField(source="course.course_title", read_only=True)
+    program_name = serializers.CharField(source="course.program.program_name", read_only=True)
+    academic_year_start = serializers.IntegerField(source="academic_year.academic_year_start", read_only=True)
+    academic_year_end = serializers.IntegerField(source="academic_year.academic_year_end", read_only=True)
+    year_level_type = serializers.CharField(source="course.year_level.year_level_type", read_only=True)
+    semester_type = serializers.CharField(source="course.semester.semester_type", read_only=True)
+
     class Meta:
         model = LoadedCourse
-        fields = ["loaded_course_id", "academic_year", "course"]
+        fields = [
+            "loaded_course_id",
+            "course_code",
+            "course_title",
+            "program_name",
+            "academic_year_start",
+            "academic_year_end",
+            "year_level_type",
+            "semester_type",
+        ]
+
+class CreateDepartmentLoadedCourseSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = LoadedCourse
+        fields = ["course", "academic_year"]
+
+    def validate(self, attrs):
+        course = attrs.get("course")
+        academic_year = attrs.get("academic_year")
+
+        if LoadedCourse.objects.filter(course=course, academic_year=academic_year).exists():
+            raise serializers.ValidationError(
+                "This course is already loaded for the given academic year."
+            )
+        return attrs
 
 class SectionSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(source="instructor_assigned.first_name", read_only=True)
@@ -605,45 +588,31 @@ class CreateSectionSerializer(serializers.ModelSerializer):
         return values
     
     def create(self, validated_data):
-        section = validated_data.pop("year_and_section")
-        instructor = validated_data.pop("instructor_assigned")
-        loaded_course = validated_data.pop("loaded_course")
-
-        section = Section.objects.create(year_and_section=section, instructor_assigned=instructor, loaded_course=loaded_course, **validated_data)
-        return section
+        return Section.objects.create(**validated_data)
 
 class UpdateSectionSerializer(serializers.ModelSerializer):
     instructor_assigned = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, allow_null=True)
-    loaded_course = serializers.PrimaryKeyRelatedField(queryset=LoadedCourse.objects.all(), required=False, allow_null=True)
+
     class Meta:
         model = Section
-        fields = "__all__"   
-        extra_kwargs = {
-            "section_id": {"read_only": True}
-        }
+        fields = ["section_id", "instructor_assigned", "year_and_section"]
+        read_only_fields = ["section_id"]
 
     def validate(self, attrs):
-        instance = getattr(self, "instance", None)
-        year_and_section = attrs.get("year_and_section", getattr(instance, "year_and_section", None))
-        instructor_assigned = attrs.get("instructor_assigned", getattr(instance, "instructor_assigned", None))
-        loaded_course = attrs.get("loaded_course", getattr(instance, "loaded_course", None))
-        if not year_and_section or not loaded_course:
-            raise serializers.ValidationError("Year and loaded course are required.")
-        duplicate = (
-            Section.objects.filter(
-                year_and_section=year_and_section,
-                instructor_assigned=instructor_assigned,
-                loaded_course=loaded_course,
-            )
-            .exclude(section_id=instance.section_id if instance else None)
-            .exists()
-        )
+        instance = self.instance
+        year_and_section = attrs.get("year_and_section", instance.year_and_section)
+        instructor_assigned = attrs.get("instructor_assigned", instance.instructor_assigned)
+        loaded_course = instance.loaded_course
 
-        if duplicate:
+        if Section.objects.filter(
+            year_and_section=year_and_section,
+            instructor_assigned=instructor_assigned,
+            loaded_course=loaded_course
+        ).exclude(pk=instance.pk).exists():
             raise serializers.ValidationError("Section with these details already exists.")
 
         return attrs
-    
+
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

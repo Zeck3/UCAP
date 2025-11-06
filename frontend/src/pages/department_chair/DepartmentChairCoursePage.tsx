@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLayout } from "../../context/useLayout";
 import emptyImage from "../../assets/undraw_file-search.svg";
-import InfoComponent from "../../components/InfoComponent";
+// import InfoComponent from "../../components/InfoComponent";
 import ToolBarComponent from "../../components/ToolBarComponent";
 import CardsGridComponent from "../../components/CardsGridComponent";
 import TableComponent from "../../components/TableComponent";
@@ -16,22 +16,22 @@ import UserInputComponent from "../../components/UserInputComponent";
 import { getInstructors } from "../../api/dropdownApi";
 import type { Instructor } from "../../types/dropdownTypes";
 import {
-  fetchDepartmentLoadedCourseDetails,
-  fetchDepartmentChairCourseSections,
-  fetchDeleteLoadedCourseSection,
-  fetchCreateSection,
-  fetchUpdateSection,
+  getSections,
+  addSection,
+  editSection,
+  deleteSection,
 } from "../../api/departmentChairDashboardApi";
 import type {
   DepartmentLoadedCourseSectionsDisplay,
-  DepartmentLoadedCourseDetailsDisplay,
   CreateSection,
 } from "../../types/departmentChairDashboardTypes";
 
 export default function DepartmentChairCoursePage() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const { department_id, department_name, loaded_course_id, course_code } = useParams();
+  const { department_id, department_name, loaded_course_id, course_code } =
+    useParams();
+  const loadedCourseId = Number(loaded_course_id ?? 0);
   const { user } = useAuth();
   const { layout } = useLayout();
   const navigate = useNavigate();
@@ -41,9 +41,7 @@ export default function DepartmentChairCoursePage() {
   const [sections, setSections] = useState<
     DepartmentLoadedCourseSectionsDisplay[]
   >([]);
-  const [LoadedCourseDetails, setLoadedCourseDetails] = useState<
-    DepartmentLoadedCourseDetailsDisplay[]
-  >([]);
+
   const [loading, setLoading] = useState(true);
 
   const currentUserId = user?.user_id ?? null;
@@ -54,18 +52,11 @@ export default function DepartmentChairCoursePage() {
   useEffect(() => {
     async function getAllCoursesSections() {
       setLoading(true);
-      const [courseData, instructorsData, sectionsData] = await Promise.all([
-        fetchDepartmentLoadedCourseDetails(
-          Number(departmentId),
-          Number(loaded_course_id)
-        ),
+      const [instructorsData, sectionsData] = await Promise.all([
         getInstructors(),
-        fetchDepartmentChairCourseSections(
-          Number(departmentId),
-          Number(loaded_course_id)
-        ),
+        getSections(Number(loaded_course_id)),
       ]);
-      setLoadedCourseDetails(courseData);
+
       setInstructors(instructorsData);
       setSections(sectionsData);
       setLoading(false);
@@ -114,14 +105,11 @@ export default function DepartmentChairCoursePage() {
         instructor_assigned: selectedInstructorId
           ? Number(selectedInstructorId)
           : null,
-        loaded_course: Number(loaded_course_id),
+        loaded_course: loadedCourseId,
       };
-      await fetchCreateSection(createSection);
+      await addSection(loadedCourseId, createSection);
 
-      const updatedSections = await fetchDepartmentChairCourseSections(
-        Number(departmentId),
-        Number(loaded_course_id)
-      );
+      const updatedSections = await getSections(Number(loaded_course_id));
       setSections(updatedSections);
 
       setIsPanelOpen(false);
@@ -141,11 +129,8 @@ export default function DepartmentChairCoursePage() {
         : null,
       loaded_course: Number(loaded_course_id),
     };
-    await fetchUpdateSection(Number(id), updateSection);
-    const updatedSections = await fetchDepartmentChairCourseSections(
-      Number(departmentId),
-      Number(loaded_course_id)
-    );
+    await editSection(Number(id), updateSection);
+    const updatedSections = await getSections(Number(loaded_course_id));
     setSections(updatedSections);
     setIsPanelOpen(false);
     setSectionName({ year_and_section: "" });
@@ -153,10 +138,7 @@ export default function DepartmentChairCoursePage() {
   };
 
   const handleDelete = async (id: number) => {
-    const success = await fetchDeleteLoadedCourseSection(
-      Number(loaded_course_id),
-      Number(id)
-    );
+    const success = await deleteSection(Number(id));
     if (success) setSections((prev) => prev.filter((u) => u.id !== id));
   };
 
@@ -178,7 +160,7 @@ export default function DepartmentChairCoursePage() {
 
   return (
     <AppLayout activeItem={`/department/${department_id}/${department_name}`}>
-      <InfoComponent
+      {/* <InfoComponent
         loading={loading}
         title={LoadedCourseDetails.map((cd) => cd.course_title).join(", ")}
         subtitle={`${LoadedCourseDetails.map(
@@ -193,7 +175,7 @@ export default function DepartmentChairCoursePage() {
         )} | ${LoadedCourseDetails.map((cd) => cd.college_name).join(
           ", "
         )} Campus`}
-      />
+      /> */}
 
       <ToolBarComponent
         titleOptions={[

@@ -138,6 +138,26 @@ class Student(models.Model):
         unique_together = ("student_id", "section")
 
 # ====================================================
+# Class Record Template
+# ====================================================
+class CourseTermTemplate(models.Model):
+    course_term_id = models.AutoField(primary_key=True)
+    loaded_course = models.ForeignKey("LoadedCourse", on_delete=models.CASCADE)
+    course_term_type = models.CharField(max_length=225)
+
+class CourseUnitTemplate(models.Model):
+    course_unit_id = models.AutoField(primary_key=True)
+    course_term = models.ForeignKey("CourseTerm", on_delete=models.CASCADE)
+    course_unit_type = models.CharField(max_length=225)
+    course_unit_percentage = models.IntegerField()
+
+class CourseComponentTemplate(models.Model):
+    course_component_id = models.AutoField(primary_key=True)
+    course_unit = models.ForeignKey("CourseUnit", on_delete=models.CASCADE)
+    course_component_type = models.CharField(max_length=225)
+    course_component_percentage = models.IntegerField()
+
+# ====================================================
 # Class Record
 # ====================================================
 class CourseTerm(models.Model):
@@ -181,7 +201,7 @@ class RawScore(models.Model):
 # ====================================================
 class CourseOutcome(models.Model):
     course_outcome_id = models.AutoField(primary_key=True)
-    course = models.ForeignKey("Course", on_delete=models.CASCADE)
+    loaded_course = models.ForeignKey("LoadedCourse", on_delete=models.CASCADE)
     course_outcome_code = models.CharField(max_length=10)
     course_outcome_description = models.CharField(max_length=255)
 
