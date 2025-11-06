@@ -298,6 +298,8 @@ function BuildHeaderRow({
 
         content = (
           <input
+            id={`max_score_input-${key}-${node.title}`}
+            name={`max_score_input-${key}-${node.title}`}
             type="number"
             min={0}
             max={999}

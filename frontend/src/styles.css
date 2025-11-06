@@ -3,17 +3,15 @@
 @import "tailwindcss";
 
 html{
-  font-size: 15px;
+  font-size: 16px;
 }
 
-/* Main Font */
 body {
   font-family: 'Inter', sans-serif;
   font-weight: 500;
   color: #3E3E3E;
 }
 
-/* Main Colors */
 :root {
   --ucap-yellow: #FFC000;
   --ucap-blue: #1F3864;
@@ -28,14 +26,6 @@ body {
   background-color: var(--ucap-yellow);
 }
 
-.text-coa-blue{
-  color: #333399;
-}
-
-.text-coa-red{
-  color: #9C0006;
-}
-
 .bg-ucap-blue {
   background-color: var(--ucap-blue);
 }
@@ -48,50 +38,32 @@ body {
   background-color: #C5E0B3;
 }
 
+.bg-ucap-yellow-hover:hover {
+  background-color: #e6a400;
+}
+
+.bg-light-blue {
+  background-color: #99CCFF;
+}
+
 .border-ucap-blue {
   border-color: var(--ucap-blue);
 }
 
-.border-ucap-yellow {
-  border-color: var(--ucap-blue);
+.text-coa-blue{
+  color: #333399;
 }
 
-.bg-ucap-yellow-hover:hover {
-  background-color: #e6a400;
+.text-coa-red{
+  color: #9C0006;
 }
 
 .text-ucap-yellow {
   color: var(--ucap-yellow);
 }
 
-.text-ucap-blue {
-  color: var(--ucap-blue);
-}
-
-.focus-ring-ucap-blue:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--ucap-blue);
-}
-
 .font-tilt-warp {
   font-family: "Tilt Warp", sans-serif;
-}
-
-/* Class Record Colors */
-.bg-light-blue {
-  background-color: #99CCFF;
-}
-
-.bg-dark-blue {
-  background-color: #1F3864;
-}
-
-.bg-bright-yellow {
-  background-color: #FCF305;
-}
-
-.bg-green {
-  background-color: #70AD47;
 }
 
 /* Remove Input Spinners */
@@ -103,11 +75,4 @@ input[type='number']::-webkit-inner-spin-button {
 input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
-}
-
-/* Default Cell Width */
-.table-cell-default {
-  min-width: 50px;
-  padding: 5px;
-  text-align: center;
 }

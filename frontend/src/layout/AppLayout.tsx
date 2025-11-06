@@ -3,12 +3,13 @@ import { useRoleSideNav } from "../config/Roles";
 import HeaderComponent from "../components/HeaderComponent";
 import SidebarNavButton from "../components/SideBarNavButton";
 import { useBreadcrumbs } from "../context/useBreadCrumbs";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
+import { useMemo } from "react";
 
 interface AppLayoutProps {
   children: React.ReactNode;
-  activeItem: string;
+  activeItem?: string;
   disablePadding?: boolean;
 }
 
@@ -20,13 +21,11 @@ export default function AppLayout({
   const { isSidebarOpen, toggleSidebar } = useLayout();
   const { user, logout } = useAuth();
   const roleNav = useRoleSideNav();
-  const navItems = user ? roleNav[user.role_id] || [] : [];
   const crumbs = useBreadcrumbs();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const goToMain = () => {
-    navigate(activeItem);
-  };
+  const currentPath = activeItem || location.pathname;
 
   const handleLogout = async () => {
     try {
@@ -36,6 +35,22 @@ export default function AppLayout({
     }
   };
 
+  const goToMain = () => navigate(currentPath);
+
+  const sidebarButtons = useMemo(() => {
+    const navItems = user ? roleNav[user.role_id] || [] : [];
+
+    return navItems.map((item) => (
+      <SidebarNavButton
+        key={item.path}
+        icon={item.icon}
+        label={item.label}
+        isSidebarOpen={isSidebarOpen}
+        path={item.path}
+        active={currentPath.startsWith(item.path)}
+      />
+    ));
+  }, [user, roleNav, isSidebarOpen, currentPath]);
   return (
     <div className="h-screen flex">
       <HeaderComponent
@@ -56,21 +71,14 @@ export default function AppLayout({
           }`}
         >
           <nav className="flex flex-col w-full pt-4 sticky top-0">
-            {navItems.map((item) => (
-              <SidebarNavButton
-                key={item.path}
-                icon={item.icon}
-                label={item.label}
-                isSidebarOpen={isSidebarOpen}
-                active={activeItem === item.path}
-                path={item.path}
-              />
-            ))}
+            {sidebarButtons}
           </nav>
         </aside>
+
         <main
-          className={`flex-1 transition-all duration-300 overflow-y-auto
-          ${disablePadding ? "" : isSidebarOpen ? "pr-44 pl-8" : "pr-44 pl-44"}`}
+          className={`flex-1 transition-all duration-300 overflow-y-auto ${
+            disablePadding ? "" : isSidebarOpen ? "pr-44 pl-8" : "pr-44 pl-44"
+          }`}
         >
           {children}
         </main>

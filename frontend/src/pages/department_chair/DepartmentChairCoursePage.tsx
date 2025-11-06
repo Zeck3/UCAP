@@ -15,21 +15,35 @@ import UserInputComponent from "../../components/UserInputComponent";
 
 import { getInstructors } from "../../api/dropdownApi";
 import type { Instructor } from "../../types/dropdownTypes";
-import { fetchDepartmentLoadedCourseDetails, fetchDepartmentChairCourseSections, fetchDeleteLoadedCourseSection, fetchCreateSection, fetchUpdateSection } from "../../api/departmentChairSectionsApi";
-import type { DepartmentLoadedCourseSectionsDisplay, DepartmentLoadedCourseDetailsDisplay, CreateSection } from "../../types/departmentChairDashboardTypes";
+import {
+  fetchDepartmentLoadedCourseDetails,
+  fetchDepartmentChairCourseSections,
+  fetchDeleteLoadedCourseSection,
+  fetchCreateSection,
+  fetchUpdateSection,
+} from "../../api/departmentChairDashboardApi";
+import type {
+  DepartmentLoadedCourseSectionsDisplay,
+  DepartmentLoadedCourseDetailsDisplay,
+  CreateSection,
+} from "../../types/departmentChairDashboardTypes";
 
 export default function DepartmentChairCoursePage() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const { department_name, loaded_course_id, course_code } = useParams();
+  const { department_id, department_name, loaded_course_id, course_code } = useParams();
   const { user } = useAuth();
   const { layout } = useLayout();
   const navigate = useNavigate();
 
   const [selectedInstructorId, setSelectedInstructorId] = useState<string>("");
   const [instructors, setInstructors] = useState<Instructor[]>([]);
-  const [sections, setSections] = useState<DepartmentLoadedCourseSectionsDisplay[]>([]);
-  const [LoadedCourseDetails, setLoadedCourseDetails] = useState<DepartmentLoadedCourseDetailsDisplay[]>([]);
+  const [sections, setSections] = useState<
+    DepartmentLoadedCourseSectionsDisplay[]
+  >([]);
+  const [LoadedCourseDetails, setLoadedCourseDetails] = useState<
+    DepartmentLoadedCourseDetailsDisplay[]
+  >([]);
   const [loading, setLoading] = useState(true);
 
   const currentUserId = user?.user_id ?? null;
@@ -41,9 +55,15 @@ export default function DepartmentChairCoursePage() {
     async function getAllCoursesSections() {
       setLoading(true);
       const [courseData, instructorsData, sectionsData] = await Promise.all([
-        fetchDepartmentLoadedCourseDetails(Number(departmentId), Number(loaded_course_id)),
+        fetchDepartmentLoadedCourseDetails(
+          Number(departmentId),
+          Number(loaded_course_id)
+        ),
         getInstructors(),
-        fetchDepartmentChairCourseSections(Number(departmentId), Number(loaded_course_id)),
+        fetchDepartmentChairCourseSections(
+          Number(departmentId),
+          Number(loaded_course_id)
+        ),
       ]);
       setLoadedCourseDetails(courseData);
       setInstructors(instructorsData);
@@ -51,14 +71,15 @@ export default function DepartmentChairCoursePage() {
       setLoading(false);
     }
     getAllCoursesSections();
-    }, [departmentId, loaded_course_id]);
+  }, [departmentId, loaded_course_id]);
 
   const filteredSections = useMemo(() => {
     if (!sections) return [];
 
     const query = searchQuery.toLowerCase();
 
-    return sections.filter(
+    return sections
+      .filter(
         (s) =>
           s.year_and_section.toLowerCase().includes(query) ||
           s.instructor_assigned.toLowerCase().includes(query)
@@ -72,15 +93,8 @@ export default function DepartmentChairCoursePage() {
 
   const instructorOptions = instructors.map((inst) => ({
     label: `${inst.first_name} ${inst.last_name}`,
-    value: inst.user_id.toString(), 
+    value: inst.user_id.toString(),
   }));
-//===============================================================================================================================
-
-  const [sectionData, setSectionData] = useState({
-    year_and_section: "",
-    instructor_assigned: "",
-  })
-
 
   const handlesInputChange = (name: string, value: string) => {
     setSectionName((prev) => ({
@@ -89,61 +103,70 @@ export default function DepartmentChairCoursePage() {
     }));
   };
 
-
   const handleCreateSection = async () => {
-  if (!sectionName.year_and_section) {
-    alert("Please fill in all fields.");
-    return;
-  }
-  try {
-    const createSection: CreateSection = {
-      year_and_section: sectionName.year_and_section,
-      instructor_assigned: selectedInstructorId ? Number(selectedInstructorId) : null,
-      loaded_course: Number(loaded_course_id),
-    };
-    await fetchCreateSection(createSection);
+    if (!sectionName.year_and_section) {
+      alert("Please fill in all fields.");
+      return;
+    }
+    try {
+      const createSection: CreateSection = {
+        year_and_section: sectionName.year_and_section,
+        instructor_assigned: selectedInstructorId
+          ? Number(selectedInstructorId)
+          : null,
+        loaded_course: Number(loaded_course_id),
+      };
+      await fetchCreateSection(createSection);
 
-    const updatedSections = await fetchDepartmentChairCourseSections(Number(departmentId), Number(loaded_course_id));
-    setSections(updatedSections);
+      const updatedSections = await fetchDepartmentChairCourseSections(
+        Number(departmentId),
+        Number(loaded_course_id)
+      );
+      setSections(updatedSections);
 
-    setIsPanelOpen(false);
-    setSectionName({ year_and_section: "" });
-    setSelectedInstructorId("");
-
-  } catch (error) {
-    console.error("Error creating sections:", error);
-  }
-
+      setIsPanelOpen(false);
+      setSectionName({ year_and_section: "" });
+      setSelectedInstructorId("");
+    } catch (error) {
+      console.error("Error creating sections:", error);
+    }
   };
 
   const handleUpdateSection = async (id: number) => {
     setIsPanelOpen(true);
     const updateSection = {
       year_and_section: sectionName.year_and_section,
-      instructor_assigned: selectedInstructorId ? Number(selectedInstructorId) : null,
+      instructor_assigned: selectedInstructorId
+        ? Number(selectedInstructorId)
+        : null,
       loaded_course: Number(loaded_course_id),
     };
     await fetchUpdateSection(Number(id), updateSection);
-    const updatedSections = await fetchDepartmentChairCourseSections(Number(departmentId), Number(loaded_course_id));
+    const updatedSections = await fetchDepartmentChairCourseSections(
+      Number(departmentId),
+      Number(loaded_course_id)
+    );
     setSections(updatedSections);
     setIsPanelOpen(false);
     setSectionName({ year_and_section: "" });
     setSelectedInstructorId("");
   };
-  
-
-  
 
   const handleDelete = async (id: number) => {
-    const success = await fetchDeleteLoadedCourseSection(Number(loaded_course_id), Number(id));
+    const success = await fetchDeleteLoadedCourseSection(
+      Number(loaded_course_id),
+      Number(id)
+    );
     if (success) setSections((prev) => prev.filter((u) => u.id !== id));
   };
- 
-  const goToDepartmentChairAssessmentPage = (section: DepartmentLoadedCourseSectionsDisplay) => {
-  navigate(
-    `/department/${LoadedCourseDetails[0].department_name}/${loaded_course_id}/${course_code}/${section.year_and_section}`
-  );
-};
+
+  const goToDepartmentChairAssessmentPage = (
+    section: DepartmentLoadedCourseSectionsDisplay
+  ) => {
+    navigate(
+      `/department/${department_id}/${department_name}/${loaded_course_id}/${course_code}/${section.year_and_section}`
+    );
+  };
 
   if (!currentUserId) {
     return <div>Unauthorized: No user logged in.</div>;
@@ -154,17 +177,22 @@ export default function DepartmentChairCoursePage() {
   }
 
   return (
-    <AppLayout activeItem={`/department/${department_name}`}>
+    <AppLayout activeItem={`/department/${department_id}/${department_name}`}>
       <InfoComponent
         loading={loading}
         title={LoadedCourseDetails.map((cd) => cd.course_title).join(", ")}
-        subtitle={`${LoadedCourseDetails.map((cd) => cd.academic_year)} ${
-          LoadedCourseDetails.map((cd) => cd.semester_type)
-        } | ${LoadedCourseDetails.map((cd) => cd.year_level).join(", ")}`}
-        details={`Department of ${LoadedCourseDetails.map((cd) => cd.department_name).join(", ")} | ${
-          LoadedCourseDetails.map((cd) => cd.college_name).join(", ")
-        } | ${LoadedCourseDetails.map((cd) => cd.college_name).join(", ")} Campus`}
-        
+        subtitle={`${LoadedCourseDetails.map(
+          (cd) => cd.academic_year
+        )} ${LoadedCourseDetails.map(
+          (cd) => cd.semester_type
+        )} | ${LoadedCourseDetails.map((cd) => cd.year_level).join(", ")}`}
+        details={`Department of ${LoadedCourseDetails.map(
+          (cd) => cd.department_name
+        ).join(", ")} | ${LoadedCourseDetails.map((cd) => cd.college_name).join(
+          ", "
+        )} | ${LoadedCourseDetails.map((cd) => cd.college_name).join(
+          ", "
+        )} Campus`}
       />
 
       <ToolBarComponent
@@ -207,7 +235,7 @@ export default function DepartmentChairCoursePage() {
             { key: "instructor_assigned", label: "Instructor Assigned" },
           ]}
           onEdit={(section) => handleUpdateSection(section)}
-          onDelete={handleDelete} 
+          onDelete={handleDelete}
           loading={loading}
           skeletonRows={2}
           showActions
@@ -221,18 +249,20 @@ export default function DepartmentChairCoursePage() {
         buttonFunction="Add Section"
         loading={loading}
       >
-        <UserInputComponent 
-          label="Year and Section" 
-          name="year_and_section" 
-          value={sectionName.year_and_section} 
+        <UserInputComponent
+          label="Year and Section"
+          name="year_and_section"
+          value={sectionName.year_and_section}
           onChange={handlesInputChange}
         />
         <DropdownComponent
           label="Instructor Assigned"
           name="instructor_assigned"
           options={instructorOptions}
-          value={""+selectedInstructorId}
-          onChange={(_, val) => {setSelectedInstructorId(val);}}
+          value={"" + selectedInstructorId}
+          onChange={(_, val) => {
+            setSelectedInstructorId(val);
+          }}
         />
       </SidePanelComponent>
     </AppLayout>

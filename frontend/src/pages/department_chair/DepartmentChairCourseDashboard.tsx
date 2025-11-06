@@ -14,7 +14,7 @@ import { useNavigate, useParams } from "react-router-dom";
  
 import type { AcademicYear } from "../../types/dropdownTypes";
 import { getAcademicYears } from "../../api/dropdownApi";
-import { fetchDepartmentLoadedCourses, fetchDepartmentDetails, fetchDeleteLoadedCourse, fetchDepartmentCourses, fetchLoadDepartmentCourse } from "../../api/departmentChairCourseDashboardApi";
+import { fetchDepartmentLoadedCourses, fetchDepartmentDetails, fetchDeleteLoadedCourse, fetchDepartmentCourses, fetchLoadDepartmentCourse } from "../../api/departmentChairDashboardApi";
 import type { DepartmentDetail, DepartmentLoadedCoursesDisplay, DepartmentCoursesDisplay, LoadDepartmentCourse } from "../../types/departmentChairDashboardTypes";
 
 export default function DepartmentChairCourseDashboard() {
@@ -23,7 +23,7 @@ export default function DepartmentChairCourseDashboard() {
   const { layout } = useLayout();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { department_name } = useParams();
+  const { department_id, department_name } = useParams();
 
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [departmentDetails, setDepartmentDetails] = useState<DepartmentDetail[]>([]);
@@ -96,7 +96,6 @@ export default function DepartmentChairCourseDashboard() {
     setSelectedCourses(
       departmentCourses.filter((course) => selected.includes(course.id))
     );
-    console.log("Selected:", selected);
   }, [departmentCourses]);
 
   const handleLoadCourse = async () => {
@@ -148,11 +147,11 @@ export default function DepartmentChairCourseDashboard() {
     const departmentName = course.department_name?.replace(/\s+/g, "") ?? "";
     const loadedCourseId = course.id;
     const courseCode = course.course_code?.replace(/\s+/g, "") ?? "";
-    navigate(`/department/${departmentName}/${loadedCourseId}/${courseCode}`);
+    navigate(`/department/${department_id}/${departmentName}/${loadedCourseId}/${courseCode}`);
   };
 
   return (
-    <AppLayout activeItem={`/department/${department_name}`}>
+    <AppLayout activeItem={`/department/${department_id}/${department_name}`}>
       <InfoComponent
         loading={loading}
         title={`Department of ${departmentDetails.map(d => d.department_name).join(", ")}`}
@@ -247,7 +246,6 @@ export default function DepartmentChairCourseDashboard() {
             showActions={false}
           />
         </div>
-
       </SidePanelComponent>
     </AppLayout>
   );

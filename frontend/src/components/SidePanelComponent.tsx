@@ -64,7 +64,7 @@ export default function SidePanelComponent({
         <div className="h-screen flex pt-16 flex-col">
           <div className="overflow-y-auto h-screen">
             {!disableInputs && (
-              <div className="grid grid-cols-1 gap-x-8 px-12 pt-8">
+              <div className="grid grid-cols-2 gap-x-8 px-12 pt-8">
                 {wrappedChildren}
               </div>
             )}

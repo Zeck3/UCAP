@@ -22,7 +22,7 @@ export default function SidebarNavButton({
 
   const handleClick = () => {
     if (onClick) onClick();
-    if (path) navigate(path);
+    if (path && location.pathname !== path) navigate(path);
   };
 
   return (

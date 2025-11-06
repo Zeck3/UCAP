@@ -9,7 +9,7 @@ import type {
 
 export async function getClassRecord(sectionId: number) {
   const { data } = await axiosClient.get<ClassRecord>(
-    `/instructor/class-record/${sectionId}/`
+    `/instructor/class_record/${sectionId}/`
   );
   return data;
 }

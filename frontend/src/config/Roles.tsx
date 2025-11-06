@@ -4,7 +4,8 @@ import HomeIcon from "../assets/house-solid.svg?react"
 import type { ReactNode } from "react";
 import { useAuth } from "../context/useAuth";
 import { useEffect, useState } from "react";
-import { fetchDepartmentPathSections } from "../api/departmentPathApi";
+import { fetchUserDepartment } from "../api/userDepartmentApi";
+import type { UserDepartment } from "../types/departmentChairDashboardTypes";
 
 export const Roles = {
   Administrator: 1,
@@ -34,18 +35,18 @@ export const roleRoutes: Record<number, string> = {
 
 export function useRoleSideNav(): Record<number, { label: string; path: string; icon: ReactNode }[]> {
   const { user } = useAuth();
-  const [departmentPath, setDepartmentPath] = useState("");
+  const [departmentInfo, setDepartmentInfo] = useState<UserDepartment | null>(null);
 
   useEffect(() => {
-  if (user?.department_id) {
-    fetchDepartmentPathSections(user.department_id)
-      .then((data) => {
-        const departmentName = data[0]?.department_name ?? "department";
-        setDepartmentPath(departmentName.replace(/\s+/g, ""));
-      })
-      .catch(() => setDepartmentPath("department"));
-  }
-}, [user?.department_id]);
+    if (user?.department_id) {
+      fetchUserDepartment(user.department_id)
+        .then(setDepartmentInfo)
+        .catch((err) => console.error("Failed to fetch department:", err));
+    }
+  }, [user?.department_id]);
+
+  const departmentId = departmentInfo?.department_id ?? "";
+  const departmentName = departmentInfo?.department_name?.replace(/\s+/g, "") ?? "department";
 
   return {
     1: [
@@ -57,7 +58,7 @@ export function useRoleSideNav(): Record<number, { label: string; path: string; 
     ],
     3: [
       { label: "My Courses", path: "/instructor", icon: <HomeIcon /> },
-      { label: "Manage Courses", path: `/department/${departmentPath}`, icon: <CoursesIcon /> },
+      { label: "Manage Courses", path: `/department/${departmentId}/${departmentName}`, icon: <CoursesIcon /> },
     ],
     4: [
       { label: "My Courses", path: "/instructor", icon: <HomeIcon /> },

@@ -272,8 +272,8 @@ export default function ResultSheetPage(): JSX.Element {
         return total >= pass70Threshold;
       }).length;
       const notAchieved = studentCount - achieved;
-      const pctAch = ((achieved / studentCount) * 100).toFixed(1);
-      const pctNot = ((notAchieved / studentCount) * 100).toFixed(1);
+      const pctAch = ((achieved / studentCount) * 100).toFixed(2);
+      const pctNot = ((notAchieved / studentCount) * 100).toFixed(2);
       return {
         outcome: co.name,
         achieved: `${achieved} (${pctAch}%)`,

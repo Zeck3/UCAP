@@ -126,10 +126,11 @@ function BuildStudentRow({
       bgClass = "";
     }
 
-    // Remarks dropdown stays the same
     if (key.endsWith("remarks")) {
       cont = (
         <select
+          id={`remarks-${student.student_id}`}
+          name={`remarks-${student.student_id}`}
           value={localStudent.remarks ?? ""}
           onChange={(e) => handleFieldChange("remarks", e.target.value)}
           onBlur={() => handleFieldBlur("remarks")}
@@ -198,6 +199,8 @@ function BuildStudentRow({
             onContextMenu={(e) => onRightClickRow?.(e, student.student_id)}
           >
             <input
+              id={`student_id_number-${student.student_id}`}
+              name={`student_id_number-${student.student_id}`}
               type="number"
               value={localStudent.id_number ?? ""}
               onChange={(e) => {
@@ -226,6 +229,8 @@ function BuildStudentRow({
             onContextMenu={(e) => onRightClickRow?.(e, student.student_id)}
           >
             <input
+              id={`student_name-${student.student_id}`}
+              name={`student_name-${student.student_id}`}
               type="text"
               value={localStudent.student_name ?? ""}
               onChange={(e) =>
@@ -255,6 +260,8 @@ function BuildStudentRow({
 
         content = (
           <input
+            id={`score_input-${student.student_id}-${scoreKey}`}
+            name={`score_input-${student.student_id}-${scoreKey}`}
             type="number"
             min={0}
             max={max}

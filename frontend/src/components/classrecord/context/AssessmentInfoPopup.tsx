@@ -93,6 +93,8 @@ export default function AssessmentInfoContextMenu({
             {bloomsOptions.map((b) => (
               <label key={b.id} className="flex items-center space-x-2 py-0.5">
                 <input
+                  id={`bloom_checkbox-${b.id}-${assessmentId}`}
+                  name={`bloom_checkbox-${b.id}-${assessmentId}`}
                   type="checkbox"
                   checked={selectedBlooms.includes(String(b.id))}
                   onChange={() => handleBloomToggle(String(b.id))}
@@ -113,6 +115,8 @@ export default function AssessmentInfoContextMenu({
             {outcomesOptions.map((o) => (
               <label key={o.id} className="flex items-center space-x-2 py-0.5">
                 <input
+                  id={`outcome_checkbox-${o.id}-${assessmentId}`}
+                  name={`outcome_checkbox-${o.id}-${assessmentId}`}
                   type="checkbox"
                   checked={selectedOutcomes.includes(String(o.id))}
                   onChange={() => handleOutcomeToggle(String(o.id))}
