@@ -456,13 +456,17 @@ class BloomsClassificationSerializer(serializers.ModelSerializer):
         fields = ["blooms_classification_id", "blooms_classification_type"]
 
 class CourseOutcomeSerializer(serializers.ModelSerializer):
+    loaded_course = serializers.PrimaryKeyRelatedField(
+        queryset=LoadedCourse.objects.all()
+    )
+
     class Meta:
         model = CourseOutcome
         fields = [
             "course_outcome_id", 
             "course_outcome_code", 
             "course_outcome_description", 
-            "course"
+            "loaded_course"
         ]
 
 class ProgramOutcomeSerializer(serializers.ModelSerializer):
@@ -559,65 +563,85 @@ class CreateDepartmentLoadedCourseSerializer(serializers.ModelSerializer):
         return attrs
 
 class SectionSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField(source="instructor_assigned.first_name", read_only=True)
-    last_name = serializers.CharField(source="instructor_assigned.last_name", read_only=True)
+    course_title = serializers.CharField(source="loaded_course.course.course_title", read_only=True)
+    academic_year = serializers.SerializerMethodField()
+    semester_type = serializers.CharField(source="loaded_course.course.semester.semester_type", read_only=True)
+    year_level = serializers.CharField(source="loaded_course.course.year_level.year_level_type", read_only=True)
+    department_name = serializers.CharField(source="loaded_course.course.program.department.department_name", read_only=True)
+    college_name = serializers.CharField(source="loaded_course.course.program.department.college.college_name", read_only=True)
+    campus_name = serializers.CharField(source="loaded_course.course.program.department.campus.campus_name", read_only=True)
+    instructor_assigned = serializers.IntegerField(
+        source="instructor_assigned.user_id", read_only=True, allow_null=True, required=False
+    )
+    first_name = serializers.CharField(
+        source="instructor_assigned.first_name", read_only=True, allow_null=True, required=False
+    )
+    last_name = serializers.CharField(
+        source="instructor_assigned.last_name", read_only=True, allow_null=True, required=False
+    )
+
     class Meta:
         model = Section
         fields = [
-            "section_id", 
-            "year_and_section", 
-            "first_name", 
-            "last_name"
+            "section_id",
+            "course_title",
+            "academic_year",
+            "semester_type",
+            "year_level",
+            "department_name",
+            "college_name",
+            "campus_name",
+            "year_and_section",
+            "instructor_assigned",
+            "first_name",
+            "last_name",
         ]
 
-class CreateSectionSerializer(serializers.ModelSerializer):
-    instructor_assigned = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, allow_null=True)
-    loaded_course = serializers.PrimaryKeyRelatedField(queryset=LoadedCourse.objects.all(), required=True)
-    class Meta:
-        model = Section
-        fields = "__all__"  
+    def get_academic_year(self, obj):
+        ay = obj.loaded_course.academic_year
+        return f"{ay.academic_year_start}-{ay.academic_year_end}"
     
-    def validate(self, values):
-        year_and_section = values.get("year_and_section")
-        instructor_assigned = values.get("instructor_assigned")
-        loaded_course = values.get("loaded_course")
-        if Section.objects.filter(year_and_section=year_and_section, instructor_assigned=instructor_assigned, loaded_course=loaded_course).exists():
-            raise serializers.ValidationError("Section already exists.")
-        if not year_and_section or not loaded_course:
-            raise serializers.ValidationError("All fields are required.")
-        return values
-    
-    def create(self, validated_data):
-        return Section.objects.create(**validated_data)
-
-class UpdateSectionSerializer(serializers.ModelSerializer):
-    instructor_assigned = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, allow_null=True)
+class SectionCreateUpdateSerializer(serializers.ModelSerializer):
+    instructor_assigned = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), required=False, allow_null=True
+    )
+    loaded_course = serializers.PrimaryKeyRelatedField(
+        queryset=LoadedCourse.objects.all(), required=True
+    )
 
     class Meta:
         model = Section
-        fields = ["section_id", "instructor_assigned", "year_and_section"]
-        read_only_fields = ["section_id"]
+        fields = ["year_and_section", "instructor_assigned", "loaded_course"]
 
     def validate(self, attrs):
-        instance = self.instance
-        year_and_section = attrs.get("year_and_section", instance.year_and_section)
-        instructor_assigned = attrs.get("instructor_assigned", instance.instructor_assigned)
-        loaded_course = instance.loaded_course
+        year_and_section = attrs.get("year_and_section")
+        instructor_assigned = attrs.get("instructor_assigned")
+        loaded_course = attrs.get("loaded_course")
+
+        if not year_and_section or not loaded_course:
+            raise serializers.ValidationError("Both 'year_and_section' and 'loaded_course' are required.")
 
         if Section.objects.filter(
             year_and_section=year_and_section,
             instructor_assigned=instructor_assigned,
             loaded_course=loaded_course
-        ).exclude(pk=instance.pk).exists():
-            raise serializers.ValidationError("Section with these details already exists.")
-
+        ).exists():
+            raise serializers.ValidationError("A section with these details already exists.")
         return attrs
+    
+class DepartmentProgramOutcomeSerializer(serializers.ModelSerializer):
+    program_name = serializers.CharField(source="program.program_name", read_only=True)
 
-    def update(self, instance, validated_data):
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        return instance
+    class Meta:
+        model = ProgramOutcome
+        fields = [
+            "program_outcome_id",
+            "program",
+            "program_name",
+            "program_outcome_code",
+            "program_outcome_description",
+        ]
+        read_only_fields = ["program_outcome_code", "program"]
 
 # ====================================================
 # Dropdown

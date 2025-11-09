@@ -14,7 +14,7 @@ def create_class_record_service(section):
 
     course_terms = ["Midterm", "Final"]
 
-    for _ in range(1):
+    for _ in range(40):
         Student.objects.create(
             section=section,
             id_number=None,

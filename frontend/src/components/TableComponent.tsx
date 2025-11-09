@@ -22,11 +22,9 @@ interface TableProps<T extends { id: string | number }> {
   showActions?: boolean;
   loading?: boolean;
   skeletonRows?: number;
-//================================
-// Add selectable props
-//================================
   selectable?: boolean;
   onSelectionChange?: (selectedIds: Array<T["id"]>) => void;
+  disableEdit?: boolean;
 }
 
 export default function TableComponent<T extends { id: string | number }>({
@@ -41,29 +39,34 @@ export default function TableComponent<T extends { id: string | number }>({
   showActions = false,
   loading = false,
   skeletonRows = 6,
-//================================
-// Add selectable props
-//================================
   selectable = false,
   onSelectionChange,
+  disableEdit = false,
 }: TableProps<T>) {
   const [openMenuId, setOpenMenuId] = useState<T["id"] | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
-//================================
-// Add selectable props
-//================================
+  //================================
+  // Add selectable props
+  //================================
   const [selectedRows, setSelectedRows] = useState<Array<T["id"]>>([]);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = data.slice(startIndex, startIndex + itemsPerPage);
 
   const totalPages = Math.ceil(data.length / itemsPerPage);
-//================================
-// Add selectable props
-//================================
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+    if (totalPages === 0 && currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
   useEffect(() => {
     onSelectionChange?.(selectedRows);
   }, [selectedRows, onSelectionChange]);
@@ -80,7 +83,7 @@ export default function TableComponent<T extends { id: string | number }>({
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
-//================================
+  //================================
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -154,7 +157,10 @@ export default function TableComponent<T extends { id: string | number }>({
               <th className="px-4 py-4">
                 <input
                   type="checkbox"
-                  checked={selectedRows.length === paginatedData.length && paginatedData.length > 0}
+                  checked={
+                    selectedRows.length === paginatedData.length &&
+                    paginatedData.length > 0
+                  }
                   onChange={toggleSelectAll}
                 />
               </th>
@@ -229,25 +235,24 @@ export default function TableComponent<T extends { id: string | number }>({
                       {openMenuId === row.id && (
                         <div
                           ref={dropdownRef}
-                          className="absolute right-4 top-12 w-40 bg-white border border-[#E9E6E6] rounded-lg z-20"
+                          className="absolute right-0 top-12 w-40 bg-white border border-[#E9E6E6] rounded-lg z-20"
                         >
-                          <div
-                            className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100"
+                          {!disableEdit && (
+                            <button
+                              className="flex w-full items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit?.(row.id);
+                                setOpenMenuId(null);
+                              }}
+                            >
+                              <EditIcon className="h-5 w-5 ml-4 mr-2" />
+                              <span>Edit</span>
+                            </button>
+                          )}
+                          <button
+                            className="flex w-full items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-red-400"
                             onClick={(e) => {
-                              // e.stopPropagation();
-                              e.stopPropagation();
-                              onEdit?.(row.id);
-                              setOpenMenuId(null);
-                            }}
-                          >
-                            <EditIcon className="h-5 w-5 ml-4 mr-2" />
-                            <span>Edit</span>
-                          </div>
-
-                          <div
-                            className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-red-400"
-                            onClick={(e) => {
-                              // e.stopPropagation();
                               e.stopPropagation();
                               onDelete?.(row.id);
                               setOpenMenuId(null);
@@ -255,7 +260,7 @@ export default function TableComponent<T extends { id: string | number }>({
                           >
                             <DeleteIcon className="h-5 w-5 ml-4 mr-2" />
                             <span>Delete</span>
-                          </div>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -267,25 +272,27 @@ export default function TableComponent<T extends { id: string | number }>({
         </tbody>
       </table>
 
-      <div className="flex w-full justify-end items-center gap-x-4 mt-4">
-        <button
-          className="px-2 py-2 border border-[#E9E6E6] rounded disabled:opacity-50 enabled:cursor-pointer"
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage((p) => p - 1)}
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <span className="text-sm">
-          {currentPage} of {totalPages}
-        </span>
-        <button
-          className="px-2 py-2 border border-[#E9E6E6] rounded disabled:opacity-50 enabled:cursor-pointer"
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage((p) => p + 1)}
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      </div>
+      {totalPages > 1 && (
+        <div className="flex w-full justify-end items-center gap-x-4 mt-4">
+          <button
+            className="px-2 py-2 border border-[#E9E6E6] rounded disabled:opacity-50 enabled:cursor-pointer"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => p - 1)}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <span className="text-sm">
+            {currentPage} of {totalPages}
+          </span>
+          <button
+            className="px-2 py-2 border border-[#E9E6E6] rounded disabled:opacity-50 enabled:cursor-pointer"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => p + 1)}
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -22,7 +22,7 @@ import {
 } from "../../../api/classRecordApi";
 import { getBloomsOptions, getCourseOutcomes } from "../../../api/dropdownApi";
 import {
-  calculateTermTotal,
+  calculateAllTermTotals,
   collectMaxScores,
   computeValues,
   findParentComponentNode,
@@ -31,16 +31,40 @@ import {
   updateAssessmentInTree,
 } from "../utils/ClassRecordFunctions";
 
+type ClassRecordState = {
+  headerNodes: HeaderNode[];
+  students: Student[];
+  maxScores: Record<string, number>;
+  studentScores: Record<number, Record<string, number>>;
+
+  assessmentBloomsMap: Record<string, number[]>;
+  assessmentOutcomesMap: Record<string, number[]>;
+
+  currentAssessmentBlooms: number[];
+  currentAssessmentOutcomes: number[];
+};
+
 export function useClassRecord() {
   const { section_id, course_code } = useParams();
-  const [headerNodes, setHeaderNodes] = useState<HeaderNode[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [maxScores, setMaxScores] = useState<Record<string, number>>({});
-  const [studentScores, setStudentScores] = useState<
-    Record<number, Record<string, number>>
-  >(() => {
-    return {};
+  const [classRecord, setClassRecord] = useState<ClassRecordState>({
+    headerNodes: [],
+    students: [],
+    maxScores: {},
+    studentScores: {},
+    assessmentBloomsMap: {},
+    assessmentOutcomesMap: {},
+    currentAssessmentBlooms: [],
+    currentAssessmentOutcomes: [],
   });
+
+  const {
+    students,
+    headerNodes,
+    maxScores,
+    studentScores,
+    currentAssessmentBlooms,
+    currentAssessmentOutcomes,
+  } = classRecord;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [canOpenPopup, setCanOpenPopup] = useState<boolean>(true);
@@ -52,23 +76,10 @@ export function useClassRecord() {
 
   const [bloomsOptions, setBloomsOptions] = useState<
     { id: number; name: string }[]
-  >([]);
+  >(() => []);
   const [outcomesOptions, setOutcomesOptions] = useState<
     { id: number; name: string }[]
-  >([]);
-
-  const [currentAssessmentBlooms, setCurrentAssessmentBlooms] = useState<
-    number[]
-  >([]);
-  const [currentAssessmentOutcomes, setCurrentAssessmentOutcomes] = useState<
-    number[]
-  >([]);
-  const [assessmentBloomsMap, setAssessmentBloomsMap] = useState<
-    Record<string, number[]>
-  >({});
-  const [assessmentOutcomesMap, setAssessmentOutcomesMap] = useState<
-    Record<string, number[]>
-  >({});
+  >(() => []);
 
   const [studentContextMenu, setStudentContextMenu] = useState<{
     visible: boolean;
@@ -109,107 +120,107 @@ export function useClassRecord() {
     y: 0,
   });
 
-  const getAllAssessmentNodes = useCallback(
-    (nodes: HeaderNode[]): HeaderNode[] => getAllAssessmentNodesPure(nodes),
+  const setMaxScores = useCallback(
+    (
+      updater:
+        | Record<string, number>
+        | ((prev: Record<string, number>) => Record<string, number>)
+    ) => {
+      setClassRecord((prev) => ({
+        ...prev,
+        maxScores:
+          typeof updater === "function" ? updater(prev.maxScores) : updater,
+      }));
+    },
     []
   );
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     let isMounted = true;
+    setLoading(true);
 
-    if (!section_id) return;
+    try {
+      const data = await getClassRecord(Number(section_id));
+      if (!data) throw new Error("No class record found");
 
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const data = await getClassRecord(Number(section_id));
-        if (!isMounted) return;
-        if (!data) throw new Error("No class record found");
+      const fetchedStudents = data.students ?? [];
+      const generatedHeaders = generateHeaderConfig(data);
+      const defaults = collectMaxScores(generatedHeaders);
+      const initialStudentScores = initializeStudentScores(
+        fetchedStudents,
+        generatedHeaders
+      );
 
-        const fetchedStudents = data.students ?? [];
-        const generatedHeaders = generateHeaderConfig(data);
-        const defaults = collectMaxScores(generatedHeaders);
-
-        const initialStudentScores = initializeStudentScores(
-          fetchedStudents,
-          generatedHeaders
-        );
-
-        startTransition(() => {
-          setStudents(fetchedStudents);
-          setHeaderNodes(generatedHeaders);
-          setMaxScores(defaults);
-          setStudentScores(initialStudentScores);
-        });
-
-        if (course_code) {
-          const [blooms, outcomes] = await Promise.all([
+      const [blooms, outcomes] = course_code
+        ? await Promise.all([
             getBloomsOptions(),
             getCourseOutcomes(course_code),
-          ]);
+          ])
+        : [[], []];
 
-          if (!isMounted) return;
+      const mappedBlooms = blooms.map((b) => ({
+        id: b.blooms_classification_id,
+        name: b.blooms_classification_type,
+      }));
 
-          const mappedBlooms = blooms.map((b) => ({
-            id: b.blooms_classification_id,
-            name: b.blooms_classification_type,
-          }));
+      const mappedOutcomes = outcomes.map((o) => ({
+        id: o.course_outcome_id,
+        name: o.course_outcome_code,
+      }));
 
-          const mappedOutcomes = outcomes.map((o) => ({
-            id: o.course_outcome_id,
-            name: o.course_outcome_code,
-          }));
-
-          startTransition(() => {
-            setBloomsOptions(mappedBlooms);
-            setOutcomesOptions(mappedOutcomes);
-          });
-        }
-
-        const allAssessments = getAllAssessmentNodes(generatedHeaders);
-        const infoRequests = allAssessments.map((node) =>
-          getAssessmentInfo(Number(node.key))
-            .then((info) => ({
+      const allAssessments = getAllAssessmentNodesPure(generatedHeaders);
+      const infos = await Promise.all(
+        allAssessments.map(async (node) => {
+          try {
+            const info = await getAssessmentInfo(Number(node.key));
+            return {
               id: String(node.key),
               blooms: info.blooms_classification ?? [],
               outcomes: info.course_outcome ?? [],
-            }))
-            .catch(() => ({
-              id: String(node.key),
-              blooms: [],
-              outcomes: [],
-            }))
-        );
+            };
+          } catch {
+            return { id: String(node.key), blooms: [], outcomes: [] };
+          }
+        })
+      );
 
-        const infos = await Promise.all(infoRequests);
-        if (!isMounted) return;
+      if (!isMounted) return;
 
-        const bloomsMap: Record<string, number[]> = {};
-        const outcomesMap: Record<string, number[]> = {};
+      const bloomsMap = Object.fromEntries(infos.map((i) => [i.id, i.blooms]));
+      const outcomesMap = Object.fromEntries(
+        infos.map((i) => [i.id, i.outcomes])
+      );
 
-        infos.forEach((i) => {
-          bloomsMap[i.id] = i.blooms;
-          outcomesMap[i.id] = i.outcomes;
+      startTransition(() => {
+        setClassRecord({
+          headerNodes: generatedHeaders,
+          students: fetchedStudents,
+          maxScores: defaults,
+          studentScores: initialStudentScores,
+          assessmentBloomsMap: bloomsMap,
+          assessmentOutcomesMap: outcomesMap,
+          currentAssessmentBlooms: [],
+          currentAssessmentOutcomes: [],
         });
 
-        startTransition(() => {
-          setAssessmentBloomsMap(bloomsMap);
-          setAssessmentOutcomesMap(outcomesMap);
-        });
-      } catch (err) {
-        console.error(err);
-        if (isMounted) setError("Failed to load class record data.");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
+        setBloomsOptions(mappedBlooms);
+        setOutcomesOptions(mappedOutcomes);
+      });
+    } catch (err) {
+      console.error("Failed to load class record:", err);
+      if (isMounted) setError("Failed to load class record data.");
+    } finally {
+      if (isMounted) setLoading(false);
     }
-
-    fetchData();
 
     return () => {
       isMounted = false;
     };
-  }, [section_id, course_code, getAllAssessmentNodes]);
+  }, [section_id, course_code]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const assessmentKeys = useMemo(() => {
     const assessmentNodes = getAllAssessmentNodesPure(headerNodes);
@@ -225,11 +236,12 @@ export function useClassRecord() {
   }, [maxScores]);
 
   const syncStudentScores = useCallback(() => {
-    setStudentScores((prev) => {
+    setClassRecord((prev) => {
+      const prevScores = prev.studentScores;
       let changed = false;
-      const updated: Record<number, Record<string, number>> = {};
+      const updatedScores: Record<number, Record<string, number>> = {};
 
-      for (const [studentIdStr, scores] of Object.entries(prev)) {
+      for (const [studentIdStr, scores] of Object.entries(prevScores)) {
         const studentId = Number(studentIdStr);
         const newScores = { ...scores };
 
@@ -254,16 +266,8 @@ export function useClassRecord() {
           }
         });
 
-        const newMidtermTotal = calculateTermTotal(
-          newScores,
-          "midterm",
-          headerNodes
-        );
-        const newFinalTotal = calculateTermTotal(
-          newScores,
-          "final",
-          headerNodes
-        );
+        const { midterm: newMidtermTotal, final: newFinalTotal } =
+          calculateAllTermTotals(newScores, prev.headerNodes);
 
         if (newScores["midterm-total-grade"] !== newMidtermTotal) {
           newScores["midterm-total-grade"] = newMidtermTotal;
@@ -275,29 +279,18 @@ export function useClassRecord() {
           changed = true;
         }
 
-        updated[studentId] = newScores;
+        updatedScores[studentId] = newScores;
       }
 
-      return changed ? updated : prev;
+      return changed ? { ...prev, studentScores: updatedScores } : prev;
     });
-  }, [headerNodes, assessmentKeys, zeroMaxScoreKeys, setStudentScores]);
+  }, [assessmentKeys, zeroMaxScoreKeys]);
 
   useEffect(() => {
     if (!loading && headerNodes.length > 0 && students.length > 0) {
       syncStudentScores();
     }
   }, [loading, headerNodes, students, syncStudentScores]);
-
-  useEffect(() => {
-    const assessmentId = String(assessmentInfoContextMenu.assessmentId);
-    if (!assessmentId) return;
-    setCurrentAssessmentBlooms(assessmentBloomsMap[assessmentId] ?? []);
-    setCurrentAssessmentOutcomes(assessmentOutcomesMap[assessmentId] ?? []);
-  }, [
-    assessmentInfoContextMenu.assessmentId,
-    assessmentBloomsMap,
-    assessmentOutcomesMap,
-  ]);
 
   const computedMaxValues = useMemo(() => {
     if (headerNodes.length === 0 || Object.keys(maxScores).length === 0)
@@ -315,65 +308,55 @@ export function useClassRecord() {
   }, [maxScores, headerNodes]);
 
   const computedStudentValues = useMemo(() => {
-    if (headerNodes.length === 0 || Object.keys(studentScores).length === 0) {
-      return students.reduce<Record<number, Record<string, number>>>(
-        (acc, student) => {
-          acc[student.student_id] = {};
-          return acc;
-        },
-        {}
+    const result: Record<number, Record<string, number>> = {};
+
+    for (const student of students) {
+      const scores = studentScores[student.student_id];
+      if (!scores) continue;
+
+      const hasAnyRawScore = Object.entries(scores).some(
+        ([k, v]) =>
+          typeof v === "number" &&
+          v !== 0 &&
+          !isNaN(v) &&
+          !k.includes("-total-grade")
+      );
+
+      if (!hasAnyRawScore) {
+        result[student.student_id] = {};
+        continue;
+      }
+
+      result[student.student_id] = computeValues(
+        scores,
+        maxScores,
+        headerNodes
       );
     }
 
-    return Object.fromEntries(
-      Object.entries(studentScores).map(([studentId, scores]) => {
-        const rawScoreKeys = Object.keys(scores).filter(
-          (k) => !k.includes("-total-grade")
-        );
-        const hasAnyScore = rawScoreKeys.some(
-          (k) => scores[k] && scores[k] !== 0
-        );
-
-        if (!hasAnyScore) {
-          return [Number(studentId), {}];
-        }
-
-        return [
-          Number(studentId),
-          computeValues(scores, maxScores, headerNodes),
-        ];
-      })
-    );
+    return result;
   }, [studentScores, maxScores, headerNodes, students]);
 
   const updateStudentScore = useCallback(
     (studentId: number, key: string, value: number) => {
-      setStudentScores((prev) => {
-        const prevStudentScore = prev[studentId] || {};
+      setClassRecord((prev) => {
+        const prevStudent = prev.studentScores[studentId] ?? {};
+        const updated = { ...prevStudent, [key]: value };
 
-        const updatedStudentScore = {
-          ...prevStudentScore,
-          [key]: value,
-        };
-
-        updatedStudentScore["midterm-total-grade"] = calculateTermTotal(
-          updatedStudentScore,
-          "midterm",
-          headerNodes
+        const { midterm, final } = calculateAllTermTotals(
+          updated,
+          prev.headerNodes
         );
-        updatedStudentScore["final-total-grade"] = calculateTermTotal(
-          updatedStudentScore,
-          "final",
-          headerNodes
-        );
+        updated["midterm-total-grade"] = midterm;
+        updated["final-total-grade"] = final;
 
         return {
           ...prev,
-          [studentId]: updatedStudentScore,
+          studentScores: { ...prev.studentScores, [studentId]: updated },
         };
       });
     },
-    [headerNodes]
+    [setClassRecord]
   );
 
   const sortedStudentsData = useMemo(() => {
@@ -394,39 +377,40 @@ export function useClassRecord() {
       });
   }, [students, studentScores, computedStudentValues]);
 
-  const handleAddStudent = async () => {
-    try {
-      if (!section_id) throw new Error("No section selected");
-
-      const newStudent: Partial<Student> = {
-        student_name: null,
-        id_number: null,
-      };
-
-      const created = await createStudent(newStudent, Number(section_id));
-      setStudents((prev) => [...prev, created]);
-
-      setStudentScores((prev) => ({
-        ...prev,
-        [created.student_id]: headerNodes.reduce((acc, node) => {
-          if (node.key) acc[node.key] = 0;
-          return acc;
-        }, {} as Record<string, number>),
-      }));
-    } catch (err) {
-      console.error("Failed to add student:", err);
-    }
-  };
+  const handleAddStudent = useCallback(async () => {
+    const created = await createStudent(
+      { student_name: null, id_number: null },
+      Number(section_id)
+    );
+    setClassRecord((prev) => ({
+      ...prev,
+      students: [...prev.students, created],
+      studentScores: {
+        ...prev.studentScores,
+        [created.student_id]: Object.fromEntries(
+          prev.headerNodes.map((node) => [node.key!, 0])
+        ),
+      },
+    }));
+  }, [section_id]);
 
   const handleDeleteStudent = useCallback(async (studentId: number) => {
     try {
       await deleteStudent(studentId);
 
-      setStudents((prev) => prev.filter((s) => s.student_id !== studentId));
-      setStudentScores((prev) => {
-        const copy = { ...prev };
-        delete copy[studentId];
-        return copy;
+      setClassRecord((prev) => {
+        const updatedStudents = prev.students.filter(
+          (s) => s.student_id !== studentId
+        );
+
+        const updatedStudentScores = { ...prev.studentScores };
+        delete updatedStudentScores[studentId];
+
+        return {
+          ...prev,
+          students: updatedStudents,
+          studentScores: updatedStudentScores,
+        };
       });
     } catch (err) {
       console.error("Error deleting student:", err);
@@ -438,13 +422,32 @@ export function useClassRecord() {
     async (studentId: number, updates: Partial<Student>) => {
       try {
         const updated = await updateStudent(studentId, updates);
-        setStudents((prev) =>
-          prev.map((s) => (s.student_id === studentId ? updated : s))
-        );
+
+        setClassRecord((prev) => ({
+          ...prev,
+          students: prev.students.map((s) =>
+            s.student_id === studentId ? updated : s
+          ),
+        }));
       } catch (err) {
         console.error("Error updating student:", err);
         setError("Failed to update student.");
       }
+    },
+    []
+  );
+
+  const insertBeforeCalculations = useCallback(
+    (children: HeaderNode[], node: HeaderNode) => {
+      const calcStartIndex = children.findIndex(
+        (c) => c.calculationType === "sum" || c.calculationType === "percentage"
+      );
+      if (calcStartIndex === -1) return [...children, node];
+      return [
+        ...children.slice(0, calcStartIndex),
+        node,
+        ...children.slice(calcStartIndex),
+      ];
     },
     []
   );
@@ -502,23 +505,7 @@ export function useClassRecord() {
         [newId]: newAssessment.assessment_highest_score ?? 0,
       }));
 
-      setHeaderNodes((prev) => {
-        const insertBeforeCalculations = (
-          children: HeaderNode[],
-          node: HeaderNode
-        ) => {
-          const calcStartIndex = children.findIndex(
-            (c) =>
-              c.calculationType === "sum" || c.calculationType === "percentage"
-          );
-          if (calcStartIndex === -1) return [...children, node];
-          return [
-            ...children.slice(0, calcStartIndex),
-            node,
-            ...children.slice(calcStartIndex),
-          ];
-        };
-
+      setClassRecord((prev) => {
         const addToComponent = (nodes: HeaderNode[]): HeaderNode[] =>
           nodes.map((node) => {
             if (
@@ -544,12 +531,24 @@ export function useClassRecord() {
                   return child;
                 }
               );
+
               return { ...node, children: updatedChildrenWithKeys };
             }
+
             return { ...node, children: addToComponent(node.children) };
           });
 
-        return addToComponent(prev);
+        const updatedHeaderNodes = addToComponent(prev.headerNodes);
+        const updatedMaxScores = {
+          ...prev.maxScores,
+          [newId]: newAssessment.assessment_highest_score ?? 0,
+        };
+
+        return {
+          ...prev,
+          headerNodes: updatedHeaderNodes,
+          maxScores: updatedMaxScores,
+        };
       });
     } catch (err) {
       console.error("Failed to add assessment:", err);
@@ -560,8 +559,11 @@ export function useClassRecord() {
     try {
       await deleteAssessment(assessmentId);
 
-      function removeAssessment(nodes: HeaderNode[], id: number): HeaderNode[] {
-        return nodes
+      const removeAssessment = (
+        nodes: HeaderNode[],
+        id: number
+      ): HeaderNode[] =>
+        nodes
           .map((node) => ({
             ...node,
             children: removeAssessment(node.children, id),
@@ -569,27 +571,42 @@ export function useClassRecord() {
           .filter(
             (node) => node.nodeType !== "assessment" || Number(node.key) !== id
           );
-      }
-      setHeaderNodes((prev) => removeAssessment(prev, assessmentId));
-      setStudentScores((prev) => {
-        const copy = { ...prev };
-        Object.values(copy).forEach((scores) => {
-          delete scores[assessmentId];
-          scores["midterm-total-grade"] = calculateTermTotal(
-            scores,
-            "midterm",
-            headerNodes
-          );
-          scores["final-total-grade"] = calculateTermTotal(
-            scores,
-            "final",
-            headerNodes
-          );
-        });
-        return copy;
+
+      setClassRecord((prev) => {
+        const updatedHeaderNodes = removeAssessment(
+          prev.headerNodes,
+          assessmentId
+        );
+
+        const updatedStudentScores = Object.fromEntries(
+          Object.entries(prev.studentScores).map(([sid, scores]) => {
+            const newScores = { ...scores };
+            delete newScores[assessmentId];
+
+            const { midterm, final } = calculateAllTermTotals(
+              newScores,
+              updatedHeaderNodes
+            );
+            newScores["midterm-total-grade"] = midterm;
+            newScores["final-total-grade"] = final;
+
+            return [sid, newScores];
+          })
+        );
+
+        const updatedMaxScores = { ...prev.maxScores };
+        delete updatedMaxScores[assessmentId];
+
+        return {
+          ...prev,
+          headerNodes: updatedHeaderNodes,
+          studentScores: updatedStudentScores,
+          maxScores: updatedMaxScores,
+        };
       });
     } catch (err) {
       console.error("Failed to delete assessment:", err);
+      setError("Failed to delete assessment.");
     }
   };
 
@@ -603,59 +620,68 @@ export function useClassRecord() {
     ) => {
       try {
         const updated = await updateAssessment(assessmentId, updates);
-        let updatedTree: HeaderNode[] = [];
-        setHeaderNodes((prev) => {
-          updatedTree = updateAssessmentInTree(prev, assessmentId, updated);
 
-          return updatedTree;
-        });
+        setClassRecord((prev) => {
+          // 1️⃣ Update the header tree (title, max score, etc.)
+          const updatedHeaderNodes = updateAssessmentInTree(
+            prev.headerNodes,
+            assessmentId,
+            updated
+          );
 
-        setStudentScores((prev) => {
-          const copy = { ...prev };
+          // 2️⃣ Recalculate student totals based on updated structure
+          const updatedStudentScores = Object.fromEntries(
+            Object.entries(prev.studentScores).map(([sid, scores]) => {
+              const newScores = { ...scores };
+              const { midterm, final } = calculateAllTermTotals(
+                newScores,
+                updatedHeaderNodes
+              );
+              newScores["midterm-total-grade"] = midterm;
+              newScores["final-total-grade"] = final;
+              return [sid, newScores];
+            })
+          );
 
-          for (const scores of Object.values(copy)) {
-            scores["midterm-total-grade"] = calculateTermTotal(
-              scores,
-              "midterm",
-              updatedTree
-            );
-            scores["final-total-grade"] = calculateTermTotal(
-              scores,
-              "final",
-              updatedTree
-            );
-          }
+          // 3️⃣ Update blooms/outcomes maps if provided
+          const updatedBloomsMap = updated.blooms_classification
+            ? {
+                ...prev.assessmentBloomsMap,
+                [assessmentId]: updated.blooms_classification,
+              }
+            : prev.assessmentBloomsMap;
 
-          return copy;
-        });
+          const updatedOutcomesMap = updated.course_outcome
+            ? {
+                ...prev.assessmentOutcomesMap,
+                [assessmentId]: updated.course_outcome,
+              }
+            : prev.assessmentOutcomesMap;
 
-        if (updated.blooms_classification) {
-          setAssessmentBloomsMap((prev) => ({
+          // 4️⃣ Update "current" selections if this assessment is open
+          const updatedCurrentBlooms =
+            updated.blooms_classification ?? prev.currentAssessmentBlooms;
+          const updatedCurrentOutcomes =
+            updated.course_outcome ?? prev.currentAssessmentOutcomes;
+
+          return {
             ...prev,
-            [assessmentId]: updated.blooms_classification!,
-          }));
-          setCurrentAssessmentBlooms(updated.blooms_classification);
-        }
-
-        if (updated.course_outcome) {
-          setAssessmentOutcomesMap((prev) => ({
-            ...prev,
-            [assessmentId]: updated.course_outcome!,
-          }));
-          setCurrentAssessmentOutcomes(updated.course_outcome);
-        }
+            headerNodes: updatedHeaderNodes,
+            studentScores: updatedStudentScores,
+            assessmentBloomsMap: updatedBloomsMap,
+            assessmentOutcomesMap: updatedOutcomesMap,
+            currentAssessmentBlooms: updatedCurrentBlooms,
+            currentAssessmentOutcomes: updatedCurrentOutcomes,
+          };
+        });
       } catch (err) {
         console.error("Failed to update assessment:", err);
+        setError("Failed to update assessment.");
       }
     },
-    [
-      setStudentScores,
-      setAssessmentBloomsMap,
-      setAssessmentOutcomesMap,
-      setCurrentAssessmentBlooms,
-      setCurrentAssessmentOutcomes,
-    ]
+    [setClassRecord]
   );
+
   const handleEditAssessmentTitle = useCallback(
     (node: HeaderNode, event: React.MouseEvent<HTMLDivElement>) => {
       if (!canOpenPopup) return;
@@ -681,17 +707,20 @@ export function useClassRecord() {
   const handleUpdateAssessmentTitle = useCallback(
     async (nodeKey: string, newValue: string) => {
       const assessmentId = Number(nodeKey);
-      setHeaderNodes((prev) =>
-        updateAssessmentInTree(prev, assessmentId, {
+      setClassRecord((prev) => ({
+        ...prev,
+        headerNodes: updateAssessmentInTree(prev.headerNodes, assessmentId, {
           assessment_title: newValue,
-        })
-      );
+        }),
+      }));
+
       await handleUpdateAssessment(assessmentId, {
         assessment_title: newValue,
       });
+
       setEditingAssessment(null);
     },
-    [handleUpdateAssessment, setEditingAssessment, setHeaderNodes]
+    [handleUpdateAssessment, setEditingAssessment, setClassRecord]
   );
 
   const handleEditAssessmentTitleCancel = useCallback(
@@ -701,47 +730,68 @@ export function useClassRecord() {
 
   const handleStudentInputChange = useCallback(
     (index: number, field: keyof Student, value: string) => {
-      setStudents((prev) => {
-        const updated = [...prev];
-        updated[index] = { ...updated[index], [field]: value };
-        return updated;
+      setClassRecord((prev) => {
+        const updatedStudents = [...prev.students];
+        updatedStudents[index] = {
+          ...updatedStudents[index],
+          [field]: value,
+        };
+
+        return {
+          ...prev,
+          students: updatedStudents,
+        };
       });
     },
-    []
+    [setClassRecord]
   );
 
   const handleScoreChange = useCallback(
     async (studentId: number, assessmentId: number, value: number | null) => {
       try {
         await updateRawScore(studentId, assessmentId, value);
-        setStudentScores((prev) => {
-          const prevStudentScore = prev[studentId] || {};
+
+        setClassRecord((prev) => {
+          const updatedScores = { ...prev.studentScores };
+          const studentScores = updatedScores[studentId] || {};
+
+          updatedScores[studentId] = {
+            ...studentScores,
+            [assessmentId]: value,
+          };
+
           return {
             ...prev,
-            [studentId]: {
-              ...prevStudentScore,
-              [assessmentId]: value,
-            },
+            studentScores: updatedScores,
           };
         });
       } catch (error) {
         console.error("Failed to update raw score:", error);
       }
     },
-    []
+    [setClassRecord]
   );
 
   const handleOpenAssessmentInfo = useCallback(
     (e: React.MouseEvent, assessmentId: number) => {
       const rect = (e.target as HTMLElement).getBoundingClientRect();
+
       setAssessmentInfoContextMenu({
         visible: true,
         x: rect.left,
         y: rect.bottom + window.scrollY,
         assessmentId,
       });
+
+      setClassRecord((prev) => ({
+        ...prev,
+        currentAssessmentBlooms:
+          prev.assessmentBloomsMap[String(assessmentId)] ?? [],
+        currentAssessmentOutcomes:
+          prev.assessmentOutcomesMap[String(assessmentId)] ?? [],
+      }));
     },
-    [setAssessmentInfoContextMenu]
+    [setAssessmentInfoContextMenu, setClassRecord]
   );
 
   const handleCloseAssessmentInfo = () => {

@@ -356,34 +356,83 @@ def department_course_detail_view(request, loaded_course_id):
 @permission_classes([AllowAny])
 def department_section_management_view(request, loaded_course_id):
     try:
+        # ----------------------------
+        # Always fetch course metadata
+        # ----------------------------
+        loaded_course = (
+            LoadedCourse.objects
+            .select_related(
+                "course__program__department__college__campus",
+                "course__semester",
+                "course__year_level",
+                "academic_year",
+            )
+            .get(pk=loaded_course_id)
+        )
+
+        course_data = {
+            "course_title": loaded_course.course.course_title,
+            "academic_year": f"{loaded_course.academic_year.academic_year_start}-{loaded_course.academic_year.academic_year_end}",
+            "semester_type": loaded_course.course.semester.semester_type,
+            "year_level": loaded_course.course.year_level.year_level_type,
+            "department_name": loaded_course.course.program.department.department_name,
+            "college_name": loaded_course.course.program.department.college.college_name,
+            "campus_name": loaded_course.course.program.department.campus.campus_name,
+        }
+
         if request.method == "GET":
-            sections = Section.objects.filter(loaded_course_id=loaded_course_id)
+            sections = (
+                Section.objects
+                .select_related(
+                    "loaded_course__course__program__department__college__campus",
+                    "loaded_course__course__semester",
+                    "loaded_course__course__year_level",
+                    "loaded_course__academic_year",
+                    "instructor_assigned",
+                )
+                .filter(loaded_course_id=loaded_course_id)
+            )
             serializer = SectionSerializer(sections, many=True)
-            return JsonResponse(serializer.data, safe=False)
+            section_data = [
+                {
+                    "id": s["section_id"],
+                    "year_and_section": s["year_and_section"],
+                    "instructor_assigned": (
+                        f"{(s['first_name'] or '').strip()} {(s['last_name'] or '').strip()}".strip()
+                        if s["first_name"] or s["last_name"]
+                        else "NO INSTRUCTOR ASSIGNED"
+                    ),
+                    "instructor_id": s["instructor_assigned"],  # add this
+                }
+                for s in serializer.data
+            ]
+            return JsonResponse({"course_details": course_data, "sections": section_data}, status=200)
+
 
         elif request.method == "POST":
-            serializer = CreateSectionSerializer(data=request.data)
+            serializer = SectionCreateUpdateSerializer(data=request.data)
             if serializer.is_valid():
-                if serializer.validated_data["loaded_course"].loaded_course_id != loaded_course_id:
-                    return JsonResponse({"message": "Loaded course mismatch."}, status=400)
                 serializer.save()
-                return JsonResponse({"message": "Section created successfully", "data": serializer.data}, status=200)
+                return JsonResponse({"message": "Section created successfully"}, status=201)
             return JsonResponse({"message": serializer.errors}, status=400)
 
+    except LoadedCourse.DoesNotExist:
+        return JsonResponse({"message": "Loaded course not found"}, status=404)
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500)
+
 
 @api_view(["PUT", "PATCH", "DELETE"])
 @permission_classes([AllowAny])
 def department_section_detail_view(request, section_id):
     try:
-        section = Section.objects.get(section_id=section_id)
+        section = Section.objects.get(pk=section_id)
 
         if request.method in ["PUT", "PATCH"]:
-            serializer = UpdateSectionSerializer(instance=section, data=request.data, partial=True)
+            serializer = SectionCreateUpdateSerializer(instance=section, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
-                return JsonResponse({"message": "Section updated successfully", "data": serializer.data}, status=200)
+                return JsonResponse({"message": "Section updated successfully"}, status=200)
             return JsonResponse({"message": serializer.errors}, status=400)
 
         elif request.method == "DELETE":
@@ -565,20 +614,11 @@ class AssessmentPageAPIView(APIView):
         academic_year = loaded_course.academic_year
 
         # Build cacode: Campus / College / Department (use department via program->department->college->campus)
-        # We attempt best-effort traversal
-        cacode_parts = []
-        # try department -> college -> campus via program -> department
         try:
             department = program.department
         except Exception:
             department = None
 
-        # Fallback: try to pull department via course -> program -> department presence
-        if not department:
-            # maybe Course->program->department not set; leave empty
-            department = None
-
-        # Try to build a readable cacode: campus / college / department
         campus_name = None
         college_name = None
         department_name = None
@@ -589,9 +629,7 @@ class AssessmentPageAPIView(APIView):
             if hasattr(department, "campus") and department.campus:
                 campus_name = getattr(department.campus, "campus_name", None)
 
-        # if missing, try program -> department -> college -> campus (some structure)
         if not campus_name:
-            # attempt to find via course.program.department.campus, or course.program.department.college.campus
             try:
                 dept = program.department
                 if dept:
@@ -603,7 +641,6 @@ class AssessmentPageAPIView(APIView):
             except Exception:
                 pass
 
-        # If still missing, try course -> ??? (best effort)
         cacode = " / ".join([p for p in [campus_name, college_name, department_name] if p])
 
         classInfo = {
@@ -619,39 +656,32 @@ class AssessmentPageAPIView(APIView):
         }
 
         # ========== POS (Program Outcomes) ==========
-        # Find program outcomes for the course"s program
         program_outcomes_qs = ProgramOutcome.objects.filter(program=program).prefetch_related(
             Prefetch(
                 "outcomemapping_set__course_outcome",
-                queryset=CourseOutcome.objects.filter(course=course),
-                to_attr="course_outcomes_for_course"
+                queryset=CourseOutcome.objects.filter(loaded_course=loaded_course),
+                to_attr="course_outcomes_for_loaded_course"
             )
         )
 
         pos_list = []
-        # Pre-fetch all assessments for this section for speed
         assessments_qs = Assessment.objects.filter(
             course_component__course_unit__course_term__section=section
         ).prefetch_related("blooms_classification", "course_outcome").order_by("assessment_id")
 
-        # Build a helper: map course outcome id -> assessments list (filtered by assessment.course_outcome M2M)
         co_to_assessments = {}
         for a in assessments_qs:
-            # for each course_outcome associated
             for co in a.course_outcome.all():
                 co_to_assessments.setdefault(co.course_outcome_id, []).append(a)
 
         for po in program_outcomes_qs:
             mapped_cos = []
             mappings = OutcomeMapping.objects.filter(program_outcome=po).select_related("course_outcome")
+
             for m in mappings:
                 co = m.course_outcome
-                if co.course_id != course.course_code and getattr(co, "course_id", None) is not None:
-                    pass
-                if co.course_id == course.course_code if hasattr(co, "course_id") else (co.course == course):
-                    pass
                 try:
-                    if co.course != course:
+                    if co.loaded_course != loaded_course:
                         continue
                 except Exception:
                     continue
@@ -673,8 +703,9 @@ class AssessmentPageAPIView(APIView):
                 cos_ids_seen = set()
                 for a in assessments_qs:
                     for co in a.course_outcome.all():
-                        if co.course == course and co.course_outcome_id not in cos_ids_seen:
+                        if co.loaded_course == loaded_course and co.course_outcome_id not in cos_ids_seen:
                             cos_ids_seen.add(co.course_outcome_id)
+
                 cos_objs = CourseOutcome.objects.filter(pk__in=cos_ids_seen)
                 for co in cos_objs:
                     assessments_for_co = co_to_assessments.get(co.course_outcome_id, [])
@@ -699,8 +730,9 @@ class AssessmentPageAPIView(APIView):
             cos_seen = {}
             for a in assessments_qs:
                 for co in a.course_outcome.all():
-                    if co.course == course:
+                    if co.loaded_course == loaded_course:
                         cos_seen.setdefault(co.course_outcome_id, co)
+
             fallback_cos = []
             for co_id, co in cos_seen.items():
                 assessments_for_co = co_to_assessments.get(co.course_outcome_id, [])
@@ -723,6 +755,7 @@ class AssessmentPageAPIView(APIView):
         # ========== Students ==========
         students_qs = Student.objects.filter(section=section).order_by("student_id")
         raw_scores_qs = RawScore.objects.filter(assessment__in=assessments_qs).select_related("assessment", "student")
+
         student_assessment_score = {}
         for rs in raw_scores_qs:
             sid = rs.student_id
@@ -767,7 +800,6 @@ class AssessmentPageAPIView(APIView):
         }
 
         return Response(response, status=status.HTTP_200_OK)
-
 
 # ====================================================
 # Dropdown
@@ -866,7 +898,12 @@ def blooms_classification_list_view(request):
 @permission_classes([IsAuthenticated])
 def course_outcome_list_view(request, course_code):
     try:
-        outcomes = CourseOutcome.objects.filter(course__course_code=course_code).order_by("course_outcome_id")
+        outcomes = (
+            CourseOutcome.objects
+            .filter(loaded_course__course__course_code=course_code)
+            .order_by("course_outcome_id")
+            .select_related("loaded_course__course")
+        )
         serializer = CourseOutcomeSerializer(outcomes, many=True)
         return JsonResponse(serializer.data, safe=False)
     except Exception as e:

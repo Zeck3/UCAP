@@ -69,10 +69,10 @@ function ClassworkNameCell({
   return (
     <td
       key={`cw-${pIdx}-${cIdx}-${cwIdx}`}
-      className="border border-[#E9E6E6] align-middle min-w-[56px] h-[160px]"
+      className="border border-[#E9E6E6] align-middle min-w-14 h-40"
     >
       <div className="h-full flex items-center justify-center">
-        <span className="text-xs leading-tight break-words whitespace-normal [writing-mode:vertical-rl] [text-orientation:mixed] rotate-180">
+        <span className="text-xs leading-tight wrap-break-word whitespace-normal [writing-mode:vertical-rl] [text-orientation:mixed] rotate-180">
           {cw.name}
         </span>
       </div>
@@ -97,7 +97,7 @@ function StudentScoreCell({
   return (
     <td
       key={`score-${studentId}-${pIdx}-${cIdx}-${cwIdx}`}
-      className="border border-[#E9E6E6] px-3 py-2 text-center min-w-[56px]"
+      className="border border-[#E9E6E6] px-3 py-2 text-center min-w-14"
     >
       {val}
     </td>
@@ -332,7 +332,7 @@ export default function ResultSheetPage(): JSX.Element {
 
   return (
     <AppLayout activeItem="/instructor" disablePadding>
-      <table className="table-auto border-collapse w-full ml-[-1px] mt-[-1px]">
+      <table className="table-auto border-collapse w-full -ml-px -mt-px">
         <tbody>
           {[
             ["Campus/College/Department:", data.classInfo.cacode],
@@ -412,7 +412,7 @@ export default function ResultSheetPage(): JSX.Element {
                   ...grouped.map((g, gIdx) => (
                     <td
                       key={`blooms-${pIdx}-${cIdx}-${gIdx}`}
-                      className="border border-[#E9E6E6] px-3 py-2 text-center italic break-words whitespace-normal"
+                      className="border border-[#E9E6E6] px-3 py-2 text-center italic wrap-break-word whitespace-normal"
                       colSpan={g.count}
                     >
                       {g.bloom}
@@ -452,13 +452,13 @@ export default function ResultSheetPage(): JSX.Element {
                   </td>,
                   <td
                     key={`cw-pass70-${pIdx}-${cIdx}`}
-                    className="border border-[#E9E6E6] px-2 py-2 text-center text-sm min-w-[56px]"
+                    className="border border-[#E9E6E6] px-2 py-2 text-center text-sm min-w-14"
                   >
                     Passing (70%)
                   </td>,
                   <td
                     key={`cw-pass80-${pIdx}-${cIdx}`}
-                    className="border border-[#E9E6E6] px-2 py-2 text-center text-sm min-w-[56px]"
+                    className="border border-[#E9E6E6] px-2 py-2 text-center text-sm min-w-14"
                   >
                     Passing (80%)
                   </td>
@@ -491,7 +491,7 @@ export default function ResultSheetPage(): JSX.Element {
                     return (
                       <td
                         key={`max-${pIdx}-${cIdx}-${cwIdx}`}
-                        className="border border-[#E9E6E6] px-3 py-2 text-center text-coa-blue min-w-[56px] "
+                        className="border border-[#E9E6E6] px-3 py-2 text-center text-coa-blue min-w-14 "
                       >
                         {maxVal}
                       </td>

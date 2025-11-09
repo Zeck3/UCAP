@@ -53,7 +53,7 @@ export default function ClassRecordComponent() {
     return <ClassRecordError description={"No data for this class record."} />;
 
   return (
-    <table className="table-fixed border-collapse border-0 min-w-max ml-[-1px] mt-[-1px]">
+    <table className="table-fixed border-collapse border-0 min-w-max -ml-px -mt-px">
       <thead>
         <BuildHeaderRow
           nodes={headerNodes}

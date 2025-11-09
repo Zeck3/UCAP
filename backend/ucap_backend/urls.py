@@ -48,10 +48,10 @@ urlpatterns = [
     path("department_chair/department_course_list/<int:department_id>/", department_course_list_view),
 
     path("department_chair/department_course_management/<int:department_id>/", department_course_management_view),
-    path("department_chair/department_course_management/<int:loaded_course_id>/", department_course_detail_view),
+    path("department_chair/department_course_management/delete/<int:loaded_course_id>/", department_course_detail_view),
 
-    path("department_chair/section_management/<int:loaded_course_id>/", department_section_management_view),
-    path("department_chair/section_management/<int:section_id>/", department_section_detail_view),
+    path("department_chair/section_management/loaded_course/<int:loaded_course_id>/", department_section_management_view),
+    path("department_chair/section_management/section/<int:section_id>/",department_section_detail_view),
     # ====================================================
     # Dropdown
     # ====================================================

@@ -133,7 +133,7 @@ export default function AdminUserDashboard() {
       newErrors.user_id = "User ID must be a number";
     }
     if (!formData.last_name?.trim()) {
-      newErrors.last_name = "Last name is required";
+      newErrors.last_name = "Last Name is required";
     }
     if (!formData.email?.trim()) {
       newErrors.email = "Email is required";

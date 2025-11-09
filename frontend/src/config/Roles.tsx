@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { useAuth } from "../context/useAuth";
 import { useEffect, useState } from "react";
 import { fetchUserDepartment } from "../api/userDepartmentApi";
-import type { UserDepartment } from "../types/departmentChairDashboardTypes";
+import type { UserDepartment } from "../types/userDepartmentTypes";
 
 export const Roles = {
   Administrator: 1,

@@ -6,21 +6,22 @@ import type {
 } from "../../../types/classRecordTypes";
 import type { HeaderNode } from "../types/headerConfigTypes";
 
+function traverse(node: HeaderNode, scores: Record<string, number>) {
+  if (
+    node.key &&
+    node.maxScore !== undefined &&
+    node.calculationType === "assignment"
+  ) {
+    scores[node.key] = node.maxScore ?? 0;
+  }
+  node.children.forEach((child) => traverse(child, scores));
+}
+
 export default function collectMaxScores(
   nodes: HeaderNode[]
 ): Record<string, number> {
   const scores: Record<string, number> = {};
-  function collect(node: HeaderNode) {
-    if (
-      node.key &&
-      node.maxScore !== undefined &&
-      node.calculationType === "assignment"
-    ) {
-      scores[node.key] = node.maxScore ?? 0;
-    }
-    node.children.forEach(collect);
-  }
-  nodes.forEach(collect);
+  nodes.forEach((n) => traverse(n, scores));
   return scores;
 }
 
@@ -88,18 +89,12 @@ function createTermSection(term: CourseTerm): HeaderNode {
 }
 
 function createUnitSection(termType: string, unit: CourseUnit): HeaderNode {
-  const children: HeaderNode[] = [];
-
-  unit.course_components.forEach((comp) => {
-    const { nodes: assignmentNodes, groupKeys } = createAssessmentNodes(
-      termType,
-      comp
-    );
-
-    children.push({
+  const children = unit.course_components.reduce<HeaderNode[]>((acc, comp) => {
+    const { nodes, groupKeys } = createAssessmentNodes(termType, comp);
+    acc.push({
       title: `${comp.course_component_type} (${comp.course_component_percentage}%)`,
       children: [
-        ...assignmentNodes,
+        ...nodes,
         {
           title: "Total Score",
           key: `${termType}-${unit.course_unit_type}-${comp.course_component_type}-total`,
@@ -118,7 +113,8 @@ function createUnitSection(termType: string, unit: CourseUnit): HeaderNode {
       nodeType: "component",
       componentId: comp.course_component_id,
     });
-  });
+    return acc;
+  }, []);
 
   const percKeys = unit.course_components.map(
     (comp) =>

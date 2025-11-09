@@ -81,7 +81,7 @@ export default function AssessmentInfoContextMenu({
   const menu = (
     <div
       ref={menuRef}
-      className="absolute bg-white shadow-lg rounded-lg border border-gray-300 p-3 z-[9999] w-64 space-y-3 text-gray-900"
+      className="absolute bg-white shadow-lg rounded-lg border border-gray-300 p-3 z-9999 w-64 space-y-3 text-gray-900"
       style={{ top: y, left: x }}
     >
       {bloomsOptions.length > 0 && (
