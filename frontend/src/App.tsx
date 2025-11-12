@@ -29,9 +29,9 @@ export default function App() {
       <Route path="*" element={<NotFoundPage />} />
 
       <Route element={<ProtectedRoute allowedRoles={[Roles.DepartmentChair]} />}>
-        <Route path="/department/:department_name/:loaded_course_id/:course_code/:year_and_section" element={<DepartmentChairAssessmentPage />} />
-        <Route path="/department/:department_name/:loaded_course_id/:course_code" element={<DepartmentChairCoursePage />} />
-        <Route path="/department/:department_name" element={<DepartmentChairCourseDashboard />} />
+        <Route path="/department/:department_id/:department_name/:loaded_course_id/:course_code/:year_and_section" element={<DepartmentChairAssessmentPage />} />
+        <Route path="/department/:department_id/:department_name/:loaded_course_id/:course_code" element={<DepartmentChairCoursePage />} />
+        <Route path="/department/:department_id/:department_name" element={<DepartmentChairCourseDashboard />} />
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={[Roles.Instructor]} />}>

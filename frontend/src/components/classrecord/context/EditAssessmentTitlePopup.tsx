@@ -77,6 +77,8 @@ export default function EditAssessmentTitlePopup({
       className="z-40 bg-white border border-[#E9E6E6] rounded-sm"
     >
       <input
+        id={`edit_assessment_input-${editingAssessment.nodeKey}`}
+        name={`edit_assessment_input-${editingAssessment.nodeKey}`}
         type="text"
         value={inputValue}
         autoFocus

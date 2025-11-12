@@ -87,7 +87,7 @@ export default function ToolBarComponent({
                 >
                   <span
                     className={`${
-                      !isSingle && isActive ? "text-ucap-yellow" : ""
+                      !isSingle && isActive ? "text-ucap-yellow" : "text-[#767676]"
                     }`}
                   >
                     {opt.label}
@@ -101,7 +101,7 @@ export default function ToolBarComponent({
           </div>
         </div>
 
-        <div className="flex flex-row gap-5 items-center">
+        <div className="h-11 flex flex-row gap-5 items-center">
           {activeOption?.enableSearch && (
             <div className="relative flex-1">
               <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-auto" />
@@ -109,7 +109,7 @@ export default function ToolBarComponent({
                 type="text"
                 placeholder="Search"
                 onChange={(e) => onSearch?.(e.target.value)}
-                className="pl-12 pr-4 py-2 text-base border-1 border-[#E9E6E6] rounded-full w-full"
+                className="pl-12 pr-4 py-2 text-base border border-[#E9E6E6] rounded-full w-full"
               />
             </div>
           )}
@@ -117,7 +117,7 @@ export default function ToolBarComponent({
           {activeOption?.enableLayout && (
             <div className="relative w-32" ref={dropdownRef}>
               <button
-                className="flex items-center justify-between w-full px-3 py-2 border-1 border-[#E9E6E6] rounded-lg bg-white"
+                className="flex items-center justify-between w-full px-3 py-2 border border-[#E9E6E6] rounded-lg bg-white"
                 onClick={() => setIsOpen((prev) => !prev)}
               >
                 <div className="flex items-center gap-2">
@@ -156,7 +156,7 @@ export default function ToolBarComponent({
           {activeOption?.enableButton && (
             <button
               onClick={onButtonClick}
-              className="bg-ucap-yellow bg-ucap-yellow-hover text-white px-4 py-2 border-1 border-[#FCB315] rounded-full cursor-pointer transition text-base flex items-center gap-2"
+              className="bg-ucap-yellow bg-ucap-yellow-hover text-white px-4 py-2 border border-[#FCB315] rounded-full cursor-pointer transition text-base flex items-center gap-2"
             >
               {buttonIcon && <span className="h-5">{buttonIcon}</span>}
               <span>{buttonLabel}</span>

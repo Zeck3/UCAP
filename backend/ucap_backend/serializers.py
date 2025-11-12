@@ -49,8 +49,6 @@ class FacultySerializer(serializers.ModelSerializer):
     def get_user_role_type(self, obj):
         return obj.user_role.user_role_type if obj.user_role else None
 
-
-
 class CreateFacultySerializer(serializers.ModelSerializer):
     department = serializers.PrimaryKeyRelatedField(
         queryset=Department.objects.all(), required=True, allow_null=False
@@ -75,6 +73,7 @@ class CreateFacultySerializer(serializers.ModelSerializer):
             "user_role",
             "user_role_type",
         ]
+
     def get_department_name(self, obj):
         return obj.department.department_name if obj.department else None
 
@@ -244,7 +243,6 @@ class UpdateCourseSerializer(serializers.ModelSerializer):
             if existing_credit:
                 instance.credit = existing_credit
             else:
-                # create new Credit
                 credit = Credit.objects.create(
                     lecture_unit=lecture,
                     laboratory_unit=lab,
@@ -253,7 +251,6 @@ class UpdateCourseSerializer(serializers.ModelSerializer):
                 instance.credit = credit
             instance.credit.save()
 
-        # Update remaining fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
@@ -274,7 +271,14 @@ class InstructorLoadedCourseSerializer(serializers.ModelSerializer):
         return str(obj.loaded_course.academic_year.academic_year_start) + "-" + str(obj.loaded_course.academic_year.academic_year_end)
     class Meta:
         model = Section
-        fields = ["loaded_course_id", "course_code", "course_title", "academic_year", "semester_type", "department_name"]
+        fields = [
+            "loaded_course_id", 
+            "course_code", 
+            "course_title", 
+            "academic_year", 
+            "semester_type", 
+            "department_name"
+        ]
 
 class InstructorAssignedSectionSerializer(serializers.ModelSerializer):
     course_title = serializers.CharField(source="loaded_course.course.course_title", read_only=True)
@@ -296,7 +300,18 @@ class InstructorAssignedSectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Section
-        fields = ["section_id", "year_and_section", "instructor_assigned", "course_title", "semester_type", "year_level", "department_name", "college_name", "campus_name", "academic_year"]
+        fields = [
+            "section_id", 
+            "year_and_section", 
+            "instructor_assigned", 
+            "course_title", 
+            "semester_type", 
+            "year_level", 
+            "department_name", 
+            "college_name", 
+            "campus_name", 
+            "academic_year"
+        ]
 
 # ====================================================
 # Class Record
@@ -304,12 +319,12 @@ class InstructorAssignedSectionSerializer(serializers.ModelSerializer):
 class AssessmentSerializer(serializers.ModelSerializer):
     blooms_classification = serializers.PrimaryKeyRelatedField(
         many=True,
-        queryset=BloomsClassification.objects.all(),  # Replace with your model
+        queryset=BloomsClassification.objects.all(),
         required=False
     )
     course_outcome = serializers.PrimaryKeyRelatedField(
         many=True,
-        queryset=CourseOutcome.objects.all(),  # Replace with your model
+        queryset=CourseOutcome.objects.all(),
         required=False
     )
 
@@ -325,28 +340,43 @@ class AssessmentSerializer(serializers.ModelSerializer):
         ]
 
 class CourseComponentSerializer(serializers.ModelSerializer):
-    assessments = AssessmentSerializer(source='assessment_set', many=True)
+    assessments = AssessmentSerializer(source="assessment_set", many=True)
 
     class Meta:
         model = CourseComponent
-        fields = ['course_component_id', 'course_component_type', 'course_component_percentage', 'assessments']
-        read_only_fields = ['course_component_id']
+        fields = [
+            "course_component_id", 
+            "course_component_type", 
+            "course_component_percentage", 
+            "assessments"
+        ]
+        read_only_fields = ["course_component_id"]
     
 class CourseUnitSerializer(serializers.ModelSerializer):
-    course_components = CourseComponentSerializer(source='coursecomponent_set', many=True)
+    course_components = CourseComponentSerializer(source="coursecomponent_set", many=True)
 
     class Meta:
         model = CourseUnit
-        fields = ['course_unit_id', 'course_unit_type', 'course_unit_percentage', 'course_components']
-        read_only_fields = ['course_unit_id', 'course_unit_type']
+        fields = [
+            "course_unit_id", 
+            "course_unit_type", 
+            "course_unit_percentage", 
+            "course_components"
+        ]
+        read_only_fields = ["course_unit_id", "course_unit_type"]
 
 class CourseTermSerializer(serializers.ModelSerializer):
-    course_units = CourseUnitSerializer(source='courseunit_set', many=True)
+    course_units = CourseUnitSerializer(source="courseunit_set", many=True)
 
     class Meta:
         model = CourseTerm
-        fields = ['course_term_id', 'course_term_type', 'section_id', 'course_units']
-        read_only_fields = ['course_term_id', 'course_term_type', 'section_id']
+        fields = [
+            "course_term_id", 
+            "course_term_type", 
+            "section_id", 
+            "course_units"
+        ]
+        read_only_fields = ["course_term_id", "course_term_type", "section_id"]
 
 class StudentScoreSerializer(serializers.Serializer):
     assessment_id = serializers.IntegerField()
@@ -357,13 +387,20 @@ class StudentSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Student
-        fields = ['student_id', 'id_number', 'student_name', 'scores', 'remarks', 'section_id']
-        read_only_fields = ['student_id', 'section_id']
+        fields = [
+            "student_id", 
+            "id_number", 
+            "student_name", 
+            "scores", 
+            "remarks", 
+            "section_id"
+        ]
+        read_only_fields = ["student_id", "section_id"]
 
     def get_scores(self, obj):
         raw_scores = obj.rawscore_set.all()
         return [
-            {'assessment_id': rs.assessment.assessment_id, 'value': rs.raw_score}
+            {"assessment_id": rs.assessment.assessment_id, "value": rs.raw_score}
             for rs in raw_scores
         ]
 
@@ -375,23 +412,23 @@ class ClassRecordSerializer(serializers.Serializer):
     def get_info(self, obj):
         course = obj.loaded_course.course
         return {
-            'department': course.program.department.department_name,
-            'subject': course.course_title,
-            'yearSection': obj.year_and_section
+            "department": course.program.department.department_name,
+            "subject": course.course_title,
+            "yearSection": obj.year_and_section
         }
 
     def get_course_terms(self, obj):
         from django.db.models import Prefetch
         terms = (
             CourseTerm.objects.filter(section=obj)
-            .select_related('section')
+            .select_related("section")
             .prefetch_related(
                 Prefetch(
-                    'courseunit_set',
+                    "courseunit_set",
                     queryset=CourseUnit.objects.prefetch_related(
                         Prefetch(
-                            'coursecomponent_set',
-                            queryset=CourseComponent.objects.prefetch_related('assessment_set')
+                            "coursecomponent_set",
+                            queryset=CourseComponent.objects.prefetch_related("assessment_set")
                         )
                     )
                 )
@@ -402,9 +439,9 @@ class ClassRecordSerializer(serializers.Serializer):
     def get_students(self, obj):
         students = (
             Student.objects.filter(section=obj)
-            .select_related('section')
+            .select_related("section")
             .prefetch_related(
-                Prefetch('rawscore_set', queryset=RawScore.objects.select_related('assessment'))
+                Prefetch("rawscore_set", queryset=RawScore.objects.select_related("assessment"))
             )
         )
         return StudentSerializer(students, many=True).data
@@ -418,11 +455,19 @@ class BloomsClassificationSerializer(serializers.ModelSerializer):
         model = BloomsClassification
         fields = ["blooms_classification_id", "blooms_classification_type"]
 
-
 class CourseOutcomeSerializer(serializers.ModelSerializer):
+    loaded_course = serializers.PrimaryKeyRelatedField(
+        queryset=LoadedCourse.objects.all()
+    )
+
     class Meta:
         model = CourseOutcome
-        fields = ["course_outcome_id", "course_outcome_code", "course_outcome_description", "course"]
+        fields = [
+            "course_outcome_id", 
+            "course_outcome_code", 
+            "course_outcome_description", 
+            "loaded_course"
+        ]
 
 class ProgramOutcomeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -433,9 +478,6 @@ class ProgramOutcomeSerializer(serializers.ModelSerializer):
             "program_outcome_description",
         ]
 
-# ====================================================    
-# Department Chair Dashboard
-# ====================================================
 class ClassworkSerializer(serializers.Serializer):
     name = serializers.CharField()
     blooms = serializers.ListField(child=serializers.CharField())
@@ -462,143 +504,148 @@ class AssessmentPageSerializer(serializers.Serializer):
 # ====================================================    
 # Department Chair Dashboard
 # ====================================================
-class DepartmentDetailsSerializer(serializers.ModelSerializer):
-    campus_name = serializers.CharField(source="college.campus.campus_name", read_only=True)
-    college_name = serializers.CharField(source="college.college_name", read_only=True)
+class DepartmentCourseSerializer(serializers.ModelSerializer):
+    year_level_type = serializers.CharField(source="year_level.year_level_type", read_only=True)
+    semester_type = serializers.CharField(source="semester.semester_type", read_only=True)
+
+    lecture_unit = serializers.IntegerField(source="credit.lecture_unit", read_only=True)
+    laboratory_unit = serializers.IntegerField(source="credit.laboratory_unit", read_only=True)
+    credit_unit = serializers.IntegerField(source="credit.credit_unit", read_only=True)
+
     class Meta:
-        model = Department
-        fields = ["department_name", "campus_name", "college_name"]
- 
-class DepartmentLoadedCoursesSerializer(serializers.ModelSerializer):
+        model = Course
+        fields = [
+            "course_code",
+            "course_title",
+            "year_level_type",
+            "semester_type",
+            "lecture_unit",
+            "laboratory_unit",
+            "credit_unit",
+        ]
+
+class DepartmentLoadedCourseSerializer(serializers.ModelSerializer):
     course_code = serializers.CharField(source="course.course_code", read_only=True)
     course_title = serializers.CharField(source="course.course_title", read_only=True)
     program_name = serializers.CharField(source="course.program.program_name", read_only=True)
-    year_level = serializers.CharField(source="course.year_level.year_level_type", read_only=True)
-    semester_type = serializers.CharField(source="course.semester.semester_type", read_only=True)
-    year_level = serializers.CharField(source="course.year_level.year_level_type", read_only=True)
-    department_name = serializers.CharField(source="course.program.department.department_name", read_only=True)
     academic_year_start = serializers.IntegerField(source="academic_year.academic_year_start", read_only=True)
     academic_year_end = serializers.IntegerField(source="academic_year.academic_year_end", read_only=True)
-    class Meta:
-        model = LoadedCourse
-        fields = ["loaded_course_id", "course_code", "course_title", "program_name", "year_level", "semester_type", "department_name", "academic_year_start", "academic_year_end"]
-
-class DepartmentLoadedCourseDetailsSerializer(serializers.ModelSerializer):
-    course_title = serializers.CharField(source="course.course_title", read_only=True)
+    year_level_type = serializers.CharField(source="course.year_level.year_level_type", read_only=True)
     semester_type = serializers.CharField(source="course.semester.semester_type", read_only=True)
-    year_level = serializers.CharField(source="course.year_level.year_level_type", read_only=True)    
-    department_name = serializers.CharField(source="course.program.department.department_name", read_only=True)
-    college_name = serializers.CharField(source="course.program.department.college.college_name", read_only=True)
-    campus_name = serializers.CharField(source="course.program.department.campus.campus_name", read_only=True)
-    academic_year_start = serializers.IntegerField(source="academic_year.academic_year_start", read_only=True)
-    academic_year_end = serializers.IntegerField(source="academic_year.academic_year_end", read_only=True)
+
     class Meta:
         model = LoadedCourse
-        fields = ["loaded_course_id", "course_title", "semester_type", "year_level", "department_name", "college_name", "campus_name", "academic_year_start", "academic_year_end"]
+        fields = [
+            "loaded_course_id",
+            "course_code",
+            "course_title",
+            "program_name",
+            "academic_year_start",
+            "academic_year_end",
+            "year_level_type",
+            "semester_type",
+        ]
 
-class DepartmentChairSectionSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField(source="instructor_assigned.first_name", read_only=True)
-    last_name = serializers.CharField(source="instructor_assigned.last_name", read_only=True)
-    class Meta:
-        model = Section
-        fields = ["section_id", "year_and_section", "first_name", "last_name"]
+class CreateDepartmentLoadedCourseSerializer(serializers.ModelSerializer):
 
-class DepartmentNotLoadedCoursesSerializer(serializers.ModelSerializer):
-    lecture_unit = serializers.IntegerField(source="credit.lecture_unit", read_only=True)
-    lab_unit = serializers.IntegerField(source="credit.laboratory_unit", read_only=True)
-    credit_unit = serializers.IntegerField(source="credit.credit_unit", read_only=True)
-    class Meta:
-        model = Course
-        fields = ["course_code", "course_title", "lecture_unit", "lab_unit", "credit_unit"]
-
-class LoadDepartmentCourseSerializer(serializers.ModelSerializer):
-    academic_year = serializers.PrimaryKeyRelatedField(queryset=AcademicYear.objects.all(), required=True)
-    course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), required=True)
     class Meta:
         model = LoadedCourse
-        fields = ["loaded_course_id", "academic_year", "course"]
-
-    # def validate(self, data):
-    #     course = data.get("course")
-    #     academic_year = data.get("academic_year")
-    #     if LoadedCourse.objects.filter(course=course, academic_year=academic_year).exists():
-    #         raise serializers.ValidationError("Course already loaded for this academic year.")
-    #     if not course or not academic_year:
-    #         raise serializers.ValidationError("Course and academic year are required.")
-    #     return data
-    
-    # def create(self, validated_data):
-    #     # You can add extra logic here if needed before saving
-    #     return super().create(validated_data)
-
-class CreateSectionSerializer(serializers.ModelSerializer):
-    instructor_assigned = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, allow_null=True)
-    loaded_course = serializers.PrimaryKeyRelatedField(queryset=LoadedCourse.objects.all(), required=True)
-    class Meta:
-        model = Section
-        fields = "__all__"  
-    
-    def validate(self, values):
-        year_and_section = values.get("year_and_section")
-        instructor_assigned = values.get("instructor_assigned")
-        loaded_course = values.get("loaded_course")
-        if Section.objects.filter(year_and_section=year_and_section, instructor_assigned=instructor_assigned, loaded_course=loaded_course).exists():
-            raise serializers.ValidationError("Section already exists.")
-        if not year_and_section or not loaded_course:
-            raise serializers.ValidationError("All fields are required.")
-        return values
-    
-    def create(self, validated_data):
-        section = validated_data.pop("year_and_section")
-        instructor = validated_data.pop("instructor_assigned")
-        loaded_course = validated_data.pop("loaded_course")
-
-        section = Section.objects.create(year_and_section=section, instructor_assigned=instructor, loaded_course=loaded_course, **validated_data)
-        return section
-
-class UpdateSectionSerializer(serializers.ModelSerializer):
-    instructor_assigned = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, allow_null=True)
-    loaded_course = serializers.PrimaryKeyRelatedField(queryset=LoadedCourse.objects.all(), required=False, allow_null=True)
-    class Meta:
-        model = Section
-        fields = "__all__"   
-        extra_kwargs = {
-            "section_id": {"read_only": True}
-        }
+        fields = ["course", "academic_year"]
 
     def validate(self, attrs):
-        instance = getattr(self, "instance", None)
-        year_and_section = attrs.get("year_and_section", getattr(instance, "year_and_section", None))
-        instructor_assigned = attrs.get("instructor_assigned", getattr(instance, "instructor_assigned", None))
-        loaded_course = attrs.get("loaded_course", getattr(instance, "loaded_course", None))
-        if not year_and_section or not loaded_course:
-            raise serializers.ValidationError("Year and loaded course are required.")
-        duplicate = (
-            Section.objects.filter(
-                year_and_section=year_and_section,
-                instructor_assigned=instructor_assigned,
-                loaded_course=loaded_course,
+        course = attrs.get("course")
+        academic_year = attrs.get("academic_year")
+
+        if LoadedCourse.objects.filter(course=course, academic_year=academic_year).exists():
+            raise serializers.ValidationError(
+                "This course is already loaded for the given academic year."
             )
-            .exclude(section_id=instance.section_id if instance else None)
-            .exists()
-        )
+        return attrs
 
-        if duplicate:
-            raise serializers.ValidationError("Section with these details already exists.")
+class SectionSerializer(serializers.ModelSerializer):
+    course_title = serializers.CharField(source="loaded_course.course.course_title", read_only=True)
+    academic_year = serializers.SerializerMethodField()
+    semester_type = serializers.CharField(source="loaded_course.course.semester.semester_type", read_only=True)
+    year_level = serializers.CharField(source="loaded_course.course.year_level.year_level_type", read_only=True)
+    department_name = serializers.CharField(source="loaded_course.course.program.department.department_name", read_only=True)
+    college_name = serializers.CharField(source="loaded_course.course.program.department.college.college_name", read_only=True)
+    campus_name = serializers.CharField(source="loaded_course.course.program.department.campus.campus_name", read_only=True)
+    instructor_assigned = serializers.IntegerField(
+        source="instructor_assigned.user_id", read_only=True, allow_null=True, required=False
+    )
+    first_name = serializers.CharField(
+        source="instructor_assigned.first_name", read_only=True, allow_null=True, required=False
+    )
+    last_name = serializers.CharField(
+        source="instructor_assigned.last_name", read_only=True, allow_null=True, required=False
+    )
 
+    class Meta:
+        model = Section
+        fields = [
+            "section_id",
+            "course_title",
+            "academic_year",
+            "semester_type",
+            "year_level",
+            "department_name",
+            "college_name",
+            "campus_name",
+            "year_and_section",
+            "instructor_assigned",
+            "first_name",
+            "last_name",
+        ]
+
+    def get_academic_year(self, obj):
+        ay = obj.loaded_course.academic_year
+        return f"{ay.academic_year_start}-{ay.academic_year_end}"
+    
+class SectionCreateUpdateSerializer(serializers.ModelSerializer):
+    instructor_assigned = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), required=False, allow_null=True
+    )
+    loaded_course = serializers.PrimaryKeyRelatedField(
+        queryset=LoadedCourse.objects.all(), required=True
+    )
+
+    class Meta:
+        model = Section
+        fields = ["year_and_section", "instructor_assigned", "loaded_course"]
+
+    def validate(self, attrs):
+        year_and_section = attrs.get("year_and_section")
+        instructor_assigned = attrs.get("instructor_assigned")
+        loaded_course = attrs.get("loaded_course")
+
+        if not year_and_section or not loaded_course:
+            raise serializers.ValidationError("Both 'year_and_section' and 'loaded_course' are required.")
+
+        if Section.objects.filter(
+            year_and_section=year_and_section,
+            instructor_assigned=instructor_assigned,
+            loaded_course=loaded_course
+        ).exists():
+            raise serializers.ValidationError("A section with these details already exists.")
         return attrs
     
-    def update(self, instance, validated_data):
-        # Just update provided fields
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        return instance
+class DepartmentProgramOutcomeSerializer(serializers.ModelSerializer):
+    program_name = serializers.CharField(source="program.program_name", read_only=True)
+
+    class Meta:
+        model = ProgramOutcome
+        fields = [
+            "program_outcome_id",
+            "program",
+            "program_name",
+            "program_outcome_code",
+            "program_outcome_description",
+        ]
+        read_only_fields = ["program_outcome_code", "program"]
 
 # ====================================================
 # Dropdown
 # ====================================================
-
 class UserRoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserRole
@@ -651,106 +698,23 @@ class InstructorSerializer(serializers.ModelSerializer):
             "user_role",
             "department_id",
         ]
+
 # ====================================================
-# Department Path
+# User Department
 # ====================================================
-class DepartmentPathSerializer(serializers.ModelSerializer):
-    department_name = serializers.CharField(source="department.department_name", read_only=True)
+class UserDepartmentSerializer(serializers.ModelSerializer):
+    college_id = serializers.IntegerField(source="college.college_id", read_only=True)
+    college_name = serializers.CharField(source="college.college_name", read_only=True)
+    campus_id = serializers.IntegerField(source="campus.campus_id", read_only=True)
+    campus_name = serializers.CharField(source="campus.campus_name", read_only=True)
+
     class Meta:
-        model = User
-        fields = ["department_name"]
-
-# # ===== INSTRUCTOR SERIALIZERS =============================================================================================================
-# class InstructorSerializer(serializers.ModelSerializer):
-#     user_role = serializers.CharField(source="user_role.user_role_type", read_only=True)
-#     user_department = serializers.CharField(source="department.department_name", read_only=True)
-
-#     class Meta:
-#         model = User
-#         fields = [
-#             "user_id",
-#             "first_name",
-#             "middle_name",
-#             "last_name",
-#             "suffix",
-#             "email",
-#             "user_role",
-#             "user_department",
-#         ]
-    
-# #===== SECTION SERIALIZERS ==============================================================================================================
-# class InstructorCoursesSerializer(serializers.ModelSerializer):
-#     course_code = serializers.CharField(source="loaded_course.course.course_code", read_only=True)
-#     course_title = serializers.CharField(source="loaded_course.course.course_title", read_only=True)
-#     academic_year = serializers.SerializerMethodField()
-#     semester_type = serializers.CharField(source="loaded_course.course.semester.semester_type", read_only=True)
-#     department_name = serializers.CharField(source="loaded_course.course.program.department.department_name", read_only=True)
-
-#     def get_academic_year(self, obj):
-#         return str(obj.loaded_course.academic_year.academic_year_start) + "-" + str(obj.loaded_course.academic_year.academic_year_end)
-    
-#     class Meta:
-#         model = Section
-#         fields = ['section_id', 'course_code', 'course_title', 'academic_year', 'semester_type', 'department_name']
-
-# class CreateSectionSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Section
-#         fields = "__all__"
-
-
-# # ==========================================================================================================================================
-
-
-
-# # ===== For Registration Validation =============================================================================================================
-# class UserRegisterSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = User
-#         fields = "__all__"
-
-#     def validate_user_id(self, value):
-#         if User.objects.filter(user_id=value).exists():
-#             raise serializers.ValidationError("User ID already exists.")
-#         return value
-
-#     def validate_email(self, value):
-#         if User.objects.filter(email=value).exists():
-#             raise serializers.ValidationError("Email already exists.")
-#         return value
-
-#     def create(self, validated_data):
-#         validated_data["password"] = make_password(validated_data["password"])
-#         return super(UserRegisterSerializer, self).create(validated_data)
-
-
-# # ===== Loaded Course Serializer =============================================================================================================
-# class LoadedCourseSerializer(serializers.ModelSerializer):
-#     loaded_course_code = serializers.CharField(
-#         source="loaded_course_code.course_code", read_only=True
-#     )
-#     loaded_academic_year_start = serializers.CharField(
-#         source="loaded_academic_year_id.academic_year_start", read_only=True
-#     )
-#     loaded_academic_year_end = serializers.CharField(
-#         source="loaded_academic_year_id.academic_year_end", read_only=True
-#     )
-
-#     class Meta:
-#         model = LoadedCourse
-#         fields = [
-#             "loaded_course_id",
-#             "loaded_course_code",
-#             "loaded_academic_year_start",
-#             "loaded_academic_year_end",
-#         ]
-
-
-# class DepartmentInstructorSerializer(serializers.ModelSerializer):
-#     assigned_department = serializers.CharField(
-#         source="user_department_id.department_name", read_only=True
-#     )
-
-#     class Meta:
-#         model = User
-#         fields = ["user_id", "first_name", "last_name", "assigned_department"]
+        model = Department
+        fields = [
+            "department_id",
+            "department_name",
+            "college_id",
+            "college_name",
+            "campus_id",
+            "campus_name",
+        ]

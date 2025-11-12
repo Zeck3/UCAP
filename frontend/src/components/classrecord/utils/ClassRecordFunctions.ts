@@ -193,22 +193,31 @@ export const getAllAssessmentNodesPure = (
   return accumulator;
 };
 
-export function calculateTermTotal(
+export function calculateAllTermTotals(
   scores: Record<string, number>,
-  term: "midterm" | "final",
   headerNodes: HeaderNode[]
-): number {
+): { midterm: number; final: number } {
   const allAssessmentNodes = getAllAssessmentNodesPure(headerNodes);
 
-  return Object.keys(scores)
-    .filter((k) => {
-      const node = allAssessmentNodes.find(
-        (n) => n.key === k && n.termType === term
-      );
-      return !!node;
-    })
-    .reduce((sum, k) => sum + (scores[k] || 0), 0);
+  const midtermKeys = new Set(
+    allAssessmentNodes.filter((n) => n.termType === "midterm").map((n) => n.key)
+  );
+  const finalKeys = new Set(
+    allAssessmentNodes.filter((n) => n.termType === "final").map((n) => n.key)
+  );
+
+  let midterm = 0;
+  let final = 0;
+
+  for (const [key, val] of Object.entries(scores)) {
+    const v = val || 0;
+    if (midtermKeys.has(key)) midterm += v;
+    else if (finalKeys.has(key)) final += v;
+  }
+
+  return { midterm, final };
 }
+
 export function initializeStudentScores(
   students: Student[],
   headers: HeaderNode[]
@@ -219,26 +228,20 @@ export function initializeStudentScores(
   students.forEach((student) => {
     const scores: Record<string, number> = {};
 
-    // Fill in from backend
     student.scores.forEach((s) => {
       const key = `${s.assessment_id}`;
       scores[key] = s.value ?? 0;
     });
 
-    // Ensure all assessments exist even if missing in backend
     assessmentNodes.forEach((node) => {
       if (node.key && scores[node.key] === undefined) {
         scores[node.key] = 0;
       }
     });
 
-    // Compute totals
-    scores["midterm-total-grade"] = calculateTermTotal(
-      scores,
-      "midterm",
-      headers
-    );
-    scores["final-total-grade"] = calculateTermTotal(scores, "final", headers);
+    const { midterm, final } = calculateAllTermTotals(scores, headers);
+    scores["midterm-total-grade"] = midterm;
+    scores["final-total-grade"] = final;
 
     result[student.student_id] = scores;
   });
@@ -435,4 +438,10 @@ export function findParentComponentNode(
     if (nested) return nested;
   }
   return null;
+}
+
+export function hasAnyNonZeroScore(scores: Record<string, number>): boolean {
+  return Object.values(scores).some(
+    (v) => typeof v === "number" && v !== 0 && !isNaN(v)
+  );
 }

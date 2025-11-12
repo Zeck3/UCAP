@@ -14,7 +14,7 @@ def create_class_record_service(section):
 
     course_terms = ["Midterm", "Final"]
 
-    for _ in range(1):
+    for _ in range(40):
         Student.objects.create(
             section=section,
             id_number=None,
@@ -41,7 +41,7 @@ def create_class_record_service(section):
                 ("Quiz/Prelim Performance Item" if term_type == "Midterm" else "Quiz/Pre-final Performance Item", 40, 4,
                  "Prelim Exam" if term_type == "Midterm" else "SFinal Exam"),
                 ("Midterm Exam" if term_type == "Midterm" else "Final Exam", 30, 0,
-                 "Mid Written Exam" if term_type == "Midterm" else "SFinal Exam"),
+                 "Mid Written Exam" if term_type == "Midterm" else "Fin Written Exam"),
                 ("Per Inno Task", 20, 2, None),
             ]
             for comp_name, comp_percentage, empty_assessments, special_assessment in lecture_components:

@@ -12,6 +12,7 @@ import {
 import type { JSX } from "react";
 import type { Assessment } from "../../../types/classRecordTypes";
 import { renderTitleLines } from "../utils/ClassRecordRenderers";
+import MaxScoreInput from "../utils/MaxScoreInput";
 
 interface BuildHeaderRowProps {
   nodes: HeaderNode[];
@@ -45,12 +46,25 @@ function BuildHeaderRow({
   onRightClickNode,
   handleUpdateAssessment,
 }: BuildHeaderRowProps) {
-  const [leafRowHeight, setLeafRowHeight] = React.useState(40);
+  const [leafRowHeight, setLeafRowHeight] = React.useState(() => {
+    const saved = localStorage.getItem("leafRowHeight");
+    return saved ? Number(saved) : 40;
+  });
 
-  React.useEffect(() => {
-    const savedHeight = localStorage.getItem("leafRowHeight");
-    if (savedHeight) setLeafRowHeight(Number(savedHeight));
-  }, []);
+  const handleNodeClick = React.useCallback(
+    (node: HeaderNode) => (e: React.MouseEvent<HTMLDivElement>) => {
+      handleEditStart(node, e);
+    },
+    [handleEditStart]
+  );
+
+  const handleNodeContextMenu = React.useCallback(
+    (node: HeaderNode) => (e: React.MouseEvent) => {
+      e.preventDefault();
+      onRightClickNode?.(e, node);
+    },
+    [onRightClickNode]
+  );
 
   const handleHResizeStart = React.useCallback(
     (e: React.MouseEvent) => {
@@ -143,9 +157,7 @@ function BuildHeaderRow({
           colSpan={colSpan}
           rowSpan={rowSpan}
           onClick={
-            node.nodeType === "assessment"
-              ? (e) => handleEditStart(node, e)
-              : undefined
+            node.nodeType === "assessment" ? handleNodeClick(node) : undefined
           }
           style={{
             height: level === 3 ? leafRowHeight : "auto",
@@ -154,15 +166,12 @@ function BuildHeaderRow({
           }}
           className={`border border-[#E9E6E6] p-2 text-center ${headerClass} ${
             isLeafDeep
-              ? `[writing-mode:vertical-rl] rotate-180 text-left truncate overflow-hidden text-ellipsis w-[3.75rem] max-w-[3.75rem]`
-              : `whitespace-normal ${headerWidth} w-[3.75rem]`
+              ? `[writing-mode:vertical-rl] rotate-180 text-left truncate overflow-hidden text-ellipsis w-15 max-w-15`
+              : `whitespace-normal ${headerWidth} w-15`
           }`}
           onContextMenu={
             node.nodeType === "assessment" || node.nodeType === "component"
-              ? (e) => {
-                  e.preventDefault();
-                  onRightClickNode?.(e, node);
-                }
+              ? handleNodeContextMenu(node)
               : undefined
           }
         >
@@ -192,7 +201,7 @@ function BuildHeaderRow({
             <th
               key={`button-${node.key || node.title}`}
               className={`border border-gray-200 p-0 text-center ${
-                node.calculationType ? "w-[3.75rem]" : ""
+                node.calculationType ? "w-15" : ""
               }`}
             >
               <button
@@ -212,7 +221,7 @@ function BuildHeaderRow({
             <th
               key={`empty-${node.key || node.title}`}
               className={`border border-[#E9E6E6] p-2 text-center ${bgClass} ${
-                node.calculationType ? "w-[3.75rem]" : ""
+                node.calculationType ? "w-15" : ""
               }`}
             />
           );
@@ -294,52 +303,20 @@ function BuildHeaderRow({
 
       if (node.calculationType === "assignment" && node.key) {
         const key = node.key as string;
-        const displayValue = maxScores[key] === 0 ? "" : maxScores[key] ?? "";
+        const val = maxScores[key] ?? 0;
 
         content = (
-          <input
-            type="number"
-            min={0}
-            max={999}
-            value={displayValue === 0 ? "" : displayValue}
-            onChange={(e) => {
-              const val = e.target.value;
-              const num = val === "" ? 0 : Number(val);
-              if (num > 999) return;
-
-              setMaxScores((prev) => ({
-                ...prev,
-                [key]: num,
-              }));
-            }}
-            onBlur={(e) => {
-              const val = e.target.value;
-              const num = val === "" ? 0 : Number(val);
-
+          <MaxScoreInput
+            node={node}
+            value={val}
+            onChange={(num) =>
+              setMaxScores((prev) => ({ ...prev, [key]: num }))
+            }
+            onBlur={(num) =>
               handleUpdateAssessment(Number(key), {
                 assessment_highest_score: Math.min(num, 999),
-              });
-            }}
-            onKeyDown={(e) => {
-              if (["e", "E", "+", "-"].includes(e.key)) {
-                e.preventDefault();
-              }
-              if (e.key === "Enter") {
-                const val = (e.target as HTMLInputElement).value;
-                const num = val === "" ? 0 : Number(val);
-                handleUpdateAssessment(Number(key), {
-                  assessment_highest_score: Math.min(num, 999),
-                });
-                (e.target as HTMLInputElement).blur();
-              }
-            }}
-            onPaste={(e) => {
-              const paste = e.clipboardData.getData("text");
-              if (!/^\d*$/.test(paste) || Number(paste) > 999) {
-                e.preventDefault();
-              }
-            }}
-            className="w-full h-full py-2.25 px-2 text-center bg-transparent border-none focus:outline-none text-coa-blue"
+              })
+            }
           />
         );
       } else if (node.key && computedMaxValues[node.key] !== undefined) {
@@ -372,7 +349,7 @@ function BuildHeaderRow({
         <th
           key={`sub-${node.key}`}
           className={`border border-[#E9E6E6] text-center ${bgClass} ${textClass} ${
-            node.calculationType ? "w-[3.75rem]" : ""
+            node.calculationType ? "w-15" : ""
           }`}
         >
           {content}
@@ -389,13 +366,13 @@ function BuildHeaderRow({
     originalMaxDepth,
     leafRowHeight,
     handleHResizeStart,
-    handleEditStart,
     openAssessmentInfoContextMenu,
     maxScores,
     setMaxScores,
     computedMaxValues,
-    onRightClickNode,
     handleUpdateAssessment,
+    handleNodeClick,
+    handleNodeContextMenu,
   ]);
 
   return (

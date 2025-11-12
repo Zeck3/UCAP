@@ -18,6 +18,7 @@ interface SidePanelComponentProps {
   disableInputs?: boolean;
   disableActions?: boolean;
   loading?: boolean;
+  singleColumn?: boolean;
 }
 
 export default function SidePanelComponent({
@@ -30,6 +31,7 @@ export default function SidePanelComponent({
   disableInputs = false,
   disableActions = false,
   loading = false,
+  singleColumn = false,
 }: SidePanelComponentProps) {
   const wrappedChildren = React.Children.map(children, (child) => {
     if (React.isValidElement<DisabledProp>(child)) {
@@ -64,7 +66,11 @@ export default function SidePanelComponent({
         <div className="h-screen flex pt-16 flex-col">
           <div className="overflow-y-auto h-screen">
             {!disableInputs && (
-              <div className="grid grid-cols-1 gap-x-8 px-12 pt-8">
+              <div
+                className={`grid ${
+                  singleColumn ? "grid-cols-1" : "grid-cols-2"
+                } gap-x-8 px-12 pt-8`}
+              >
                 {wrappedChildren}
               </div>
             )}
@@ -78,14 +84,18 @@ export default function SidePanelComponent({
                   Cancel
                 </button>
                 <button
-                  onClick={onSubmit}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onSubmit(e);
+                  }}
                   disabled={loading}
-                  className={` text-white w-40 py-2 rounded-lg cursor-pointer transition text-sm flex justify-center items-center
-            ${
-              loading
-                ? "bg-[#E9D4A6] cursor cursor-not-allowed"
-                : "bg-ucap-yellow bg-ucap-yellow-hover"
-            }`}
+                  className={`text-white w-40 py-2 rounded-lg cursor-pointer transition text-sm flex justify-center items-center
+                  ${
+                    loading
+                      ? "bg-[#E9D4A6] cursor-not-allowed"
+                      : "bg-ucap-yellow bg-ucap-yellow-hover"
+                  }`}
                 >
                   {loading ? (
                     <LoadingIcon className="animate-spin h-4 w-4" />

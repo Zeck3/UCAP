@@ -20,6 +20,7 @@ export interface CardsGridProps<T> {
   disableCardPointer?: boolean;
   loading?: boolean;
   skeletonCard?: number;
+  disableEdit?: boolean;
 }
 
 export default function CardsGridComponent<T extends { id: string | number }>({
@@ -37,6 +38,7 @@ export default function CardsGridComponent<T extends { id: string | number }>({
   disableCardPointer = false,
   loading = false,
   skeletonCard = 6,
+  disableEdit = false,
 }: CardsGridProps<T>) {
   const [openMenuId, setOpenMenuId] = useState<string | number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -46,6 +48,15 @@ export default function CardsGridComponent<T extends { id: string | number }>({
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedItems = items.slice(startIndex, startIndex + itemsPerPage);
   const totalPages = Math.ceil(items.length / itemsPerPage);
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+    if (totalPages === 0 && currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [items.length, totalPages, currentPage]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -118,7 +129,7 @@ export default function CardsGridComponent<T extends { id: string | number }>({
               {topValue && (
                 <div
                   style={{ aspectRatio }}
-                  className="w-full bg-gradient-to-b from-[#1A1851] to-[#3B36B7] rounded-t-lg flex items-end"
+                  className="w-full bg-linear-to-b from-[#1A1851] to-[#3B36B7] rounded-t-lg flex items-end"
                 >
                   <span className="text-2xl text-white mx-4 mb-2">
                     {topValue}
@@ -158,21 +169,23 @@ export default function CardsGridComponent<T extends { id: string | number }>({
                   {openMenuId === item.id && (
                     <div
                       ref={dropdownRef}
-                      className="absolute right-0 top-12 w-40 bg-white border border-[#E9E6E6] rounded-lg z-20"
+                      className="absolute right-0 top-10 w-40 bg-white border border-[#E9E6E6] rounded-lg z-20"
                     >
+                      {!disableEdit && (
+                        <button
+                          className="flex w-full items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit?.(item.id);
+                            setOpenMenuId(null);
+                          }}
+                        >
+                          <EditIcon className="h-5 w-5 ml-4 mr-2" />
+                          <span>Edit</span>
+                        </button>
+                      )}
                       <button
-                        className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEdit?.(item.id);
-                          setOpenMenuId(null);
-                        }}
-                      >
-                        <EditIcon className="h-5 w-5 ml-4 mr-2" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-sm text-red-400"
+                        className="flex w-full items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-sm text-red-400"
                         onClick={(e) => {
                           e.stopPropagation();
                           onDelete?.(item.id);
@@ -191,25 +204,29 @@ export default function CardsGridComponent<T extends { id: string | number }>({
         })}
       </div>
 
-      <div className="flex w-full justify-end items-center gap-x-4 mt-4">
-        <button
-          className="px-2 py-2 border border-[#E9E6E6] rounded disabled:opacity-50 enabled:cursor-pointer"
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage((p) => p - 1)}
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <span className="text-sm">
-          {currentPage} of {totalPages}
-        </span>
-        <button
-          className="px-2 py-2 border border-[#E9E6E6] rounded disabled:opacity-50 enabled:cursor-pointer"
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage((p) => p + 1)}
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      </div>
+      {totalPages > 1 && (
+        <div className="flex w-full justify-end items-center gap-x-4 mt-4">
+          <button
+            className="px-2 py-2 border border-[#E9E6E6] rounded disabled:opacity-50 enabled:cursor-pointer"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => p - 1)}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+
+          <span className="text-sm">
+            {currentPage} of {totalPages}
+          </span>
+
+          <button
+            className="px-2 py-2 border border-[#E9E6E6] rounded disabled:opacity-50 enabled:cursor-pointer"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => p + 1)}
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

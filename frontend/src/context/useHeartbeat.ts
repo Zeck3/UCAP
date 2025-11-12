@@ -12,7 +12,7 @@ export const useHeartbeat = (
     try {
       await axiosClient.get("/heartbeat/");
     } catch {
-      console.log("Heartbeat failed");
+      // Handle error silently
     }
   }, []);
 

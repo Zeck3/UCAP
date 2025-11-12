@@ -3,11 +3,11 @@ from rest_framework.routers import DefaultRouter
 from .views import *
 
 router = DefaultRouter()
-router.register(r'instructor/students', StudentViewSet, basename='student')
-router.register(r'instructor/assessments', AssessmentViewSet, basename='assessment')
-router.register(r'instructor/course-components', CourseComponentViewSet, basename='course-component')
-router.register(r'instructor/course-units', CourseUnitViewSet, basename='course-unit')
-router.register(r'instructor/class-record', ClassRecordViewSet, basename='class-record')
+router.register(r"students", StudentViewSet, basename="student")
+router.register(r"assessments", AssessmentViewSet, basename="assessment")
+router.register(r"course_components", CourseComponentViewSet, basename="course_component")
+router.register(r"course_units", CourseUnitViewSet, basename="course_unit")
+router.register(r"class_record", ClassRecordViewSet, basename="class_record")
 
 urlpatterns = [
     # ====================================================
@@ -36,8 +36,8 @@ urlpatterns = [
     # ====================================================
     # Class Record
     # ====================================================
-    path('', include(router.urls)),
-    path('instructor/rawscores/<int:student_id>/<int:assessment_id>/', RawScoreUpdateView.as_view()),
+    path("instructor/", include(router.urls)),
+    path("instructor/rawscores/<int:student_id>/<int:assessment_id>/", RawScoreUpdateView.as_view()),
     # ====================================================
     # Assessment Page
     # ====================================================
@@ -45,16 +45,13 @@ urlpatterns = [
     # ====================================================
     # Department Chair Dashboard
     # ====================================================
-    path("department_chair/department_details/<int:department_id>/", get_department_details_view),
-    path("department_chair/course_details/<int:department_id>/<int:loaded_course_id>/", get_department_course_details_view),
-    path("department_chair/course_management/<int:department_id>/", get_department_loaded_courses_view,),
-    path("department_chair/sections/<int:department_id>/<int:loaded_course_id>/", get_department_course_sections_view,),
-    path("department_chair/not_loaded_courses/<int:department_id>/", get_department_courses_view),
-    path("department_chair/delete_section/<int:loaded_course_id>/<int:section_id>/", delete_department_section),
-    path("department_chair/delete_loaded_course/<int:loaded_course_id>/", delete_loaded_course),
-    path("department_chair/load_department_courses/", load_course),
-    path("department_chair/section_management/", section_management),
-    path("department_chair/sections/<int:departmentId>/", department_path_view),
+    path("department_chair/department_course_list/<int:department_id>/", department_course_list_view),
+
+    path("department_chair/department_course_management/<int:department_id>/", department_course_management_view),
+    path("department_chair/department_course_management/delete/<int:loaded_course_id>/", department_course_detail_view),
+
+    path("department_chair/section_management/loaded_course/<int:loaded_course_id>/", department_section_management_view),
+    path("department_chair/section_management/section/<int:section_id>/",department_section_detail_view),
     # ====================================================
     # Dropdown
     # ====================================================
@@ -68,4 +65,8 @@ urlpatterns = [
     path("instructors/", instructor_list_view),
     path("blooms_classification/", blooms_classification_list_view),
     path("course_outcomes/<str:course_code>", course_outcome_list_view),
+    # ====================================================
+    # User Department
+    # ====================================================
+    path("user/<int:departmentId>/", user_department_view),
 ]

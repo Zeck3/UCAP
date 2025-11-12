@@ -48,7 +48,6 @@ export async function addUser(
       "/admin/user_management/",
       payload
     );
-    console.log("Backend response:", res.data);
     return mapUser(res.data);
   } catch (error) {
     console.error("Error adding user:", error);
