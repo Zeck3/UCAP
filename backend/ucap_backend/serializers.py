@@ -456,18 +456,15 @@ class BloomsClassificationSerializer(serializers.ModelSerializer):
         fields = ["blooms_classification_id", "blooms_classification_type"]
 
 class CourseOutcomeSerializer(serializers.ModelSerializer):
-    loaded_course = serializers.PrimaryKeyRelatedField(
-        queryset=LoadedCourse.objects.all()
-    )
-
     class Meta:
         model = CourseOutcome
         fields = [
-            "course_outcome_id", 
-            "course_outcome_code", 
-            "course_outcome_description", 
-            "loaded_course"
+            "course_outcome_id",
+            "course_outcome_code",
+            "course_outcome_description",
+            "loaded_course",
         ]
+        read_only_fields = ["course_outcome_code", "loaded_course"]
 
 class ProgramOutcomeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -476,7 +473,9 @@ class ProgramOutcomeSerializer(serializers.ModelSerializer):
             "program_outcome_id",
             "program_outcome_code",
             "program_outcome_description",
+            "program",
         ]
+        read_only_fields = ["program"]
 
 class ClassworkSerializer(serializers.Serializer):
     name = serializers.CharField()
@@ -500,6 +499,33 @@ class AssessmentPageSerializer(serializers.Serializer):
     classInfo = serializers.DictField()
     pos = ProgramOutcomeDisplaySerializer(many=True)
     students = StudentScoreSerializer(many=True)
+
+class OutcomeMappingSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
+    program_outcome = ProgramOutcomeSerializer(read_only=True)
+    course_outcome = CourseOutcomeSerializer(read_only=True)
+    program_outcome_id = serializers.PrimaryKeyRelatedField(
+        source="program_outcome",
+        queryset=ProgramOutcome.objects.all(),
+        write_only=True
+    )
+    course_outcome_id = serializers.PrimaryKeyRelatedField(
+        source="course_outcome",
+        queryset=CourseOutcome.objects.all(),
+        write_only=True
+    )
+
+    class Meta:
+        model = OutcomeMapping
+        fields = [
+            "id",
+            "program_outcome",
+            "course_outcome",
+            "program_outcome_id",
+            "course_outcome_id",
+            "outcome_mapping",
+        ]
+
 
 # ====================================================    
 # Department Chair Dashboard
@@ -628,20 +654,6 @@ class SectionCreateUpdateSerializer(serializers.ModelSerializer):
         ).exists():
             raise serializers.ValidationError("A section with these details already exists.")
         return attrs
-    
-class DepartmentProgramOutcomeSerializer(serializers.ModelSerializer):
-    program_name = serializers.CharField(source="program.program_name", read_only=True)
-
-    class Meta:
-        model = ProgramOutcome
-        fields = [
-            "program_outcome_id",
-            "program",
-            "program_name",
-            "program_outcome_code",
-            "program_outcome_description",
-        ]
-        read_only_fields = ["program_outcome_code", "program"]
 
 # ====================================================
 # Dropdown
@@ -707,6 +719,8 @@ class UserDepartmentSerializer(serializers.ModelSerializer):
     college_name = serializers.CharField(source="college.college_name", read_only=True)
     campus_id = serializers.IntegerField(source="campus.campus_id", read_only=True)
     campus_name = serializers.CharField(source="campus.campus_name", read_only=True)
+    program_id = serializers.SerializerMethodField()
+    program_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Department
@@ -717,4 +731,14 @@ class UserDepartmentSerializer(serializers.ModelSerializer):
             "college_name",
             "campus_id",
             "campus_name",
+            "program_id",
+            "program_name",
         ]
+
+    def get_program_id(self, obj):
+        program = obj.program_set.first()
+        return program.program_id if program else None
+
+    def get_program_name(self, obj):
+        program = obj.program_set.first()
+        return program.program_name if program else None

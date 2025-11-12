@@ -2,10 +2,7 @@ import UsersIcon from "../assets/users.svg?react";
 import CoursesIcon from "../assets/courses.svg?react";
 import HomeIcon from "../assets/house-solid.svg?react"
 import type { ReactNode } from "react";
-import { useAuth } from "../context/useAuth";
-import { useEffect, useState } from "react";
-import { fetchUserDepartment } from "../api/userDepartmentApi";
-import type { UserDepartment } from "../types/userDepartmentTypes";
+import { useDepartment } from "../context/useDepartment";
 
 export const Roles = {
   Administrator: 1,
@@ -34,19 +31,9 @@ export const roleRoutes: Record<number, string> = {
 };
 
 export function useRoleSideNav(): Record<number, { label: string; path: string; icon: ReactNode }[]> {
-  const { user } = useAuth();
-  const [departmentInfo, setDepartmentInfo] = useState<UserDepartment | null>(null);
-
-  useEffect(() => {
-    if (user?.department_id) {
-      fetchUserDepartment(user.department_id)
-        .then(setDepartmentInfo)
-        .catch((err) => console.error("Failed to fetch department:", err));
-    }
-  }, [user?.department_id]);
-
-  const departmentId = departmentInfo?.department_id ?? "";
-  const departmentName = departmentInfo?.department_name?.replace(/\s+/g, "") ?? "department";
+  const { department } = useDepartment();
+  const departmentId = department?.department_id ?? "";
+  const departmentName = department?.department_name?.replace(/\s+/g, "") ?? "department";
 
   return {
     1: [

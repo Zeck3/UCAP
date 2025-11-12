@@ -73,9 +73,11 @@ export async function getCreditUnits(): Promise<Credit[]> {
   }
 }
 
-export async function getInstructors(): Promise<Instructor[]> {
+export async function getInstructors(departmentId?: number | null): Promise<Instructor[]> {
   try {
-    const res = await axiosClient.get("/instructors/");
+    const res = await axiosClient.get("/instructors/", {
+      params: departmentId ? { department_id: departmentId } : {},
+    });
     return res.data;
   } catch (error) {
     console.error("Error fetching instructors:", error);

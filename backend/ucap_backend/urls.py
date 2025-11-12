@@ -33,6 +33,12 @@ urlpatterns = [
     # ====================================================
     path("instructor/<int:instructor_id>/", instructor_loaded_courses_view,),
     path("instructor/<int:instructor_id>/<str:loaded_course_id>", instructor_assigned_sections_view,),
+
+    path("instructor/course_outcomes_management/<int:loaded_course_id>/", course_outcome_list_create_view),
+    path("instructor/course_outcomes_management/detail/<int:outcome_id>/", course_outcome_detail_view),
+
+    path("instructor/outcome_mapping_management/<int:loaded_course_id>/", outcome_mapping_view),
+    path("instructor/outcome_mapping_management/update/<int:pk>/", update_outcome_mapping),
     # ====================================================
     # Class Record
     # ====================================================
@@ -52,6 +58,9 @@ urlpatterns = [
 
     path("department_chair/section_management/loaded_course/<int:loaded_course_id>/", department_section_management_view),
     path("department_chair/section_management/section/<int:section_id>/",department_section_detail_view),
+
+    path("department_chair/program_outcomes_management/<int:program_id>/", program_outcome_list_create_view),
+    path("department_chair/program_outcomes_management/detail/<int:outcome_id>/", program_outcome_detail_view),
     # ====================================================
     # Dropdown
     # ====================================================

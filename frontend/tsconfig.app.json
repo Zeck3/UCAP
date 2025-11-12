@@ -23,5 +23,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "../TemporaryFolder/Temp", "../TemporaryFolder/Test"]
+  "include": ["src", "../TemporaryFolder/Temp", "../TemporaryFolder/Test", "../test/TEtsClassRecordTable.tsx"]
 }

@@ -11,7 +11,7 @@ import PlusIcon from "../../assets/plus-solid.svg?react";
 import SidePanelComponent from "../../components/SidePanelComponent";
 import DropdownComponent from "../../components/DropDownComponent";
 import { useNavigate, useParams } from "react-router-dom";
-
+import { useDepartment } from "../../context/useDepartment";
 import type { AcademicYear } from "../../types/dropdownTypes";
 import { getAcademicYears } from "../../api/dropdownApi";
 import {
@@ -26,6 +26,8 @@ import type {
   LoadDepartmentCourse,
 } from "../../types/departmentChairLoadedCourseTypes";
 import DepartmentCoursesTableComponent from "../../components/DepartmentCoursesTableComponent";
+import InfoComponent from "../../components/InfoComponent";
+import ProgramOutcomesTableComponent from "../../components/ProgramOutcomesTableComponent";
 
 export default function DepartmentChairCourseDashboard() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -35,7 +37,7 @@ export default function DepartmentChairCourseDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { department_id, department_name } = useParams();
-
+  const { department } = useDepartment();
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [departmentLoadedCourses, setDepartmentLoadedCourses] = useState<
     DepartmentLoadedCoursesDisplay[]
@@ -56,6 +58,7 @@ export default function DepartmentChairCourseDashboard() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const departmentId = user?.department_id ?? 0;
+  const programId = department?.program_id ?? 0;
 
   useEffect(() => {
     async function fetchDepartmentDetailsData() {
@@ -184,6 +187,12 @@ export default function DepartmentChairCourseDashboard() {
 
   return (
     <AppLayout activeItem={`/department/${department_id}/${department_name}`}>
+      <InfoComponent
+        loading={loading}
+        title={`Department of ${department?.department_name ?? ""}`}
+        subtitle={`${department?.college_name ?? ""}`}
+        details={`${department?.campus_name ?? ""} Campus`}
+      />
       <ToolBarComponent
         titleOptions={[
           {
@@ -255,8 +264,9 @@ export default function DepartmentChairCourseDashboard() {
           )}
         </>
       ) : activeMenu === "outcomes" ? (
-        <div className="text-center text-gray-600 py-8">
-          Program Outcomes view goes here
+        <div className="pb-20 pt-8 flex flex-col gap-4">
+          <span>Upon completion of the {department?.program_name}, graduates are able to:</span>
+          <ProgramOutcomesTableComponent programId={programId} />
         </div>
       ) : null}
 

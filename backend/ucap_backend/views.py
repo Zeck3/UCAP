@@ -444,6 +444,234 @@ def department_section_detail_view(request, section_id):
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500)
 
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+def program_outcome_list_create_view(request, program_id):
+    try:
+        if request.method == "GET":
+            outcomes = ProgramOutcome.objects.filter(program_id=program_id).order_by("program_outcome_id")
+            serializer = ProgramOutcomeSerializer(outcomes, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        elif request.method == "POST":
+            try:
+                program = Program.objects.get(pk=program_id)
+            except Program.DoesNotExist:
+                return Response({"message": "Program not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            last_outcome = (
+                ProgramOutcome.objects.filter(program=program)
+                .order_by("program_outcome_id")
+                .last()
+            )
+            if last_outcome:
+                last_letter = last_outcome.program_outcome_code.split("-")[-1]
+                next_letter = chr(ord(last_letter.lower()) + 1)
+            else:
+                next_letter = "a"
+
+            next_code = f"PO-{next_letter}"
+
+            serializer = ProgramOutcomeSerializer(
+                data={
+                    "program_outcome_code": next_code,
+                    "program_outcome_description": request.data.get("program_outcome_description", ""),
+                }
+            )
+
+            if serializer.is_valid():
+                serializer.save(program=program)
+                return Response(
+                    {"message": "Program Outcome added successfully", "data": serializer.data},
+                    status=status.HTTP_201_CREATED,
+                )
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["PUT", "DELETE"])
+@permission_classes([AllowAny])
+def program_outcome_detail_view(request, outcome_id):
+    """
+    PUT: Update description only.
+    DELETE: Only delete the latest Program Outcome.
+    """
+    try:
+        outcome = ProgramOutcome.objects.get(pk=outcome_id)
+
+        if request.method == "PUT":
+            serializer = ProgramOutcomeSerializer(outcome, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message": "Program Outcome updated", "data": serializer.data})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        elif request.method == "DELETE":
+            latest = (
+                ProgramOutcome.objects.filter(program=outcome.program)
+                .order_by("program_outcome_id")
+                .last()
+            )
+            if latest.program_outcome_id != outcome.program_outcome_id:
+                return Response(
+                    {"message": "Only the most recent Program Outcome can be deleted."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            outcome.delete()
+            return Response({"message": "Program Outcome deleted successfully"}, status=status.HTTP_200_OK)
+
+    except ProgramOutcome.DoesNotExist:
+        return Response({"message": "Program Outcome not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+def course_outcome_list_create_view(request, loaded_course_id):
+    """
+    GET: List all Course Outcomes for a given loaded course.
+    POST: Add new Course Outcome (auto-increment CO1, CO2, ...).
+    """
+    try:
+        if request.method == "GET":
+            outcomes = CourseOutcome.objects.filter(loaded_course_id=loaded_course_id).order_by("course_outcome_id")
+            serializer = CourseOutcomeSerializer(outcomes, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        elif request.method == "POST":
+            try:
+                loaded_course = LoadedCourse.objects.get(pk=loaded_course_id)
+            except LoadedCourse.DoesNotExist:
+                return Response({"message": "Loaded course not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            last_outcome = (
+                CourseOutcome.objects.filter(loaded_course=loaded_course)
+                .order_by("course_outcome_id")
+                .last()
+            )
+
+            if last_outcome:
+                last_num = int(last_outcome.course_outcome_code.replace("CO", ""))
+                next_num = last_num + 1
+            else:
+                next_num = 1
+
+            next_code = f"CO{next_num}"
+
+            serializer = CourseOutcomeSerializer(data=request.data)
+            if serializer.is_valid():
+                # supply loaded_course explicitly here
+                serializer.save(loaded_course=loaded_course, course_outcome_code=next_code)
+                return Response(
+                    {"message": "Course Outcome added successfully", "data": serializer.data},
+                    status=status.HTTP_201_CREATED,
+                )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["PUT", "DELETE"])
+@permission_classes([AllowAny])
+def course_outcome_detail_view(request, outcome_id):
+    """
+    PUT: Edit course_outcome_description.
+    DELETE: Remove only the latest Course Outcome.
+    """
+    try:
+        try:
+            outcome = CourseOutcome.objects.get(pk=outcome_id)
+        except CourseOutcome.DoesNotExist:
+            return Response({"message": "Course Outcome not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.method == "PUT":
+            serializer = CourseOutcomeSerializer(outcome, data=request.data, partial=True)
+            if serializer.is_valid():
+                # prevent updates to loaded_course or code
+                serializer.save()
+                return Response(
+                    {"message": "Course Outcome updated successfully", "data": serializer.data},
+                    status=status.HTTP_200_OK,
+                )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        elif request.method == "DELETE":
+            latest = (
+                CourseOutcome.objects.filter(loaded_course=outcome.loaded_course)
+                .order_by("course_outcome_id")
+                .last()
+            )
+            if latest and latest.pk == outcome.pk:
+                outcome.delete()
+                return Response({"message": "Course Outcome deleted successfully"}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "Only the latest Course Outcome can be deleted"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+    except Exception as e:
+        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def outcome_mapping_view(request, loaded_course_id):
+    """
+    Returns program outcomes, course outcomes, and outcome mappings for a loaded course.
+    """
+    try:
+        course_outcomes = CourseOutcome.objects.filter(loaded_course_id=loaded_course_id)
+        if not course_outcomes.exists():
+            return Response({"detail": "No course outcomes found."}, status=status.HTTP_404_NOT_FOUND)
+
+        program = course_outcomes.first().loaded_course.course.program
+        program_outcomes = ProgramOutcome.objects.filter(program=program)
+
+        # ensure all mappings exist
+        for co in course_outcomes:
+            for po in program_outcomes:
+                OutcomeMapping.objects.get_or_create(program_outcome=po, course_outcome=co)
+
+        mappings = OutcomeMapping.objects.filter(
+            program_outcome__in=program_outcomes,
+            course_outcome__in=course_outcomes,
+        )
+
+        return Response({
+            "program_outcomes": ProgramOutcomeSerializer(program_outcomes, many=True).data,
+            "course_outcomes": CourseOutcomeSerializer(course_outcomes, many=True).data,
+            "mapping": OutcomeMappingSerializer(mappings, many=True).data,
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["PUT"])
+@permission_classes([AllowAny])
+def update_outcome_mapping(request, pk):
+    """
+    Updates one mapping cell.
+    """
+    try:
+        mapping = OutcomeMapping.objects.get(pk=pk)
+        value = request.data.get("outcome_mapping", "").strip().upper()
+        if value not in ["", "I", "D", "E"]:
+            return Response({"detail": "Invalid mapping value. Must be '', 'I', 'D', or 'E'."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        mapping.outcome_mapping = value if value else None
+        mapping.save()
+        return Response(OutcomeMappingSerializer(mapping).data, status=status.HTTP_200_OK)
+    except OutcomeMapping.DoesNotExist:
+        return Response({"detail": "Mapping not found."}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 # ====================================================
 # Class Record
 # ====================================================
@@ -878,11 +1106,17 @@ def academic_year_list_view(request):
 @permission_classes([IsAuthenticated])
 def instructor_list_view(request):
     try:
-        instructors = User.objects.exclude(user_role_id=1) 
+        department_id = request.query_params.get("department_id")
+        instructors = User.objects.exclude(user_role_id=1)
+        if department_id:
+            instructors = instructors.filter(department_id=department_id)
+
         serializer = InstructorSerializer(instructors, many=True)
         return JsonResponse(serializer.data, safe=False)
+
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

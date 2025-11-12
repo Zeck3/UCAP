@@ -203,13 +203,13 @@ class CourseOutcome(models.Model):
     course_outcome_id = models.AutoField(primary_key=True)
     loaded_course = models.ForeignKey("LoadedCourse", on_delete=models.CASCADE)
     course_outcome_code = models.CharField(max_length=10)
-    course_outcome_description = models.CharField(max_length=255)
+    course_outcome_description = models.TextField()
 
 class ProgramOutcome(models.Model):
     program_outcome_id = models.AutoField(primary_key=True)
     program = models.ForeignKey("Program", on_delete=models.CASCADE)
     program_outcome_code = models.CharField(max_length=10)
-    program_outcome_description = models.CharField(max_length=255)
+    program_outcome_description = models.TextField()
 
 class BloomsClassification(models.Model):
     blooms_classification_id = models.AutoField(primary_key=True)

@@ -66,7 +66,7 @@ export default function DepartmentChairCoursePage() {
       try {
         const [instructorsData, { course_details, sections }] =
           await Promise.all([
-            getInstructors(),
+             getInstructors(departmentId),
             getSections(Number(loaded_course_id)),
           ]);
 
@@ -235,11 +235,11 @@ export default function DepartmentChairCoursePage() {
           subtitle={`${courseDetails.academic_year} ${courseDetails.semester_type} | ${courseDetails.year_level}`}
           details={`Department of ${courseDetails.department_name} | ${courseDetails.college_name} | ${courseDetails.campus_name} Campus`}
         />
-      )}{" "}
+      )}
       <ToolBarComponent
         titleOptions={[
           {
-            label: "Section",
+            label: "Sections",
             value: "section",
             enableSearch: true,
             enableLayout: true,

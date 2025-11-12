@@ -5,4 +5,6 @@ export interface UserDepartment {
   college_name: string;
   campus_id: number;
   campus_name: string;
+  program_name: string;
+  program_id: number;
 }

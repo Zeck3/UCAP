@@ -6,17 +6,21 @@ import InfoComponent from "../../components/InfoComponent";
 import ToolBarComponent from "../../components/ToolBarComponent";
 import CardsGridComponent from "../../components/CardsGridComponent";
 import TableComponent from "../../components/TableComponent";
-import RightArrowIcon from "../../assets/arrow-right-solid.svg?react";
-import FileImport from "../../assets/file-import-solid.svg?react";
 import AppLayout from "../../layout/AppLayout";
 import { useAuth } from "../../context/useAuth";
 import { fetchCourseDetails } from "../../api/instructorDashboardApi";
 import type { CourseDetailsWithSections } from "../../types/instructorDashboardTypes";
+import ProgramOutcomesDisplayTable from "../../components/ProgramOutcomesDisplayTableComponent";
+import { useDepartment } from "../../context/useDepartment";
+import CourseOutcomesTableComponent from "../../components/CourseOutcomesTableComponent";
+import OutcomeMappingTableComponent from "../../components/OutcomeMappingTableComponent";
 
 export default function CoursePage() {
   const [activeMenu, setActiveMenu] = useState("section");
   const [searchQuery, setSearchQuery] = useState("");
   const { loaded_course_id, course_code } = useParams();
+  const { department } = useDepartment();
+  const programId = department?.program_id ?? 0;
   const { user } = useAuth();
   const { layout } = useLayout();
   const navigate = useNavigate();
@@ -72,7 +76,7 @@ export default function CoursePage() {
       `/instructor/${loaded_course_id}/${course_code}/${item.section_id}/${item.year_and_section}`
     );
   };
-  
+
   if (!currentUserId) {
     return <div>Unauthorized: No instructor logged in.</div>;
   }
@@ -104,25 +108,22 @@ export default function CoursePage() {
       <ToolBarComponent
         titleOptions={[
           {
-            label: "Section",
+            label: "My Sections",
             value: "section",
             enableSearch: true,
             enableLayout: true,
             enableButton: false,
           },
           {
-            label: "Mapping",
+            label: "Outcome Mapping",
             value: "mapping",
             enableSearch: false,
             enableLayout: false,
-            enableButton: true,
+            enableButton: false,
           },
         ]}
         onSearch={(val) => setSearchQuery(val)}
         onTitleSelect={(val) => setActiveMenu(val)}
-        buttonLabel="Generate Suggested Mapping"
-        buttonIcon={<RightArrowIcon className="h-5 w-5 text-white" />}
-        onButtonClick={() => console.log("Button clicked!")}
       />
       {activeMenu === "section" && (
         <>
@@ -155,23 +156,33 @@ export default function CoursePage() {
       )}
 
       {activeMenu === "mapping" && (
-        <div className="flex flex-col gap-8 my-8">
-          <p className="text-sm">
-            The NLP-driven Course Outcome to Program Outcome (CO-PO) Mapping in
-            the following table suggests potential alignments between Course
-            Outcomes (COs) and Program Outcomes (POs). The generated mappings
-            are intended to serve as guidance for instructors and remain subject
-            to their discretion, as they may possibly produce inaccuracies.
-          </p>
-          <button
-            onClick={() => console.log("clicked")}
-            className="h-32 border cursor-pointer rounded-lg border-[#E9E6E6] w-full flex flex-col items-center justify-center gap-4"
-          >
-            <FileImport className="h-12 text-[#767676]" />
-            <span className="text-[#767676] text-sm">
-              Upload Course Syllabus in PDF Format
-            </span>
-          </button>
+        <div className="pb-20 pt-12 flex flex-col gap-16">
+          <div className="flex flex-col gap-8">
+            <div className="gap-2">
+              <h2 className="text-xl">Program Outcomes</h2>
+              <span className="text-gray-500">
+                Upon completion of the {department?.program_name}, graduates are
+                able to:
+              </span>
+            </div>
+            <ProgramOutcomesDisplayTable programId={programId} />
+          </div>
+          <div className="flex flex-col gap-8">
+            <div className="gap-2">
+              <h2 className="text-xl">Course Outcomes</h2>
+              <span className="text-gray-500">
+                Upon completion of the {course_code} course, students are able
+                to:
+              </span>
+            </div>
+            <CourseOutcomesTableComponent
+              loadedCourseId={Number(loaded_course_id)}
+            />
+          </div>
+          <div className="flex flex-col gap-8">
+            <h2 className="text-xl">Outcome Mapping</h2>
+            <OutcomeMappingTableComponent loadedCourseId={Number(loaded_course_id)} />
+          </div>
         </div>
       )}
     </AppLayout>
