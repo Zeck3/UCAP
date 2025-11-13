@@ -70,14 +70,13 @@ export default function ProgramOutcomesTableComponent({ programId }: Props) {
   };
 
   const handleDelete = async () => {
-    const confirmed = window.confirm("Delete latest Program Outcome?");
-    if (!confirmed) return;
     try {
       const latest = outcomes[outcomes.length - 1];
       if (latest) {
         const success = await deleteProgramOutcome(latest.program_outcome_id);
-        if (success) setOutcomes((prev) => prev.slice(0, prev.length - 1)); // remove locally
+        if (success) setOutcomes((prev) => prev.slice(0, prev.length - 1));
       }
+      setNewDescription("");
     } catch (err) {
       console.error("Failed to delete outcome:", err);
     }
@@ -171,23 +170,7 @@ export default function ProgramOutcomesTableComponent({ programId }: Props) {
         </table>
       </div>
 
-      <div className="flex justify-end items-center gap-2">
-        {outcomes.length !== 0 && (
-          <button
-            onClick={handleDelete}
-            disabled={adding || outcomes.length === 0}
-            className={`border border-red-400 text-red-400 hover:text-red-500 px-3 py-2 rounded-md flex items-center gap-2 ${
-              adding || outcomes.length === 0
-                ? "opacity-50 cursor-not-allowed"
-                : ""
-            }`}
-            title="Delete latest PO"
-          >
-            <TrashIcon className="h-4 w-4" />
-            Delete Latest
-          </button>
-        )}
-
+      <div className="flex justify-between items-center gap-2">
         <button
           onClick={handleAdd}
           disabled={!newDescription.trim() || adding}
@@ -206,6 +189,21 @@ export default function ProgramOutcomesTableComponent({ programId }: Props) {
             </>
           )}
         </button>
+        {outcomes.length !== 0 && (
+          <button
+            onClick={handleDelete}
+            disabled={adding || outcomes.length === 0}
+            className={`border border-red-400 text-red-400 hover:text-red-500 px-3 py-2 rounded-md flex items-center gap-2 ${
+              adding || outcomes.length === 0
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
+            title="Delete latest PO"
+          >
+            <TrashIcon className="h-4 w-4" />
+            Delete Latest
+          </button>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import FileImportIcon from "../assets/file-import-solid.svg?react";
-import FileExportIcon from "../assets/file-export-solid.svg?react";
 import AnalyticsIcon from "../assets/chart-simple.svg?react";
 
 export default function FloatingToolbar({
@@ -29,7 +28,7 @@ export default function FloatingToolbar({
           </span>
         </button>
 
-        <button
+        {/* <button
           className="relative px-2 py-2 p-2 rounded-full hover:bg-gray-100 group"
           title="Export Class Record"
         >
@@ -37,7 +36,7 @@ export default function FloatingToolbar({
           <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 text-xs text-white bg-[#767676] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">
             Export Class Record
           </span>
-        </button>
+        </button> */}
 
         <button
           onClick={goToAssessmentPage}

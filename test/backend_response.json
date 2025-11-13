@@ -1,0 +1,538 @@
+{
+  "info": {
+    "university_hierarchy": "USTP-CDO / College of Engineering and Architecture / Electronics Engineering",
+    "program_name": "BS Electronics Engineering",
+    "course_title": "Introduction to Electronics Engineering",
+    "academic_year_and_semester_type": "2025 - 2026 / 2nd Semester",
+    "instructor_assigned": "Robert Speedwagon"
+  },
+  "assessments": [
+    {
+      "program_outcomes": [
+        {
+          "PO-a, PO-b, PO-c, PO-d, PO-e, PO-f, PO-g, PO-h, PO-j": [
+            {
+              "course_outcomes": [
+                {
+                  "CO1": [
+                    {
+                      "CO1 (Lecture)": [
+                        {
+                          "blooms_classification": [
+                            {
+                              "Remember": [
+                                {
+                                  "assessment_id": 1,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 2,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 3,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 4,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 5,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 6,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 7,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                }
+                              ],
+                              "Remember / Understand": [
+                                {
+                                  "assessment_id": 8,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 9,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 10,
+                                  "assessment_title": "Prelim Exam",
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 11,
+                                  "assessment_title": "Mid Written Exam",
+                                  "assessment_highest_score": 8
+                                }
+                              ],
+                              "Apply": [
+                                {
+                                  "assessment_id": 12,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 13,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "CO1 (Laboratory)": [
+                        {
+                          "blooms_classification": [
+                            {
+                              "Analyze": [
+                                {
+                                  "assessment_id": 14,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 15,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 16,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 17,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 18,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                }
+                              ],
+                              "Evaluate": [
+                                {
+                                  "assessment_id": 19,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 20,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 21,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 22,
+                                  "assessment_title": "Mid Lab Exam",
+                                  "assessment_highest_score": 8
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "PO-a, PO-b, PO-c, PO-d, PO-e, PO-f, PO-g, PO-i": [
+            {
+              "course_outcomes": [
+                {
+                  "CO2": [
+                    {
+                      "CO2 (Lecture)": [
+                        {
+                          "blooms_classification": [
+                            {
+                              "Remember": [
+                                {
+                                  "assessment_id": 28,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 29,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 30,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 31,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                }
+                              ],
+                              "Remember / Understand": [
+                                {
+                                  "assessment_id": 32,
+                                  "assessment_title": "SFinal Exam",
+                                  "assessment_highest_score": 8
+                                }
+                              ],
+                              "Understand": [
+                                {
+                                  "assessment_id": 23,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 24,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 25,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 26,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 27,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                }
+                              ],
+                              "Apply / Analyze": [
+                                {
+                                  "assessment_id": 34,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                }
+                              ],
+                              "Evaluate": [
+                                {
+                                  "assessment_id": 35,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "CO2 (Laboratory)": [
+                        {
+                          "blooms_classification": [
+                            {
+                              "Apply": [
+                                {
+                                  "assessment_id": 38,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 39,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                }
+                              ],
+                              "Analyze / Evaluate": [
+                                {
+                                  "assessment_id": 41,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                }
+                              ],
+                              "Analyze": [
+                                {
+                                  "assessment_id": 42,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                }
+                              ],
+                              "Evaluate": [
+                                {
+                                  "assessment_id": 36,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 37,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 40,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                },
+                                {
+                                  "assessment_id": 43,
+                                  "assessment_title": null,
+                                  "assessment_highest_score": 8
+                                }
+                              ],
+                              "Create": [
+                                {
+                                  "assessment_id": 44,
+                                  "assessment_title": "Fin Lab Exam",
+                                  "assessment_highest_score": 8
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "PO-a, PO-b, PO-c, PO-d, PO-e, PO-f, PO-g, PO-h, PO-i, PO-j": [
+            {
+              "course_outcomes": [
+                {
+                  "CO1 & CO2": [
+                    {
+                      "CO1 & CO2": [
+                        {
+                          "blooms_classification": [
+                            {
+                              "Remember / Understand": [
+                                {
+                                  "assessment_id": 33,
+                                  "assessment_title": "Fin Written Exam",
+                                  "assessment_highest_score": 8
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "students": [
+    {
+      "student_id": 1,
+      "id_number": 2022306865,
+      "student_name": "Dinglasa, Neil Jan C.",
+      "scores": [
+        {
+          "assessment_id": 1,
+          "value": 8
+        },
+        {
+          "assessment_id": 2,
+          "value": 8
+        },
+        {
+          "assessment_id": 3,
+          "value": 8
+        },
+        {
+          "assessment_id": 4,
+          "value": 8
+        },
+        {
+          "assessment_id": 5,
+          "value": 8
+        },
+        {
+          "assessment_id": 6,
+          "value": 8
+        },
+        {
+          "assessment_id": 7,
+          "value": 8
+        },
+        {
+          "assessment_id": 8,
+          "value": 8
+        },
+        {
+          "assessment_id": 9,
+          "value": 8
+        },
+        {
+          "assessment_id": 10,
+          "value": 8
+        },
+        {
+          "assessment_id": 11,
+          "value": 8
+        },
+        {
+          "assessment_id": 12,
+          "value": 8
+        },
+        {
+          "assessment_id": 13,
+          "value": 8
+        },
+        {
+          "assessment_id": 14,
+          "value": 8
+        },
+        {
+          "assessment_id": 15,
+          "value": 8
+        },
+        {
+          "assessment_id": 16,
+          "value": 8
+        },
+        {
+          "assessment_id": 17,
+          "value": 8
+        },
+        {
+          "assessment_id": 18,
+          "value": 8
+        },
+        {
+          "assessment_id": 19,
+          "value": 8
+        },
+        {
+          "assessment_id": 20,
+          "value": 8
+        },
+        {
+          "assessment_id": 21,
+          "value": 8
+        },
+        {
+          "assessment_id": 22,
+          "value": 8
+        },
+        {
+          "assessment_id": 23,
+          "value": 8
+        },
+        {
+          "assessment_id": 24,
+          "value": 8
+        },
+        {
+          "assessment_id": 25,
+          "value": 8
+        },
+        {
+          "assessment_id": 26,
+          "value": 8
+        },
+        {
+          "assessment_id": 27,
+          "value": 8
+        },
+        {
+          "assessment_id": 28,
+          "value": 8
+        },
+        {
+          "assessment_id": 29,
+          "value": 8
+        },
+        {
+          "assessment_id": 30,
+          "value": 8
+        },
+        {
+          "assessment_id": 31,
+          "value": 8
+        },
+        {
+          "assessment_id": 32,
+          "value": 8
+        },
+        {
+          "assessment_id": 33,
+          "value": 8
+        },
+        {
+          "assessment_id": 34,
+          "value": 8
+        },
+        {
+          "assessment_id": 35,
+          "value": 8
+        },
+        {
+          "assessment_id": 36,
+          "value": 8
+        },
+        {
+          "assessment_id": 37,
+          "value": 8
+        },
+        {
+          "assessment_id": 38,
+          "value": 8
+        },
+        {
+          "assessment_id": 39,
+          "value": 8
+        },
+        {
+          "assessment_id": 40,
+          "value": 8
+        },
+        {
+          "assessment_id": 41,
+          "value": 8
+        },
+        {
+          "assessment_id": 42,
+          "value": 8
+        },
+        {
+          "assessment_id": 43,
+          "value": 8
+        },
+        {
+          "assessment_id": 44,
+          "value": 8
+        }
+      ]
+    }
+  ]
+}

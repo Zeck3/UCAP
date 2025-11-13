@@ -62,7 +62,7 @@ export default function ToolBarComponent({
   const selectedOption = options.find((o) => o.value === layout);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 sticky top-0 z-30 bg-white">
       <div className="flex flex-row items-center mt-6">
         <div className="flex items-center gap-4 flex-1">
           <div className="flex items-center gap-8">
@@ -81,7 +81,7 @@ export default function ToolBarComponent({
                   }}
                   className={`relative ${
                     !isSingle ? "cursor-pointer" : ""
-                  } text-2xl font-base transition ${
+                  } text-xl font-base transition h-full py-2 ${
                     opt.disabled ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
@@ -93,7 +93,7 @@ export default function ToolBarComponent({
                     {opt.label}
                   </span>
                   {!isSingle && isActive && (
-                    <span className="absolute top-12.5 left-0 w-full h-1 bg-ucap-yellow rounded-t-md" />
+                    <span className="absolute top-14 left-0 w-full h-1 bg-ucap-yellow rounded-t-md" />
                   )}
                 </div>
               );

@@ -526,7 +526,6 @@ class OutcomeMappingSerializer(serializers.ModelSerializer):
             "outcome_mapping",
         ]
 
-
 # ====================================================    
 # Department Chair Dashboard
 # ====================================================

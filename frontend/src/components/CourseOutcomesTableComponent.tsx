@@ -9,13 +9,16 @@ import type { CourseOutcome } from "../types/instructorCourseOutcomeTypes";
 import LoadingIcon from "../assets/circle-regular.svg?react";
 import PlusIcon from "../assets/plus-solid.svg?react";
 import TrashIcon from "../assets/trash-solid.svg?react";
+import RotateRight from "../assets/rotate-right-solid-full.svg?react";
 
 interface Props {
   loadedCourseId: number;
+  onCourseOutcomesChanged?: () => void;
 }
 
 export default function CourseOutcomesTableComponent({
   loadedCourseId,
+  onCourseOutcomesChanged,
 }: Props) {
   const [outcomes, setOutcomes] = useState<CourseOutcome[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +52,7 @@ export default function CourseOutcomesTableComponent({
       });
       setOutcomes((prev) => [...prev, newOutcome]); // append locally
       setNewDescription("");
+      onCourseOutcomesChanged?.();
     } catch (err) {
       console.error("Failed to add outcome:", err);
     } finally {
@@ -68,20 +72,21 @@ export default function CourseOutcomesTableComponent({
         )
       );
       setEditingId(null);
+      onCourseOutcomesChanged?.();
     } catch (err) {
       console.error("Failed to update outcome:", err);
     }
   };
 
   const handleDelete = async () => {
-    const confirmed = window.confirm("Delete latest Course Outcome?");
-    if (!confirmed) return;
     try {
       const latest = outcomes[outcomes.length - 1];
       if (latest) {
         const success = await deleteCourseOutcome(latest.course_outcome_id);
-        if (success) setOutcomes((prev) => prev.slice(0, prev.length - 1)); // remove last locally
+        if (success) setOutcomes((prev) => prev.slice(0, prev.length - 1));
       }
+      setNewDescription("");
+      onCourseOutcomesChanged?.();
     } catch (err) {
       console.error("Failed to delete outcome:", err);
     }
@@ -176,24 +181,37 @@ export default function CourseOutcomesTableComponent({
       </div>
 
       <div className="flex justify-between items-center gap-2">
-        <button
-          onClick={handleAdd}
-          disabled={!newDescription.trim() || adding}
-          className={`bg-ucap-yellow text-white px-4 py-2 rounded-md flex items-center gap-2 ${
-            !newDescription.trim() || adding
-              ? "opacity-50 cursor-not-allowed"
-              : "bg-ucap-yellow-hover"
-          }`}
-        >
-          {adding ? (
-            <LoadingIcon className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              <PlusIcon className="h-4 w-4" />
-              Add
-            </>
-          )}
-        </button>
+        <div className="flex flex-row gap-2">
+          <button
+            onClick={handleAdd}
+            disabled={!newDescription.trim() || adding}
+            className={`bg-ucap-yellow text-white px-4 py-2 rounded-md flex items-center gap-2 ${
+              !newDescription.trim() || adding
+                ? "opacity-50 cursor-not-allowed"
+                : "bg-ucap-yellow-hover"
+            }`}
+          >
+            {adding ? (
+              <LoadingIcon className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <PlusIcon className="h-4 w-4" />
+                Add
+              </>
+            )}
+          </button>
+          <button
+            onClick={fetchOutcomes}
+            disabled={loading}
+            className={`border border-[#E9E6E6] px-4 py-2 rounded-md flex items-center gap-2 ${
+              loading ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"
+            }`}
+          >
+            <RotateRight
+              className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+            />
+          </button>
+        </div>
         {outcomes.length !== 0 && (
           <button
             onClick={handleDelete}

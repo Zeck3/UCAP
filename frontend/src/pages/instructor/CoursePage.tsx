@@ -8,17 +8,20 @@ import CardsGridComponent from "../../components/CardsGridComponent";
 import TableComponent from "../../components/TableComponent";
 import AppLayout from "../../layout/AppLayout";
 import { useAuth } from "../../context/useAuth";
+import FileImport from "../../assets/file-import-solid.svg?react";
 import { fetchCourseDetails } from "../../api/instructorDashboardApi";
 import type { CourseDetailsWithSections } from "../../types/instructorDashboardTypes";
 import ProgramOutcomesDisplayTable from "../../components/ProgramOutcomesDisplayTableComponent";
 import { useDepartment } from "../../context/useDepartment";
 import CourseOutcomesTableComponent from "../../components/CourseOutcomesTableComponent";
 import OutcomeMappingTableComponent from "../../components/OutcomeMappingTableComponent";
+import GearsSolid from "../../assets/gears-solid-full.svg?react";
 
 export default function CoursePage() {
   const [activeMenu, setActiveMenu] = useState("section");
   const [searchQuery, setSearchQuery] = useState("");
   const { loaded_course_id, course_code } = useParams();
+  const [refreshMappingKey, setRefreshMappingKey] = useState(0);
   const { department } = useDepartment();
   const programId = department?.program_id ?? 0;
   const { user } = useAuth();
@@ -29,7 +32,6 @@ export default function CoursePage() {
     CourseDetailsWithSections[]
   >([]);
   const [loading, setLoading] = useState(true);
-
   const currentUserId = user?.user_id ?? null;
 
   useEffect(() => {
@@ -77,6 +79,10 @@ export default function CoursePage() {
     );
   };
 
+  const handleCourseOutcomesChanged = () => {
+    setRefreshMappingKey((prev) => prev + 1);
+  };
+
   if (!currentUserId) {
     return <div>Unauthorized: No instructor logged in.</div>;
   }
@@ -119,11 +125,16 @@ export default function CoursePage() {
             value: "mapping",
             enableSearch: false,
             enableLayout: false,
-            enableButton: false,
-          },
+            enableButton: true,
+          }
         ]}
         onSearch={(val) => setSearchQuery(val)}
         onTitleSelect={(val) => setActiveMenu(val)}
+        buttonLabel="Upload Course Syllabus"
+        onButtonClick={() => {
+          alert("Feature coming soon!");
+        }}
+        buttonIcon={<FileImport className="w-5 h-5" />}
       />
       {activeMenu === "section" && (
         <>
@@ -157,6 +168,7 @@ export default function CoursePage() {
 
       {activeMenu === "mapping" && (
         <div className="pb-20 pt-12 flex flex-col gap-16">
+          {/* Program Outcomes */}
           <div className="flex flex-col gap-8">
             <div className="gap-2">
               <h2 className="text-xl">Program Outcomes</h2>
@@ -167,6 +179,8 @@ export default function CoursePage() {
             </div>
             <ProgramOutcomesDisplayTable programId={programId} />
           </div>
+
+          {/* Course Outcomes */}
           <div className="flex flex-col gap-8">
             <div className="gap-2">
               <h2 className="text-xl">Course Outcomes</h2>
@@ -177,11 +191,37 @@ export default function CoursePage() {
             </div>
             <CourseOutcomesTableComponent
               loadedCourseId={Number(loaded_course_id)}
+              onCourseOutcomesChanged={handleCourseOutcomesChanged} // new prop
             />
           </div>
+
+          {/* Outcome Mapping */}
           <div className="flex flex-col gap-8">
             <h2 className="text-xl">Outcome Mapping</h2>
-            <OutcomeMappingTableComponent loadedCourseId={Number(loaded_course_id)} />
+            <OutcomeMappingTableComponent
+              key={refreshMappingKey} // triggers re-mount/re-fetch
+              loadedCourseId={Number(loaded_course_id)}
+            />
+          </div>
+
+
+          <div className="flex flex-col gap-8">
+            <p className="text-sm">
+              The NLP-driven Course Outcome to Program Outcome (CO-PO) Mapping
+              in the following table suggests potential alignments between
+              Course Outcomes (COs) and Program Outcomes (POs). The generated
+              mappings are intended to serve as guidance for instructors and
+              remain subject to their discretion.
+            </p>
+            <button
+              onClick={() => console.log("clicked")}
+              className="py-4 border cursor-pointer rounded-lg bg-ucap-yellow bg-ucap-yellow-hover border-[#FCB315] w-full flex flex-row items-center justify-center gap-4"
+            >
+              <GearsSolid className="w-8 h-8 text-white" />
+              <span className="text-white text-base">
+                Perform Course Outcome to Program Outcome Mapping
+              </span>
+            </button>
           </div>
         </div>
       )}

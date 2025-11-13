@@ -179,9 +179,6 @@ export default function TableComponent<T extends { id: string | number }>({
         <tbody>
           {paginatedData.map((row, idx) => {
             const isClickable = !!onRowClick && !disableRowPointer;
-            //================================
-            // Add selectable props
-            //================================
             const isChecked = selectedRows.includes(row.id);
             return (
               <tr
@@ -193,9 +190,6 @@ export default function TableComponent<T extends { id: string | number }>({
                   if (isClickable) onRowClick?.(row);
                 }}
               >
-                {/* ================================
-                 Add selectable props
-                ================================ */}
                 {selectable && (
                   <td className="px-4 py-4">
                     <input

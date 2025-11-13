@@ -1,4 +1,3 @@
-// import InfoComponent from "../../components/InfoComponent";
 import ToolBarComponent from "../../components/ToolBarComponent";
 import CardsGridComponent from "../../components/CardsGridComponent";
 import TableComponent from "../../components/TableComponent";
@@ -265,7 +264,10 @@ export default function DepartmentChairCourseDashboard() {
         </>
       ) : activeMenu === "outcomes" ? (
         <div className="pb-20 pt-8 flex flex-col gap-4">
-          <span>Upon completion of the {department?.program_name}, graduates are able to:</span>
+          <span>
+            Upon completion of the {department?.program_name}, graduates are
+            able to:
+          </span>
           <ProgramOutcomesTableComponent programId={programId} />
         </div>
       ) : null}
@@ -280,19 +282,6 @@ export default function DepartmentChairCourseDashboard() {
         loading={sidePanelLoading}
       >
         <div className="mb-4">
-          <DropdownComponent
-            label="Academic Year"
-            name="academic_year"
-            required
-            error={errors.academic_year}
-            options={academicYearOptions}
-            value={selectedAcademicYear ?? ""}
-            onChange={(_, value) => setSelectedAcademicYear(value)}
-            loading={sidePanelLoading}
-            onClearError={handleClearError}
-          />
-        </div>
-        <div className="mb-4">
           <DepartmentCoursesTableComponent
             courses={filteredDepartmentCourses}
             selectedCourses={selectedCourses.map((c) => c.course_code)}
@@ -303,6 +292,19 @@ export default function DepartmentChairCourseDashboard() {
             }}
             loading={sidePanelLoading}
             error={errors.courses}
+            onClearError={handleClearError}
+          />
+        </div>
+        <div className="mb-4">
+          <DropdownComponent
+            label="Academic Year"
+            name="academic_year"
+            required
+            error={errors.academic_year}
+            options={academicYearOptions}
+            value={selectedAcademicYear ?? ""}
+            onChange={(_, value) => setSelectedAcademicYear(value)}
+            loading={sidePanelLoading}
             onClearError={handleClearError}
           />
         </div>

@@ -1,3 +1,4 @@
+from collections import defaultdict
 from django.http import JsonResponse
 from .models import *
 import json
@@ -623,19 +624,31 @@ def course_outcome_detail_view(request, outcome_id):
 def outcome_mapping_view(request, loaded_course_id):
     """
     Returns program outcomes, course outcomes, and outcome mappings for a loaded course.
+    Handles cases where either COs or POs may be missing.
     """
     try:
         course_outcomes = CourseOutcome.objects.filter(loaded_course_id=loaded_course_id)
         if not course_outcomes.exists():
-            return Response({"detail": "No course outcomes found."}, status=status.HTTP_404_NOT_FOUND)
+            # Still need the program to check for POs
+            loaded_course = LoadedCourse.objects.filter(pk=loaded_course_id).select_related("course__program").first()
+            program_outcomes = []
+            if loaded_course and loaded_course.course.program:
+                program_outcomes = ProgramOutcome.objects.filter(program=loaded_course.course.program)
+            return Response({
+                "program_outcomes": ProgramOutcomeSerializer(program_outcomes, many=True).data,
+                "course_outcomes": [],
+                "mapping": [],
+            }, status=status.HTTP_200_OK)
 
+        # If there are COs, fetch their program via the first CO
         program = course_outcomes.first().loaded_course.course.program
         program_outcomes = ProgramOutcome.objects.filter(program=program)
 
-        # ensure all mappings exist
-        for co in course_outcomes:
-            for po in program_outcomes:
-                OutcomeMapping.objects.get_or_create(program_outcome=po, course_outcome=co)
+        # Create mappings only if both COs and POs exist
+        if program_outcomes.exists() and course_outcomes.exists():
+            for co in course_outcomes:
+                for po in program_outcomes:
+                    OutcomeMapping.objects.get_or_create(program_outcome=po, course_outcome=co)
 
         mappings = OutcomeMapping.objects.filter(
             program_outcome__in=program_outcomes,
@@ -650,7 +663,6 @@ def outcome_mapping_view(request, loaded_course_id):
 
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @api_view(["PUT"])
 @permission_classes([AllowAny])
@@ -826,7 +838,7 @@ class AssessmentPageAPIView(APIView):
             section = (
                 Section.objects
                 .select_related(
-                    "loaded_course__course__program",
+                    "loaded_course__course__program__department__college__campus",
                     "loaded_course__academic_year",
                     "instructor_assigned",
                 )
@@ -835,200 +847,221 @@ class AssessmentPageAPIView(APIView):
         except Section.DoesNotExist:
             return Response({"detail": "Section not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # ========== classInfo ==========
         loaded_course = section.loaded_course
         course = loaded_course.course
         program = course.program
         academic_year = loaded_course.academic_year
+        department = getattr(program, "department", None)
+        campus_name = getattr(getattr(department, "campus", None), "campus_name", None)
+        college_name = getattr(getattr(department, "college", None), "college_name", None)
+        department_name = getattr(department, "department_name", None)
 
-        # Build cacode: Campus / College / Department (use department via program->department->college->campus)
-        try:
-            department = program.department
-        except Exception:
-            department = None
-
-        campus_name = None
-        college_name = None
-        department_name = None
-        if department:
-            department_name = getattr(department, "department_name", None)
-            if hasattr(department, "college") and department.college:
-                college_name = getattr(department.college, "college_name", None)
-            if hasattr(department, "campus") and department.campus:
-                campus_name = getattr(department.campus, "campus_name", None)
-
-        if not campus_name:
-            try:
-                dept = program.department
-                if dept:
-                    department_name = department_name or dept.department_name
-                    if getattr(dept, "campus", None):
-                        campus_name = getattr(dept.campus, "campus_name", None)
-                    if getattr(dept, "college", None):
-                        college_name = getattr(dept.college, "college_name", None)
-            except Exception:
-                pass
-
-        cacode = " / ".join([p for p in [campus_name, college_name, department_name] if p])
-
-        classInfo = {
-            "cacode": cacode or "",
-            "program": getattr(program, "program_name", "") or "",
-            "course": f"{getattr(course, 'course_code', '')} - {getattr(course, 'course_title', '')}".strip(" -"),
-            "aySemester": f"{getattr(academic_year, 'academic_year_start', '')}-{getattr(academic_year, 'academic_year_end', '')} / {getattr(course.semester, 'semester_type', '')}",
-            "faculty": (
-                f"{section.instructor_assigned.last_name}, "
-                f"{section.instructor_assigned.first_name}"
+        # =================== INFO ===================
+        info = {
+            "university_hierarchy": " / ".join(
+                [p for p in [campus_name, college_name, department_name] if p]
+            ),
+            "program_name": getattr(program, "program_name", "") or "",
+            "course_title": getattr(course, "course_title", "") or "",
+            "academic_year_and_semester_type": (
+                f"{getattr(academic_year, 'academic_year_start', '')} - "
+                f"{getattr(academic_year, 'academic_year_end', '')} / "
+                f"{getattr(course.semester, 'semester_type', '')}"
+            ),
+            "instructor_assigned": (
+                f"{getattr(section.instructor_assigned,'first_name','') or ''} "
+                f"{getattr(section.instructor_assigned,'last_name','') or ''}".strip()
                 if section.instructor_assigned else ""
             ),
         }
 
-        # ========== POS (Program Outcomes) ==========
-        program_outcomes_qs = ProgramOutcome.objects.filter(program=program).prefetch_related(
-            Prefetch(
-                "outcomemapping_set__course_outcome",
-                queryset=CourseOutcome.objects.filter(loaded_course=loaded_course),
-                to_attr="course_outcomes_for_loaded_course"
+        # =================== ASSESSMENTS ===================
+        BLOOM_ORDER = ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"]
+        BLOOM_INDEX = {b: i for i, b in enumerate(BLOOM_ORDER)}
+
+        def normalize_bloom_names(blooms_qs):
+            if not blooms_qs:
+                return "Unclassified"
+            names = {b.blooms_classification_type for b in blooms_qs}
+            ordered = sorted(names, key=lambda n: BLOOM_INDEX.get(n, 999))
+            return " / ".join(ordered)
+
+        def co_code_num(co_code):
+            try:
+                return int("".join(ch for ch in (co_code or "") if ch.isdigit()))
+            except ValueError:
+                return 9999
+
+        def format_co_label(co_codes, course_unit_type):
+            codes_sorted = sorted(co_codes, key=co_code_num)
+            if len(codes_sorted) == 1:
+                return f"{codes_sorted[0]} ({course_unit_type})" if course_unit_type else codes_sorted[0]
+            if len(codes_sorted) == 2:
+                return f"{codes_sorted[0]} & {codes_sorted[1]}"
+            return f"{', '.join(codes_sorted[:-1])}, & {codes_sorted[-1]}"
+
+        assessments_qs = (
+            Assessment.objects
+            .filter(course_component__course_unit__course_term__section=section)
+            .select_related(
+                "course_component__course_unit__course_term",
+                "course_component__course_unit",
+                "course_component",
             )
+            .prefetch_related("blooms_classification", "course_outcome")
+            .order_by("assessment_id")
         )
 
-        pos_list = []
-        assessments_qs = Assessment.objects.filter(
-            course_component__course_unit__course_term__section=section
-        ).prefetch_related("blooms_classification", "course_outcome").order_by("assessment_id")
+        co_qs = CourseOutcome.objects.filter(loaded_course=loaded_course)
+        co_id_to_code = {co.course_outcome_id: co.course_outcome_code for co in co_qs}
 
-        co_to_assessments = {}
+        # all mapped POs for this loaded course
+        co_to_po_codes = defaultdict(set)
+        mappings_qs = OutcomeMapping.objects.filter(
+            course_outcome__loaded_course=loaded_course,
+            program_outcome__program=program,
+            outcome_mapping__in=["I", "D", "E"],
+        ).select_related("program_outcome", "course_outcome")
+
+        for m in mappings_qs:
+            co_code = getattr(m.course_outcome, "course_outcome_code", None)
+            po_code = getattr(m.program_outcome, "program_outcome_code", None)
+            if co_code and po_code:
+                co_to_po_codes[co_code].add(po_code)
+
+        co_to_bloom_to_assess = defaultdict(lambda: defaultdict(list))
+        assessment_ids_in_order = []
+
         for a in assessments_qs:
-            for co in a.course_outcome.all():
-                co_to_assessments.setdefault(co.course_outcome_id, []).append(a)
+            unit_type = getattr(getattr(a.course_component, "course_unit", None), "course_unit_type", None)
+            a_co_codes = [
+                co_id_to_code.get(co.course_outcome_id)
+                for co in a.course_outcome.all()
+                if co.loaded_course_id == loaded_course.loaded_course_id
+            ]
+            if not a_co_codes:
+                assessment_ids_in_order.append(a.assessment_id)
+                continue
 
-        for po in program_outcomes_qs:
-            mapped_cos = []
-            mappings = OutcomeMapping.objects.filter(program_outcome=po).select_related("course_outcome")
+            co_label = format_co_label([c for c in a_co_codes if c], unit_type)
+            bloom_key = normalize_bloom_names(list(a.blooms_classification.all()))
+            co_to_bloom_to_assess[co_label][bloom_key].append({
+                "assessment_id": a.assessment_id,
+                "assessment_title": a.assessment_title,
+                "assessment_highest_score": a.assessment_highest_score,
+            })
+            assessment_ids_in_order.append(a.assessment_id)
 
-            for m in mappings:
-                co = m.course_outcome
-                try:
-                    if co.loaded_course != loaded_course:
-                        continue
-                except Exception:
-                    continue
+        def first_co_code_from_label(lbl):
+            base = lbl.split(" (")[0]
+            first = base.split(",")[0].split("&")[0].strip()
+            return co_code_num(first)
 
-                assessments_for_co = co_to_assessments.get(co.course_outcome_id, [])
-                classwork = []
-                for a in assessments_for_co:
-                    classwork.append({
-                        "name": a.assessment_title or "",
-                        "blooms": [b.blooms_classification_type for b in a.blooms_classification.all()],
-                        "maxScore": a.assessment_highest_score or 0,
+        course_outcomes_payload = []
+
+        # Merge CO variants (Lecture/Laboratory) under same base CO per PO group
+        po_to_co_map = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+        for co_label, bloom_map in co_to_bloom_to_assess.items():
+            base_label = co_label.split(" (")[0]  # e.g. "CO1" from "CO1 (Lecture)"
+            co_codes = [c.strip() for c in base_label.replace("&", ",").split(",") if c.strip()]
+
+            # Get all POs mapped to this CO (merged if multi)
+            merged_po_codes = set()
+            for co_code in co_codes:
+                merged_po_codes |= co_to_po_codes.get(co_code, set())
+
+            po_key = ", ".join(sorted(merged_po_codes, key=lambda s: s.lower())) if merged_po_codes else ""
+
+            # Merge bloom entries per PO + CO base
+            for bloom_label, assessments in bloom_map.items():
+                po_to_co_map[po_key][base_label][bloom_label].extend(assessments)
+
+        # Build final payload (PO → CO → Lecture/Lab)
+        course_outcomes_payload = []
+        for po_key, co_groups in po_to_co_map.items():
+            co_entries = []
+            for co_code, blooms in sorted(co_groups.items(), key=lambda x: co_code_num(x[0])):
+                # split lecture/lab variants
+                lec_lab_variants = defaultdict(lambda: defaultdict(list))
+                for bloom_label, assessments in blooms.items():
+                    for a in assessments:
+                        # look up unit type
+                        unit_type = getattr(
+                            Assessment.objects.get(pk=a["assessment_id"]).course_component.course_unit,
+                            "course_unit_type",
+                            None,
+                        )
+
+                        # if multiple COs (e.g. CO1 & CO2 or comma-separated), ignore lecture/lab suffix
+                        if "&" in co_code or "," in co_code:
+                            label = co_code  # no split
+                        else:
+                            label = f"{co_code} ({unit_type})" if unit_type else co_code
+
+                        lec_lab_variants[label][bloom_label].append(a)
+
+                # build the final nested payload per variant
+                variant_entries = []
+                for variant_label, bloom_map in lec_lab_variants.items():
+                    bloom_entry_dict = {
+                        bk: bloom_map[bk]
+                        for bk in sorted(
+                            bloom_map.keys(),
+                            key=lambda k: BLOOM_INDEX.get(k.split(" / ")[0], 999)
+                        )
+                    }
+                    variant_entries.append({
+                        variant_label: [
+                            {"blooms_classification": [bloom_entry_dict]}
+                        ]
                     })
-                mapped_cos.append({
-                    "name": f"{co.course_outcome_code} - {co.course_outcome_description}" if co.course_outcome_code else co.course_outcome_description,
-                    "classwork": classwork
+
+                co_entries.append({
+                    co_code: variant_entries
                 })
 
-            if not mapped_cos:
-                cos_ids_seen = set()
-                for a in assessments_qs:
-                    for co in a.course_outcome.all():
-                        if co.loaded_course == loaded_course and co.course_outcome_id not in cos_ids_seen:
-                            cos_ids_seen.add(co.course_outcome_id)
-
-                cos_objs = CourseOutcome.objects.filter(pk__in=cos_ids_seen)
-                for co in cos_objs:
-                    assessments_for_co = co_to_assessments.get(co.course_outcome_id, [])
-                    classwork = []
-                    for a in assessments_for_co:
-                        classwork.append({
-                            "name": a.assessment_title or "",
-                            "blooms": [b.blooms_classification_type for b in a.blooms_classification.all()],
-                            "maxScore": a.assessment_highest_score or 0,
-                        })
-                    mapped_cos.append({
-                        "name": f"{co.course_outcome_code} - {co.course_outcome_description}" if co.course_outcome_code else co.course_outcome_description,
-                        "classwork": classwork
-                    })
-
-            pos_list.append({
-                "name": f"{po.program_outcome_code} - {po.program_outcome_description}" if po.program_outcome_code else po.program_outcome_description,
-                "cos": mapped_cos
+            course_outcomes_payload.append({
+                po_key or "": [
+                    {"course_outcomes": co_entries}
+                ]
             })
 
-        if not pos_list:
-            cos_seen = {}
-            for a in assessments_qs:
-                for co in a.course_outcome.all():
-                    if co.loaded_course == loaded_course:
-                        cos_seen.setdefault(co.course_outcome_id, co)
+        assessments_payload = [{"program_outcomes": course_outcomes_payload}]
 
-            fallback_cos = []
-            for co_id, co in cos_seen.items():
-                assessments_for_co = co_to_assessments.get(co.course_outcome_id, [])
-                classwork = []
-                for a in assessments_for_co:
-                    classwork.append({
-                        "name": a.assessment_title or "",
-                        "blooms": [b.blooms_classification_type for b in a.blooms_classification.all()],
-                        "maxScore": a.assessment_highest_score or 0,
-                    })
-                fallback_cos.append({
-                    "name": f"{co.course_outcome_code} - {co.course_outcome_description}" if co.course_outcome_code else co.course_outcome_description,
-                    "classwork": classwork
-                })
-            pos_list = [{
-                "name": "",
-                "cos": fallback_cos
-            }]
-
-        # ========== Students ==========
+        # =================== STUDENTS ===================
         students_qs = Student.objects.filter(section=section).order_by("student_id")
         raw_scores_qs = RawScore.objects.filter(assessment__in=assessments_qs).select_related("assessment", "student")
-
-        student_assessment_score = {}
+        scores_by_student = defaultdict(dict)
         for rs in raw_scores_qs:
-            sid = rs.student_id
-            aid = rs.assessment.assessment_id
-            student_assessment_score.setdefault(sid, {})[aid] = rs.raw_score
+            scores_by_student[rs.student_id][rs.assessment.assessment_id] = rs.raw_score
 
-        students_list = []
-        for s in students_qs:
-            scores_obj = {}
-            all_cos = []
-            for po in pos_list:
-                for co in po.get("cos", []):
-                    all_cos.append(co)
-            for co in all_cos:
-                co_name = co.get("name", "")
-                classwork = co.get("classwork", [])
-                raw_list = []
-                for cw in classwork:
-                    matching_assessment = None
-                    for a in assessments_qs:
-                        if (a.assessment_title or "") == (cw.get("name") or "") and (a.assessment_highest_score or 0) == (cw.get("maxScore") or 0):
-                            matching_assessment = a
-                            break
-                    if matching_assessment:
-                        aid = matching_assessment.assessment_id
-                        raw = student_assessment_score.get(s.student_id, {}).get(aid)
-                        raw_list.append({"raw": raw if raw is not None else None})
-                    else:
-                        raw_list.append({"raw": None})
-                scores_obj[co_name] = raw_list
+        seen = set()
+        ordered_assessment_ids = []
+        for aid in assessment_ids_in_order:
+            if aid not in seen:
+                seen.add(aid)
+                ordered_assessment_ids.append(aid)
 
-            students_list.append({
-                "id": str(getattr(s, "id_number", s.student_id) or s.student_id),
-                "name": s.student_name or "",
-                "scores": scores_obj
-            })
+        students_list = [{
+            "student_id": s.student_id,
+            "id_number": s.id_number,
+            "student_name": s.student_name,
+            "scores": [
+                {"assessment_id": aid, "value": scores_by_student.get(s.student_id, {}).get(aid, None)}
+                for aid in ordered_assessment_ids
+            ]
+        } for s in students_qs]
 
+        # =================== RESPONSE ===================
         response = {
-            "classInfo": classInfo,
-            "pos": pos_list,
-            "students": students_list
+            "info": info,
+            "assessments": assessments_payload,
+            "students": students_list,
         }
 
         return Response(response, status=status.HTTP_200_OK)
-
+    
 # ====================================================
 # Dropdown
 # ====================================================
