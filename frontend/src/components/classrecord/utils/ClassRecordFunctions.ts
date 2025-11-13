@@ -1,6 +1,23 @@
 import type { HeaderNode } from "../types/headerConfigTypes";
 import type { Assessment, Student } from "../../../types/classRecordTypes";
 
+const GRADE_SCALE = [
+  1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25,
+  4.5, 4.75, 5.0,
+];
+
+const roundToNearestGrade = (value: number): number => {
+  return GRADE_SCALE.reduce(
+    (prev, curr) =>
+      Math.abs(curr - value) < Math.abs(prev - value)
+        ? curr
+        : Math.abs(curr - value) === Math.abs(prev - value)
+        ? Math.max(curr, prev)
+        : prev,
+    GRADE_SCALE[0]
+  );
+};
+
 type ComputedType = "computedWeighted" | "computedRounded" | undefined;
 
 interface ComputedContentResult {
@@ -52,6 +69,10 @@ export function formatValue(value: number, type?: string): string {
     return value.toFixed(2);
   } else if (type === "computedWeighted") {
     return value.toFixed(2);
+  } else if (type === "percentage") {
+    return `${value.toFixed(0)}%`;
+  } else if (type === "weightedAverage") {
+    return `${value.toFixed(0)}%`;
   } else {
     return Math.floor(value).toString();
   }
@@ -158,7 +179,7 @@ export function getDesc(g: number): string {
   if (g === 3.0) return "Passing";
   return "N/A";
 }
-// ===================================================
+
 export function updateHeaderNodeTitle(
   nodes: HeaderNode[],
   nodeKey: string,
@@ -249,8 +270,6 @@ export function initializeStudentScores(
   return result;
 }
 
-// ===================================================
-
 export function computeValues(
   baseScores: Record<string, number>,
   maxScores: Record<string, number>,
@@ -294,17 +313,7 @@ export function computeValues(
         value = mga >= 70 ? 23 / 3 - (20 / 3) * ratio : 5 - (20 / 7) * ratio;
       } else if (node.calculationType === "roundedGrade") {
         const gp = values[node.dependsOn?.[0] ?? ""] ?? 0;
-        const grades = [
-          1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0,
-          4.25, 4.5, 4.75, 5.0,
-        ];
-        value = grades.reduce((prev, curr) =>
-          Math.abs(curr - gp) < Math.abs(prev - gp)
-            ? curr
-            : Math.abs(curr - gp) === Math.abs(prev - gp)
-            ? Math.max(curr, prev)
-            : prev
-        );
+        value = roundToNearestGrade(gp);
       }
       values[node.key] = value;
     }
@@ -319,28 +328,12 @@ export function computeComputedContent(
   fin: number,
   key: string
 ): ComputedContentResult {
-  const grades = [
-    1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25,
-    4.5, 4.75, 5.0,
-  ];
-
   let raw = 0;
   let rounded = 0;
   let type: ComputedType = undefined;
   let content = "";
   let textClass = "";
 
-  const roundToNearestGrade = (value: number) => {
-    return grades.reduce(
-      (prev, curr) =>
-        Math.abs(curr - value) < Math.abs(prev - value)
-          ? curr
-          : Math.abs(curr - value) === Math.abs(prev - value)
-          ? Math.max(curr, prev)
-          : prev,
-      grades[0]
-    );
-  };
   if (key === "computed-half-weighted") {
     raw = mid * 0.5 + fin * 0.5;
     content = formatValue(raw, "computedWeighted");

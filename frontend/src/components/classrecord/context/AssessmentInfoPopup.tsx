@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Assessment } from "../../../types/classRecordTypes";
 
@@ -54,35 +54,41 @@ export default function AssessmentInfoContextMenu({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
-  function handleBloomToggle(id: string) {
-    setSelectedBlooms((prev) => {
-      const updated = prev.includes(id)
-        ? prev.filter((b) => b !== id)
-        : [...prev, id];
-      handleUpdateAssessment(assessmentId, {
-        blooms_classification: updated.map(Number),
+  const handleBloomToggle = useCallback(
+    (id: string) => {
+      setSelectedBlooms((prev) => {
+        const updated = prev.includes(id)
+          ? prev.filter((b) => b !== id)
+          : [...prev, id];
+        handleUpdateAssessment(assessmentId, {
+          blooms_classification: updated.map(Number),
+        });
+        return updated;
       });
-      return updated;
-    });
-  }
+    },
+    [assessmentId, handleUpdateAssessment]
+  );
 
-  function handleOutcomeToggle(id: string) {
-    setSelectedOutcomes((prev) => {
-      const updated = prev.includes(id)
-        ? prev.filter((o) => o !== id)
-        : [...prev, id];
-      handleUpdateAssessment(assessmentId, {
-        course_outcome: updated.map(Number),
+  const handleOutcomeToggle = useCallback(
+    (id: string) => {
+      setSelectedOutcomes((prev) => {
+        const updated = prev.includes(id)
+          ? prev.filter((o) => o !== id)
+          : [...prev, id];
+        handleUpdateAssessment(assessmentId, {
+          course_outcome: updated.map(Number),
+        });
+        return updated;
       });
-      return updated;
-    });
-  }
+    },
+    [assessmentId, handleUpdateAssessment]
+  );
 
   const menu = (
     <div
       ref={menuRef}
-      className="absolute bg-white shadow-lg rounded-lg border border-gray-300 p-3 z-9999 w-64 space-y-3 text-gray-900"
-      style={{ top: y, left: x }}
+      className="bg-white shadow-lg rounded-lg border border-gray-300 p-3 w-64 space-y-3 text-gray-900"
+      style={{ position: "fixed", top: y, left: x, zIndex: 99999 }}
     >
       {bloomsOptions.length > 0 && (
         <div>

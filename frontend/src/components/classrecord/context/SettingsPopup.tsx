@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
-import AddIcon from "../../../assets/plus-solid.svg?react"
+import AddIcon from "../../../assets/plus-solid.svg?react";
 import DeleteIcon from "../../../assets/trash-solid.svg?react";
 
 interface SettingsPopupProps {
@@ -24,27 +24,47 @@ export default function SettingsPopup({
   deleteLabel = "Delete",
   onClose,
 }: SettingsPopupProps) {
+  const handleAdd = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onAdd?.();
+      onClose?.();
+    },
+    [onAdd, onClose]
+  );
+
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onDelete?.();
+      onClose?.();
+    },
+    [onDelete, onClose]
+  );
+
   useEffect(() => {
     if (!visible) return;
 
     const handleClickOutside = () => {
-      if (onClose) onClose();
+      onClose?.();
     };
 
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [visible, onClose]);
 
   if (!visible) return null;
 
   return createPortal(
     <div
-      className="fixed right-0 top-12 w-52 bg-white border border-[#E9E6E6] rounded-lg z-20"
-      style={{ top: y, left: x }}
+      className="fixed w-52 bg-white border border-[#E9E6E6] rounded-lg shadow-md"
+      style={{ top: y, left: x, zIndex: 4000 }}
     >
       {onAdd && (
         <button
-          onClick={onAdd}
+          type="button"
+          onClick={handleAdd}
+          onMouseDown={(e) => e.stopPropagation()}
           className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-sm w-full"
         >
           <AddIcon className="h-5 w-5 ml-4 mr-2 text-[#767676]" />
@@ -53,7 +73,9 @@ export default function SettingsPopup({
       )}
       {onDelete && (
         <button
-          onClick={onDelete}
+          type="button"
+          onClick={handleDelete}
+          onMouseDown={(e) => e.stopPropagation()}
           className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-sm text-red-400 w-full"
         >
           <DeleteIcon className="h-5 w-5 ml-4 mr-2" />

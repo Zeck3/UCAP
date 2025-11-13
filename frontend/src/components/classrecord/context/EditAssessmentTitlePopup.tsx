@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react"; // <-- Import useState
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Dispatch, SetStateAction } from "react";
 
@@ -20,16 +20,9 @@ export default function EditAssessmentTitlePopup({
   handleEditSave,
   handleEditCancel,
 }: EditAssessmentTitlePopupProps) {
-  const [inputValue, setInputValue] = useState(editingAssessment?.value || "");
-
-  useEffect(() => {
-    if (editingAssessment) {
-      setInputValue(editingAssessment.value);
-    }
-  }, [editingAssessment]);
-
   const containerRef = useRef<HTMLDivElement | null>(null);
   const popupContentRef = useRef<HTMLDivElement | null>(null);
+  const [inputValue, setInputValue] = useState(editingAssessment?.value || "");
 
   useEffect(() => {
     const portalNode = document.createElement("div");
@@ -58,23 +51,24 @@ export default function EditAssessmentTitlePopup({
     };
   }, [editingAssessment, handleEditCancel]);
 
-  if (!editingAssessment || !containerRef.current) {
-    return null;
-  }
+  const handleLocalSave = useCallback(() => {
+    if (editingAssessment) {
+      handleEditSave(editingAssessment.nodeKey, inputValue);
+    }
+  }, [editingAssessment, inputValue, handleEditSave]);
 
-  const handleLocalSave = () => {
-    handleEditSave(editingAssessment.nodeKey, inputValue);
-  };
+  if (!editingAssessment || !containerRef.current) return null;
 
   return createPortal(
     <div
       ref={popupContentRef}
       style={{
-        position: "absolute",
+        position: "fixed",
         top: editingAssessment.coords.y,
         left: editingAssessment.coords.x,
+        zIndex: 99999,
       }}
-      className="z-40 bg-white border border-[#E9E6E6] rounded-sm"
+      className="bg-white border border-[#E9E6E6] rounded-sm"
     >
       <input
         id={`edit_assessment_input-${editingAssessment.nodeKey}`}

@@ -1,10 +1,6 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type JSX,
-} from "react";
+import { useCallback, useEffect, useMemo, useState, memo } from "react";
+import type React from "react";
+import type { JSX } from "react";
 import type { HeaderNode } from "../types/headerConfigTypes";
 import type { Student } from "../../../types/classRecordTypes";
 import {
@@ -14,6 +10,11 @@ import {
   getTextClass,
 } from "../utils/ClassRecordFunctions";
 import ScoreInput from "../utils/ScoreInput";
+
+const GRADE_SCALE = [
+  1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25,
+  4.5, 4.75, 5.0,
+];
 
 interface BuildStudentRowProps {
   student: Student;
@@ -85,10 +86,6 @@ function BuildStudentRow({
       textClass: string;
       bgClass: string;
     } => {
-      const grades = [
-        1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0,
-        4.25, 4.5, 4.75, 5.0,
-      ];
 
       let raw = 0;
       let rounded = 0;
@@ -113,35 +110,34 @@ function BuildStudentRow({
           key.includes("after-removal")
         ) {
           raw = Number(raw.toFixed(2));
-          rounded = grades.reduce(
+          rounded = GRADE_SCALE.reduce(
             (prev, curr) =>
               Math.abs(curr - raw) < Math.abs(prev - raw)
                 ? curr
                 : Math.abs(curr - raw) === Math.abs(prev - raw)
                 ? Math.max(curr, prev)
                 : prev,
-            grades[0]
+            GRADE_SCALE[0]
           );
           cont = formatValue(rounded, "computedRounded");
           textClass = getTextClass(rounded, "computedRounded");
           bgClass = getCalculatedBg("computedRounded");
         } else if (key.endsWith("desc")) {
           raw = Number(raw.toFixed(2));
-          rounded = grades.reduce(
+          rounded = GRADE_SCALE.reduce(
             (prev, curr) =>
               Math.abs(curr - raw) < Math.abs(prev - raw)
                 ? curr
                 : Math.abs(curr - raw) === Math.abs(prev - raw)
                 ? Math.max(curr, prev)
                 : prev,
-            grades[0]
+            GRADE_SCALE[0]
           );
           cont = getDesc(rounded);
           textClass = "text-coa-blue";
         }
       }
 
-      // remarks select (relies on handlers and local state)
       if (key.endsWith("remarks")) {
         cont = (
           <select
@@ -188,7 +184,7 @@ function BuildStudentRow({
           return (
             <td
               key={`${baseKey}-vsep`}
-              className="bg-ucap-blue w-4 border border-ucap-blue"
+              className="bg-ucap-blue w-4 border border-ucap-blue sticky-vsep"
             />
           );
         }
@@ -204,7 +200,6 @@ function BuildStudentRow({
 
         if (node.type === "h-separator") return [];
 
-        // ✅ Safe recursive call: same stable function reference
         if (node.children.length > 0) {
           return buildRowCells(node.children);
         }
@@ -213,14 +208,14 @@ function BuildStudentRow({
           return [
             <td
               key={`no-${baseKey}`}
-              className="border border-[#E9E6E6] p-2 w-12 text-left"
+              className="border border-[#E9E6E6] p-2 w-12 text-left sticky-col sticky-col-1"
               onContextMenu={(e) => onRightClickRow?.(e, student.student_id)}
             >
               {index + 1}
             </td>,
             <td
               key={`id-${baseKey}`}
-              className="border border-[#E9E6E6] w-32 text-left"
+              className="border border-[#E9E6E6] w-32 text-left sticky-col sticky-col-2"
               onContextMenu={(e) => onRightClickRow?.(e, student.student_id)}
             >
               <input
@@ -249,7 +244,7 @@ function BuildStudentRow({
             </td>,
             <td
               key={`name-${baseKey}`}
-              className="border border-[#E9E6E6] text-left"
+              className="border border-[#E9E6E6] text-left sticky-col sticky-col-3"
               onContextMenu={(e) => onRightClickRow?.(e, student.student_id)}
             >
               <input
@@ -314,7 +309,7 @@ function BuildStudentRow({
         return (
           <td
             key={baseKey}
-            className={`border border-[#E9E6E6] text-center ${bgClass} ${textClass}`}
+            className={`border border-[#E9E6E6] text-center ${bgClass} ${textClass} ${node.calculationType === "assignment" ? "assessment-col" : ""}`}
           >
             {content}
           </td>
@@ -347,7 +342,7 @@ function BuildStudentRow({
   );
 }
 
-export default React.memo(BuildStudentRow, (prev, next) => {
+export default memo(BuildStudentRow, (prev, next) => {
   return (
     prev.student.student_id === next.student.student_id &&
     prev.student.student_name === next.student.student_name &&
