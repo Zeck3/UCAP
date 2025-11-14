@@ -22,8 +22,7 @@ function buildClassInfo(info: any) {
 }
 
 function parseBloomsClassification(
-  bloomsArr: any[],
-  secKey: string
+  bloomsArr: any[]
 ): { classwork: Array<{ name: string; blooms: string[]; maxScore: number }>; assessmentIds: number[] } {
   const classwork: Array<{ name: string; blooms: string[]; maxScore: number }> = [];
   const assessmentIds: number[] = [];
@@ -43,7 +42,7 @@ function parseBloomsClassification(
           .map((s) => s.trim())
           .filter(Boolean);
 
-        const name = title?.trim() ? title : `${secKey} - ${bloomGroup}`;
+        const name = title?.trim() ? title : "";
 
         classwork.push({ 
           name, 
@@ -76,7 +75,7 @@ function processCourseOutcomeSections(
 
     for (const secItem of secArr as any[]) {
       const bloomsArr = asArray<any>(secItem?.blooms_classification);
-      const { classwork, assessmentIds } = parseBloomsClassification(bloomsArr, secKey);
+      const { classwork, assessmentIds } = parseBloomsClassification(bloomsArr);
       
       allClasswork.push(...classwork);
       allAssessmentIds.push(...assessmentIds);

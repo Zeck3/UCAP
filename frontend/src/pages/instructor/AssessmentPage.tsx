@@ -223,7 +223,7 @@ export default function ResultSheetPage(): JSX.Element {
           .map((co) => {
             const validClasswork =
               co.classwork?.filter(
-                (cw) => cw && cw.name && cw.maxScore != null
+                (cw) => cw && cw.maxScore != null
               ) ?? [];
 
             if (validClasswork.length === 0) return null;
