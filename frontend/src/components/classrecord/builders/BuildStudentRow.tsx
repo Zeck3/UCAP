@@ -347,7 +347,7 @@ function BuildStudentRow({
   const rowCells = useMemo(() => buildRowCells(nodes), [nodes, buildRowCells]);
 
   return (
-    <tr key={student.student_id} className="select-none hover:bg-gray-50!">
+    <tr key={student.student_id} className="select-none">
       {rowCells}
     </tr>
   );

@@ -57,13 +57,13 @@ function totalClassworkColumns(pos: AssessmentPageData["pos"]) {
 function extractCoNumbers(name: string): number[] {
   const matches = name.match(/CO(\d+)/gi);
   if (!matches) return [9999];
-  return matches.map(m => parseInt(m.replace(/CO/i, '')));
+  return matches.map((m) => parseInt(m.replace(/CO/i, "")));
 }
 
 function extractType(name: string): string {
-  if (name.includes('(Lecture)')) return 'Lecture';
-  if (name.includes('(Laboratory)')) return 'Laboratory';
-  return 'Unknown';
+  if (name.includes("(Lecture)")) return "Lecture";
+  if (name.includes("(Laboratory)")) return "Laboratory";
+  return "Unknown";
 }
 
 function sortCourseOutcomes(a: { name: string }, b: { name: string }): number {
@@ -83,7 +83,7 @@ function sortCourseOutcomes(a: { name: string }, b: { name: string }): number {
   }
 
   if (aType !== bType) {
-    return aType === 'Lecture' ? -1 : 1;
+    return aType === "Lecture" ? -1 : 1;
   }
 
   return 0;
@@ -96,21 +96,26 @@ function extractPOShortName(poName: string): string {
 
 function formatCOLabel(coName: string, counter: number): string {
   const coMatches = coName.match(/CO\d+/gi);
-  const coNumbers = coMatches && coMatches.length > 0
-    ? coMatches.map(m => m.toUpperCase()).join(' & ')
-    : `CO${counter}`;
+  const coNumbers =
+    coMatches && coMatches.length > 0
+      ? coMatches.map((m) => m.toUpperCase()).join(" & ")
+      : `CO${counter}`;
 
   const typeMatch = coName.match(/\((Lecture|Laboratory)\)/i);
-  const type = typeMatch ? typeMatch[1] : '';
+  const type = typeMatch ? typeMatch[1] : "";
 
   return type ? `${coNumbers} (${type})` : coNumbers;
 }
 
-function groupBloomsBySequence(clustered: ExpandedCW[]): { bloom: string; count: number }[] {
+function groupBloomsBySequence(
+  clustered: ExpandedCW[]
+): { bloom: string; count: number }[] {
   const grouped: { bloom: string; count: number }[] = [];
   let prev: string | null = null;
-  
-  for (const item of clustered.length ? clustered : [{ name: "", blooms: "", coIndex: -1 }]) {
+
+  for (const item of clustered.length
+    ? clustered
+    : [{ name: "", blooms: "", coIndex: -1 }]) {
     if (item.blooms === prev) {
       grouped[grouped.length - 1].count++;
     } else {
@@ -118,7 +123,7 @@ function groupBloomsBySequence(clustered: ExpandedCW[]): { bloom: string; count:
       prev = item.blooms;
     }
   }
-  
+
   return grouped;
 }
 
@@ -138,8 +143,8 @@ function ClassworkNameCell({
       key={`cw-${pIdx}-${cIdx}-${cwIdx}`}
       className="border border-[#E9E6E6] align-middle min-w-14 h-40"
     >
-      <div className="h-full flex items-center justify-center">
-        <span className="text-xs leading-tight wrap-break-word whitespace-normal [writing-mode:vertical-rl] [text-orientation:mixed] rotate-180">
+      <div className="h-full flex items-end justify-center py-4">
+        <span className="leading-tight wrap-break-word whitespace-normal [writing-mode:vertical-rl] [text-orientation:mixed] rotate-180">
           {cw.name}
         </span>
       </div>
@@ -184,16 +189,19 @@ export default function ResultSheetPage(): JSX.Element {
         setLoading(true);
         if (!section_id) return;
         const response = await getAssessmentPageData(Number(section_id));
-        
+
         const filteredStudents = response.students.filter((student) => {
           const hasValidId = student.id && /^\d{10}$/.test(student.id);
           const hasValidName = student.name?.trim().length > 0;
           return hasValidId && hasValidName;
         });
-        
+
         setData({ ...response, students: filteredStudents });
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "Failed to load assessment page";
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to load assessment page";
         setError(message || "Failed to load assessment page");
       } finally {
         setLoading(false);
@@ -348,7 +356,8 @@ export default function ResultSheetPage(): JSX.Element {
   if (loading) return <div className="p-6 text-center">Loading...</div>;
   if (error) return <div className="p-6 text-red-500">{error}</div>;
   const hasPos = Array.isArray(data?.pos) && data!.pos.length > 0;
-  const hasStudents = Array.isArray(data?.students) && data!.students.length > 0;
+  const hasStudents =
+    Array.isArray(data?.students) && data!.students.length > 0;
   if (!data || !hasPos || !hasStudents) {
     return (
       <div className="px-6 py-6 text-center text-coa-red">
@@ -458,12 +467,12 @@ export default function ResultSheetPage(): JSX.Element {
             {layout.flatMap((po, pIdx) =>
               po.cos.flatMap((co, cIdx) => {
                 const grouped = groupBloomsBySequence(co.clustered);
-                
+
                 return [
                   ...grouped.map((g, gIdx) => (
                     <td
                       key={`blooms-${pIdx}-${cIdx}-${gIdx}`}
-                      className="border border-[#E9E6E6] px-3 py-2 text-center italic wrap-break-word whitespace-normal"
+                      className="border border-[#E9E6E6] px-3 py-2 text-center whitespace-nowrap overflow-hidden text-ellipsis"
                       colSpan={g.count}
                     >
                       {g.bloom}
@@ -471,10 +480,10 @@ export default function ResultSheetPage(): JSX.Element {
                   )),
                   <td
                     key={`blooms-kpi-${pIdx}-${cIdx}`}
-                    className="border border-[#E9E6E6] px-3 py-2 text-center font-semibold"
+                    className="border border-[#E9E6E6] px-3 py-2 text-center text-sm font-semibold"
                     colSpan={3}
                   >
-                    KPI
+                    KPI <br /> (passed the assessment)
                   </td>,
                 ];
               })
@@ -497,19 +506,19 @@ export default function ResultSheetPage(): JSX.Element {
                 cwCells.push(
                   <td
                     key={`cw-total-${pIdx}-${cIdx}`}
-                    className="border border-[#E9E6E6] px-2 py-2 text-center font-semibold min-w-[50px]"
+                    className="border border-[#E9E6E6] px-2 py-2 text-center align-bottom font-semibold min-w-[50px]"
                   >
                     Total
                   </td>,
                   <td
                     key={`cw-pass70-${pIdx}-${cIdx}`}
-                    className="border border-[#E9E6E6] px-2 py-2 text-center text-sm min-w-14"
+                    className="border border-[#E9E6E6] px-2 py-2 text-center align-bottom min-w-14"
                   >
                     Passing (70%)
                   </td>,
                   <td
                     key={`cw-pass80-${pIdx}-${cIdx}`}
-                    className="border border-[#E9E6E6] px-2 py-2 text-center text-sm min-w-14"
+                    className="border border-[#E9E6E6] px-2 py-2 text-center align-bottom min-w-14"
                   >
                     Passing (80%)
                   </td>
@@ -732,13 +741,13 @@ export default function ResultSheetPage(): JSX.Element {
 
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-[2700]"
+          className="fixed inset-0 bg-black/50 z-2700"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {isOpen && (
-        <div className="fixed right-0 top-0 h-full w-250 bg-white z-[2800] p-4 overflow-y-auto shadow-xl border-l border-gray-200">
+        <div className="fixed right-0 top-0 h-full w-250 bg-white z-2800 p-4 overflow-y-auto shadow-xl border-l border-gray-200">
           <div className="flex items-center mb-4 pt-8 px-8">
             <button
               onClick={() => setIsOpen(false)}

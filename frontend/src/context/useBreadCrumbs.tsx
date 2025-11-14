@@ -22,7 +22,6 @@ export function useBreadcrumbs() {
 
   const isCampus = pathname.startsWith("/campus/");
   const isDean = pathname.startsWith("/college/");
-  const isInstructor = pathname.startsWith("/instructor/");
   const isDepartmentChair = pathname.startsWith("/department/");
 
   let base = "/instructor";
@@ -45,14 +44,6 @@ export function useBreadcrumbs() {
     crumbs.push({
       label: year_and_section,
       path: `${base}/${loaded_course_id}/${section_id}`,
-      state: { course_code, year_and_section },
-    });
-  }
-
-  if (isInstructor && pathname.endsWith("/assessment")) {
-    crumbs.push({
-      label: "Assessment",
-      path: pathname,
       state: { course_code, year_and_section },
     });
   }
