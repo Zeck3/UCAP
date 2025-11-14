@@ -5,7 +5,7 @@ import AssessmentPageComponent from "../../components/AssessmentPageComponent";
 export default function CampusAssessmentPage() {
   const { department_id, section_id } = useParams();
   return (
-    <AppLayout activeItem={`/campus/${department_id}`}>
+    <AppLayout activeItem={`/campus/${department_id}`} disablePadding>
       <AssessmentPageComponent sectionId={Number(section_id)}/>
     </AppLayout>
   );
