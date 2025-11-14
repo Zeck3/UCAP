@@ -6,6 +6,30 @@ import type {
 } from "../../../types/classRecordTypes";
 import type { HeaderNode } from "../types/headerConfigTypes";
 
+const COMPUTED_TITLES = [
+  "1/2 MTG + 1/2 FTG",
+  "1/2 MTG + 1/2 FTG (For Removal)",
+  "1/2 MTG + 1/2 FTG (After Removal)",
+  "Description",
+  "1/3 MTG + 2/3 FTG",
+  "1/3 MTG + 2/3 FTG (For Removal)",
+  "1/3 MTG + 2/3 FTG (After Removal)",
+  "Description",
+  "Remarks (INC, Withdrawn, DF, OD)",
+];
+
+const COMPUTED_KEYS = [
+  "computed-half-weighted",
+  "computed-half-for-removal",
+  "computed-half-after-removal",
+  "computed-half-desc",
+  "computed-third-weighted",
+  "computed-third-for-removal",
+  "computed-third-after-removal",
+  "computed-third-desc",
+  "computed-remarks",
+];
+
 function traverse(node: HeaderNode, scores: Record<string, number>) {
   if (
     node.key &&
@@ -23,6 +47,29 @@ export default function collectMaxScores(
   const scores: Record<string, number> = {};
   nodes.forEach((n) => traverse(n, scores));
   return scores;
+}
+
+function createAssessmentNodes(
+  termType: string,
+  component: CourseComponent
+): { nodes: HeaderNode[]; groupKeys: string[] } {
+  const sortedAssessments = [...component.assessments].sort(
+    (a, b) => (a.assessment_id ?? 0) - (b.assessment_id ?? 0)
+  );
+
+  const nodes: HeaderNode[] = sortedAssessments.map((assess) => ({
+    title: assess.assessment_title || "",
+    key: `${assess.assessment_id}`,
+    children: [],
+    needsButton: true,
+    calculationType: "assignment",
+    nodeType: "assessment",
+    maxScore: assess.assessment_highest_score ?? 0,
+    termType: termType as "midterm" | "final",
+  }));
+
+  const groupKeys = nodes.map((n) => n.key!);
+  return { nodes, groupKeys };
 }
 
 export function createSpanningCell(crp: ClassRecord): HeaderNode {
@@ -89,32 +136,36 @@ function createTermSection(term: CourseTerm): HeaderNode {
 }
 
 function createUnitSection(termType: string, unit: CourseUnit): HeaderNode {
-  const children = unit.course_components.reduce<HeaderNode[]>((acc, comp) => {
+  const children: HeaderNode[] = unit.course_components.map((comp) => {
     const { nodes, groupKeys } = createAssessmentNodes(termType, comp);
-    acc.push({
-      title: `${comp.course_component_type} (${comp.course_component_percentage}%)`,
-      children: [
-        ...nodes,
-        {
-          title: "Total Score",
-          key: `${termType}-${unit.course_unit_type}-${comp.course_component_type}-total`,
-          children: [],
-          calculationType: "sum",
-          groupKeys,
-        },
-        {
-          title: "% Percentage",
-          key: `${termType}-${unit.course_unit_type}-${comp.course_component_type}-perc`,
-          children: [],
-          calculationType: "percentage",
-          groupKeys,
-        },
-      ],
-      nodeType: "component",
-      componentId: comp.course_component_id,
+
+    const componentChildren: HeaderNode[] = [...nodes];
+
+    if (groupKeys.length > 1) {
+      componentChildren.push({
+        title: "Total Score",
+        key: `${termType}-${unit.course_unit_type}-${comp.course_component_type}-total`,
+        children: [],
+        calculationType: "sum",
+        groupKeys,
+      });
+    }
+
+    componentChildren.push({
+      title: "% Percentage",
+      key: `${termType}-${unit.course_unit_type}-${comp.course_component_type}-perc`,
+      children: [],
+      calculationType: "percentage",
+      groupKeys,
     });
-    return acc;
-  }, []);
+
+    return {
+      title: `${comp.course_component_type} (${comp.course_component_percentage}%)`,
+      children: componentChildren,
+      nodeType: "component" as const,
+      componentId: comp.course_component_id,
+    };
+  });
 
   const percKeys = unit.course_components.map(
     (comp) =>
@@ -123,11 +174,18 @@ function createUnitSection(termType: string, unit: CourseUnit): HeaderNode {
   const unitMgaKey = `${termType}-${unit.course_unit_type}-mga`;
   const unitGpKey = `${termType}-${unit.course_unit_type}-gradepoint`;
 
+  const mgaTitle =
+    String(termType).toLowerCase() === "midterm"
+      ? "MGA"
+      : String(termType).toLowerCase() === "final"
+        ? "FGA"
+        : "MGA";
+
   children.push({
     title: unit.course_unit_type,
     children: [
       {
-        title: "MGA",
+        title: mgaTitle,
         key: unitMgaKey,
         children: [],
         calculationType: "weightedAverage",
@@ -153,56 +211,11 @@ function createUnitSection(termType: string, unit: CourseUnit): HeaderNode {
   };
 }
 
-function createAssessmentNodes(
-  termType: string,
-  component: CourseComponent
-): { nodes: HeaderNode[]; groupKeys: string[] } {
-  const sortedAssessments = [...component.assessments].sort(
-    (a, b) => (a.assessment_id ?? 0) - (b.assessment_id ?? 0)
-  );
-
-  const nodes: HeaderNode[] = sortedAssessments.map((assess) => ({
-    title: assess.assessment_title || "",
-    key: `${assess.assessment_id}`,
-    children: [],
-    needsButton: true,
-    calculationType: "assignment",
-    nodeType: "assessment",
-    maxScore: assess.assessment_highest_score ?? 0,
-    termType: termType as "midterm" | "final",
-  }));
-
-  const groupKeys = nodes.map((n) => n.key!);
-  return { nodes, groupKeys };
-}
-
 export function createComputedSection(): HeaderNode {
-  const titles = [
-    "1/2 MTG + 1/2 FTG",
-    "1/2 MTG + 1/2 FTG (For Removal)",
-    "1/2 MTG + 1/2 FTG (After Removal)",
-    "Description",
-    "1/3 MTG + 2/3 FTG",
-    "1/3 MTG + 2/3 FTG (For Removal)",
-    "1/3 MTG + 2/3 FTG (After Removal)",
-    "Description",
-    "Remarks (INC, Withdrawn, DF, OD)",
-  ];
-  const keys = [
-    "computed-half-weighted",
-    "computed-half-for-removal",
-    "computed-half-after-removal",
-    "computed-half-desc",
-    "computed-third-weighted",
-    "computed-third-for-removal",
-    "computed-third-after-removal",
-    "computed-third-desc",
-    "computed-remarks",
-  ];
-  const children: HeaderNode[] = titles.map((title, index) => ({
+  const children: HeaderNode[] = COMPUTED_TITLES.map((title, index) => ({
     title,
     children: [],
-    key: keys[index],
+    key: COMPUTED_KEYS[index],
     calculationType: "computed",
     customRowSpan: 2,
     computedGrades: true,

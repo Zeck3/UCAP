@@ -1,5 +1,8 @@
-import React from "react";
+import { useCallback, useMemo, useState, memo } from "react";
+import type React from "react";
+import type { JSX } from "react";
 import type { HeaderNode } from "../types/headerConfigTypes";
+import type { Assessment } from "../../../types/classRecordTypes";
 import {
   countLeaves,
   getTotalLeafCount,
@@ -9,8 +12,6 @@ import {
   formatValue,
   getCalculatedBg,
 } from "../utils/ClassRecordFunctions";
-import type { JSX } from "react";
-import type { Assessment } from "../../../types/classRecordTypes";
 import { renderTitleLines } from "../utils/ClassRecordRenderers";
 import MaxScoreInput from "../utils/MaxScoreInput";
 
@@ -46,19 +47,19 @@ function BuildHeaderRow({
   onRightClickNode,
   handleUpdateAssessment,
 }: BuildHeaderRowProps) {
-  const [leafRowHeight, setLeafRowHeight] = React.useState(() => {
+  const [leafRowHeight, setLeafRowHeight] = useState(() => {
     const saved = localStorage.getItem("leafRowHeight");
     return saved ? Number(saved) : 40;
   });
 
-  const handleNodeClick = React.useCallback(
+  const handleNodeClick = useCallback(
     (node: HeaderNode) => (e: React.MouseEvent<HTMLDivElement>) => {
       handleEditStart(node, e);
     },
     [handleEditStart]
   );
 
-  const handleNodeContextMenu = React.useCallback(
+  const handleNodeContextMenu = useCallback(
     (node: HeaderNode) => (e: React.MouseEvent) => {
       e.preventDefault();
       onRightClickNode?.(e, node);
@@ -66,7 +67,7 @@ function BuildHeaderRow({
     [onRightClickNode]
   );
 
-  const handleHResizeStart = React.useCallback(
+  const handleHResizeStart = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       const startY = e.clientY;
@@ -74,7 +75,7 @@ function BuildHeaderRow({
       function onMouseMove(ev: MouseEvent) {
         const delta = ev.clientY - startY;
         const nextHeight = startHeight + delta;
-        setLeafRowHeight(nextHeight <= 40 ? 40 : nextHeight);
+        setLeafRowHeight(Math.max(40, nextHeight));
       }
       function onMouseUp() {
         document.removeEventListener("mousemove", onMouseMove);
@@ -86,11 +87,12 @@ function BuildHeaderRow({
     [leafRowHeight, setLeafRowHeight]
   );
 
-  const rowsToRender = React.useMemo(() => {
+  const rowsToRender = useMemo(() => {
     const newMaxDepth = originalMaxDepth + 1;
     const rows: JSX.Element[][] = Array.from({ length: newMaxDepth }, () => []);
     const hSeparators: JSX.Element[] = [];
     const buttonRow: JSX.Element[] = [];
+    const totalLeafCount = getTotalLeafCount(nodes);
 
     function build(node: HeaderNode, level: number) {
       if (node.type === "v-separator") {
@@ -98,7 +100,7 @@ function BuildHeaderRow({
           <th
             key={node.key || `vsep-${level}-${node.title}-${node.type}`}
             rowSpan={newMaxDepth - level}
-            className="bg-ucap-blue w-1 border border-ucap-blue relative cursor-col-resize"
+            className="bg-ucap-blue w-1 border border-ucap-blue relative cursor-col-resize sticky-rowspan sticky-vsep"
           >
             <div className="absolute top-0 right-0 h-full w-1 cursor-col-resize" />
           </th>
@@ -121,9 +123,9 @@ function BuildHeaderRow({
         hSeparators.push(
           <th
             key={node.key || `hsep-rsize`}
-            colSpan={getTotalLeafCount(nodes)}
+            colSpan={totalLeafCount}
             className="bg-ucap-blue h-4 border border-ucap-blue p-0 cursor-row-resize"
-            onMouseDown={(e) => handleHResizeStart(e)}
+            onMouseDown={handleHResizeStart}
           />
         );
         return;
@@ -136,10 +138,11 @@ function BuildHeaderRow({
           ? node.children.reduce((sum, child) => sum + countLeaves(child), 0)
           : 1);
 
-      let rowSpan: number;
-      if (node.customRowSpan) rowSpan = node.customRowSpan;
-      else if (node.isRowSpan) rowSpan = newMaxDepth - level;
-      else rowSpan = 1;
+      const rowSpan: number = node.customRowSpan
+        ? node.customRowSpan
+        : node.isRowSpan
+        ? newMaxDepth - level
+        : 1;
 
       const headerClass = getHeaderClass(node);
       const headerWidth = getHeaderWidth(node);
@@ -168,6 +171,10 @@ function BuildHeaderRow({
             isLeafDeep
               ? `[writing-mode:vertical-rl] rotate-180 text-left truncate overflow-hidden text-ellipsis w-15 max-w-15`
               : `whitespace-normal ${headerWidth} w-15`
+          } ${node.isRowSpan ? "sticky-col sticky-col-1 sticky-rowspan" : ""} ${
+            node.nodeType === "assessment" || node.calculationType === "assignment"
+              ? "assessment-col"
+              : ""
           }`}
           onContextMenu={
             node.nodeType === "assessment" || node.nodeType === "component"
@@ -179,8 +186,7 @@ function BuildHeaderRow({
         </th>
       );
 
-      if (hasChildren)
-        node.children.forEach((child) => build(child, level + rowSpan));
+      if (hasChildren) node.children.forEach((child) => build(child, level + rowSpan));
     }
 
     function addButtons(node: HeaderNode) {
@@ -244,7 +250,7 @@ function BuildHeaderRow({
         subRow.push(
           <th
             key={`vsep-${node.key || node.title}`}
-            className="bg-ucap-blue w-1 border border-ucap-blue relative cursor-col-resize"
+            className="bg-ucap-blue w-1 border border-ucap-blue relative cursor-col-resize sticky-rowspan sticky-vsep"
           >
             <div className="absolute top-0 right-0 h-full w-1 cursor-col-resize" />
           </th>
@@ -268,7 +274,7 @@ function BuildHeaderRow({
         subRow.push(
           <th
             key="sub-no-col"
-            className="border border-[#E9E6E6] p-2 w-12 text-left font-bold"
+            className="border border-[#E9E6E6] p-2 w-12 text-left font-bold sticky-col sticky-col-1"
           >
             No.
           </th>
@@ -276,7 +282,7 @@ function BuildHeaderRow({
         subRow.push(
           <th
             key="sub-id-col"
-            className="border border-[#E9E6E6] p-2 w-24 text-left font-bold"
+            className="border border-[#E9E6E6] p-2 w-32 text-left font-bold sticky-col sticky-col-2"
           >
             Student ID
           </th>
@@ -284,7 +290,7 @@ function BuildHeaderRow({
         subRow.push(
           <th
             key="sub-name-col"
-            className="border border-[#E9E6E6] p-2 text-left font-bold"
+            className="border border-[#E9E6E6] p-2 text-left font-bold sticky-col sticky-col-3"
           >
             Name
           </th>
@@ -292,10 +298,7 @@ function BuildHeaderRow({
         return;
       }
 
-      if (node.children.length > 0) {
-        node.children.forEach(buildSubRow);
-        return;
-      }
+      if (node.children.length > 0) { node.children.forEach(buildSubRow); return; }
 
       let content: JSX.Element | string = "";
       let bgClass = getCalculatedBg(node.calculationType);
@@ -348,9 +351,7 @@ function BuildHeaderRow({
       subRow.push(
         <th
           key={`sub-${node.key}`}
-          className={`border border-[#E9E6E6] text-center ${bgClass} ${textClass} ${
-            node.calculationType ? "w-15" : ""
-          }`}
+          className={`border border-[#E9E6E6] text-center ${bgClass} ${textClass} ${node.calculationType ? "w-15" : ""} ${node.nodeType === "assessment" || node.calculationType === "assignment" ? "assessment-col" : ""}`}
         >
           {content}
         </th>
@@ -380,10 +381,15 @@ function BuildHeaderRow({
       {rowsToRender
         .filter((row) => row.length > 0)
         .map((row, i) => (
-          <tr key={`header-row-${i}`}>{row}</tr>
+          <tr
+            key={`header-row-${i}`}
+            className={`header-row header-row-${i} ${i < 5 ? "sticky-header" : ""}`}
+          >
+            {row}
+          </tr>
         ))}
     </>
   );
 }
 
-export default React.memo(BuildHeaderRow);
+export default memo(BuildHeaderRow);

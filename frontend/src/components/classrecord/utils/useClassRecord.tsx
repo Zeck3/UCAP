@@ -46,6 +46,7 @@ type ClassRecordState = {
 
 export function useClassRecord() {
   const { section_id, course_code } = useParams();
+
   const [classRecord, setClassRecord] = useState<ClassRecordState>({
     headerNodes: [],
     students: [],
@@ -65,9 +66,10 @@ export function useClassRecord() {
     currentAssessmentBlooms,
     currentAssessmentOutcomes,
   } = classRecord;
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [canOpenPopup, setCanOpenPopup] = useState<boolean>(true);
+  const [canOpenPopup, setCanOpenPopup] = useState(false);
   const [editingAssessment, setEditingAssessment] = useState<{
     nodeKey: string;
     value: string;
@@ -76,48 +78,38 @@ export function useClassRecord() {
 
   const [bloomsOptions, setBloomsOptions] = useState<
     { id: number; name: string }[]
-  >(() => []);
+  >([]);
   const [outcomesOptions, setOutcomesOptions] = useState<
     { id: number; name: string }[]
-  >(() => []);
+  >([]);
 
-  const [studentContextMenu, setStudentContextMenu] = useState<{
-    visible: boolean;
-    x: number;
-    y: number;
-    studentId?: number;
-  }>({ visible: false, x: 0, y: 0, studentId: undefined });
+  const [studentContextMenu, setStudentContextMenu] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    studentId: undefined as number | undefined,
+  });
 
-  const [assessmentContextMenu, setAssessmentContextMenu] = useState<{
-    visible: boolean;
-    x: number;
-    y: number;
-    assessmentId?: number;
-    componentId?: number;
-  }>({
+  const [assessmentContextMenu, setAssessmentContextMenu] = useState({
     visible: false,
     x: 0,
     y: 0,
+    assessmentId: undefined as number | undefined,
+    componentId: undefined as number | undefined,
   });
-  const [assessmentInfoContextMenu, setAssessmentInfoContextMenu] = useState<{
-    visible: boolean;
-    x: number;
-    y: number;
-    assessmentId?: number;
-  }>({
+
+  const [assessmentInfoContextMenu, setAssessmentInfoContextMenu] = useState({
     visible: false,
     x: 0,
     y: 0,
+    assessmentId: undefined as number | undefined,
   });
-  const [componentContextMenu, setComponentContextMenu] = useState<{
-    visible: boolean;
-    x: number;
-    y: number;
-    componentId?: number;
-  }>({
+
+  const [componentContextMenu, setComponentContextMenu] = useState({
     visible: false,
     x: 0,
     y: 0,
+    componentId: undefined as number | undefined,
   });
 
   const setMaxScores = useCallback(
@@ -134,6 +126,66 @@ export function useClassRecord() {
     },
     []
   );
+
+  const insertBeforeCalculations = useCallback(
+    (children: HeaderNode[], node: HeaderNode) => {
+      const calcStartIndex = children.findIndex(
+        (c) => c.calculationType === "sum" || c.calculationType === "percentage"
+      );
+      if (calcStartIndex === -1) return [...children, node];
+      return [
+        ...children.slice(0, calcStartIndex),
+        node,
+        ...children.slice(calcStartIndex),
+      ];
+    },
+    []
+  );
+
+  const refreshGroupKeys = useCallback((nodes: HeaderNode[]): HeaderNode[] => {
+    return nodes.map((node) => {
+      if (!node.children || node.children.length === 0) return node;
+
+      const updatedChildren = refreshGroupKeys(node.children);
+
+      const assessmentKeys = updatedChildren
+        .filter((c) => c.nodeType === "assessment" && c.key)
+        .map((c) => c.key!);
+
+      const assessmentNodes = updatedChildren.filter(c => c.nodeType === "assessment");
+      const otherNodes = updatedChildren.filter(c => c.nodeType !== "assessment");
+
+      const totalScoreNodeIndex = otherNodes.findIndex(c => c.title === "Total Score");
+      let totalScoreNode: HeaderNode | undefined = undefined;
+
+      if (assessmentKeys.length > 1) {
+        totalScoreNode = totalScoreNodeIndex !== -1
+          ? otherNodes[totalScoreNodeIndex]
+          : {
+            title: "Total Score",
+            key: `total-${node.title}`,
+            children: [],
+            calculationType: "sum",
+            groupKeys: assessmentKeys,
+          };
+      }
+
+      const updatedOtherNodes = otherNodes.map(c => {
+        if (c.calculationType === "sum" || c.calculationType === "percentage") {
+          return { ...c, groupKeys: assessmentKeys };
+        }
+        return c;
+      });
+
+      const finalChildren = [
+        ...assessmentNodes,
+        ...(totalScoreNode ? [totalScoreNode] : []),
+        ...updatedOtherNodes.filter(c => c.title !== "Total Score")
+      ];
+
+      return { ...node, children: finalChildren };
+    });
+  }, []);
 
   const fetchData = useCallback(async () => {
     let isMounted = true;
@@ -153,9 +205,9 @@ export function useClassRecord() {
 
       const [blooms, outcomes] = course_code
         ? await Promise.all([
-            getBloomsOptions(),
-            getCourseOutcomes(course_code),
-          ])
+          getBloomsOptions(),
+          getCourseOutcomes(course_code),
+        ])
         : [[], []];
 
       const mappedBlooms = blooms.map((b) => ({
@@ -295,15 +347,10 @@ export function useClassRecord() {
   const computedMaxValues = useMemo(() => {
     if (headerNodes.length === 0 || Object.keys(maxScores).length === 0)
       return {};
-    const rawMaxScoreKeys = Object.keys(maxScores).filter(
-      (k) => !k.includes("-total-grade")
+    const hasAnyMaxScore = Object.entries(maxScores).some(
+      ([k, v]) => !k.includes("-total-grade") && v > 0
     );
-    const hasAnyMaxScore = rawMaxScoreKeys.some(
-      (k) => maxScores[k] && maxScores[k] > 0
-    );
-    if (!hasAnyMaxScore) {
-      return {};
-    }
+    if (!hasAnyMaxScore) return {};
     return computeValues(maxScores, maxScores, headerNodes);
   }, [maxScores, headerNodes]);
 
@@ -437,22 +484,7 @@ export function useClassRecord() {
     []
   );
 
-  const insertBeforeCalculations = useCallback(
-    (children: HeaderNode[], node: HeaderNode) => {
-      const calcStartIndex = children.findIndex(
-        (c) => c.calculationType === "sum" || c.calculationType === "percentage"
-      );
-      if (calcStartIndex === -1) return [...children, node];
-      return [
-        ...children.slice(0, calcStartIndex),
-        node,
-        ...children.slice(calcStartIndex),
-      ];
-    },
-    []
-  );
-
-  const handleAddAssessment = async () => {
+  const handleAddAssessment = useCallback(async () => {
     try {
       let componentId = componentContextMenu.componentId;
       let parentTermType: "midterm" | "final" = "midterm";
@@ -464,21 +496,11 @@ export function useClassRecord() {
         );
         if (parentNode) {
           componentId = parentNode.componentId;
-
-          const parentNodeTermTypeRaw = parentNode.termType ?? "midterm";
-          parentTermType =
-            parentNodeTermTypeRaw === "final" ? "final" : "midterm";
-        }
-      } else if (componentId) {
-        const parentNode = headerNodes.find(
-          (n) => n.componentId === componentId
-        );
-        if (parentNode) {
-          const parentNodeTermTypeRaw = parentNode.termType ?? "midterm";
-          parentTermType =
-            parentNodeTermTypeRaw === "final" ? "final" : "midterm";
+          const termRaw = parentNode.termType ?? "midterm";
+          parentTermType = termRaw === "final" ? "final" : "midterm";
         }
       }
+
       if (!componentId) return;
 
       const newAssessment = await createAssessment({
@@ -508,37 +530,20 @@ export function useClassRecord() {
       setClassRecord((prev) => {
         const addToComponent = (nodes: HeaderNode[]): HeaderNode[] =>
           nodes.map((node) => {
-            if (
-              node.nodeType === "component" &&
-              node.componentId === componentId
-            ) {
+            if (node.nodeType === "component" && node.componentId === componentId) {
               const updatedChildren = insertBeforeCalculations(
                 node.children,
                 newNode
               );
-
-              const updatedChildrenWithKeys: HeaderNode[] = updatedChildren.map(
-                (child) => {
-                  if (
-                    child.calculationType === "sum" ||
-                    child.calculationType === "percentage"
-                  ) {
-                    const allAssessmentKeys = updatedChildren
-                      .filter((c) => c.nodeType === "assessment" && c.key)
-                      .map((c) => c.key!);
-                    return { ...child, groupKeys: allAssessmentKeys };
-                  }
-                  return child;
-                }
-              );
-
-              return { ...node, children: updatedChildrenWithKeys };
+              return { ...node, children: updatedChildren };
             }
-
             return { ...node, children: addToComponent(node.children) };
           });
 
-        const updatedHeaderNodes = addToComponent(prev.headerNodes);
+        let updatedHeaderNodes = addToComponent(prev.headerNodes);
+
+        updatedHeaderNodes = refreshGroupKeys(updatedHeaderNodes);
+
         const updatedMaxScores = {
           ...prev.maxScores,
           [newId]: newAssessment.assessment_highest_score ?? 0,
@@ -553,30 +558,21 @@ export function useClassRecord() {
     } catch (err) {
       console.error("Failed to add assessment:", err);
     }
-  };
+  }, [headerNodes, componentContextMenu, assessmentContextMenu, insertBeforeCalculations, refreshGroupKeys, setMaxScores]);
 
-  const handleDeleteAssessment = async (assessmentId: number) => {
+  const handleDeleteAssessment = useCallback(async (assessmentId: number) => {
     try {
       await deleteAssessment(assessmentId);
 
-      const removeAssessment = (
-        nodes: HeaderNode[],
-        id: number
-      ): HeaderNode[] =>
+      const removeAssessment = (nodes: HeaderNode[]): HeaderNode[] =>
         nodes
-          .map((node) => ({
-            ...node,
-            children: removeAssessment(node.children, id),
-          }))
-          .filter(
-            (node) => node.nodeType !== "assessment" || Number(node.key) !== id
-          );
+          .map((node) => ({ ...node, children: removeAssessment(node.children) }))
+          .filter((node) => node.nodeType !== "assessment" || Number(node.key) !== assessmentId);
 
       setClassRecord((prev) => {
-        const updatedHeaderNodes = removeAssessment(
-          prev.headerNodes,
-          assessmentId
-        );
+        let updatedHeaderNodes = removeAssessment(prev.headerNodes);
+
+        updatedHeaderNodes = refreshGroupKeys(updatedHeaderNodes);
 
         const updatedStudentScores = Object.fromEntries(
           Object.entries(prev.studentScores).map(([sid, scores]) => {
@@ -608,7 +604,8 @@ export function useClassRecord() {
       console.error("Failed to delete assessment:", err);
       setError("Failed to delete assessment.");
     }
-  };
+  }, [refreshGroupKeys]);
+
 
   const handleUpdateAssessment = useCallback(
     async (
@@ -622,14 +619,12 @@ export function useClassRecord() {
         const updated = await updateAssessment(assessmentId, updates);
 
         setClassRecord((prev) => {
-          // 1️⃣ Update the header tree (title, max score, etc.)
           const updatedHeaderNodes = updateAssessmentInTree(
             prev.headerNodes,
             assessmentId,
             updated
           );
 
-          // 2️⃣ Recalculate student totals based on updated structure
           const updatedStudentScores = Object.fromEntries(
             Object.entries(prev.studentScores).map(([sid, scores]) => {
               const newScores = { ...scores };
@@ -643,22 +638,20 @@ export function useClassRecord() {
             })
           );
 
-          // 3️⃣ Update blooms/outcomes maps if provided
           const updatedBloomsMap = updated.blooms_classification
             ? {
-                ...prev.assessmentBloomsMap,
-                [assessmentId]: updated.blooms_classification,
-              }
+              ...prev.assessmentBloomsMap,
+              [assessmentId]: updated.blooms_classification,
+            }
             : prev.assessmentBloomsMap;
 
           const updatedOutcomesMap = updated.course_outcome
             ? {
-                ...prev.assessmentOutcomesMap,
-                [assessmentId]: updated.course_outcome,
-              }
+              ...prev.assessmentOutcomesMap,
+              [assessmentId]: updated.course_outcome,
+            }
             : prev.assessmentOutcomesMap;
 
-          // 4️⃣ Update "current" selections if this assessment is open
           const updatedCurrentBlooms =
             updated.blooms_classification ?? prev.currentAssessmentBlooms;
           const updatedCurrentOutcomes =
@@ -779,7 +772,7 @@ export function useClassRecord() {
       setAssessmentInfoContextMenu({
         visible: true,
         x: rect.left,
-        y: rect.bottom + window.scrollY,
+        y: rect.bottom,
         assessmentId,
       });
 
@@ -795,7 +788,12 @@ export function useClassRecord() {
   );
 
   const handleCloseAssessmentInfo = () => {
-    setAssessmentInfoContextMenu({ visible: false, x: 0, y: 0 });
+    setAssessmentInfoContextMenu({
+      visible: false,
+      x: 0,
+      y: 0,
+      assessmentId: undefined,
+    });
   };
 
   const handleRightClickRow = useCallback(
