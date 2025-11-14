@@ -43,12 +43,6 @@ def populate_default_data():
 
     users_data = [
         {"user_id": 1, "role": "Administrator", "last_name": "Administrator", "email": "admin@example.com"},
-        {"user_id": 2025396865, "role": "Instructor", "first_name": "Kujo", "last_name": "Jotaro", "email": "kujo.jotaro234@ustp.edu.ph", "department": department_1},
-        {"user_id": 2025407938, "role": "Instructor", "first_name": "Jean Pierre", "last_name": "Polnareff", "email": "jeanpierre.75polnareff@ustp.edu.ph", "department": department_1},
-        {"user_id": 2025678934, "role": "Department Chair", "first_name": "Robert", "last_name": "Speedwagon", "email": "Speedwagon056@ustp.edu.ph", "department": department_1},
-        {"user_id": 2025583422, "role": "Dean", "first_name": "Lisa", "last_name": "Lisa", "email": "lisalisa@ustp.edu.ph", "department": department_1},
-        {"user_id": 2025547491, "role": "Vice Chancellor of Academic Affairs", "last_name": "Diavolo", "email": "diavolerolero@example.com", "department": department_1},
-        {"user_id": 2025787146, "role": "Vice President of Academic Affairs", "last_name": "Kars", "email": "kars2005@ustp.edu.ph", "department": department_1},
     ]
 
     for user_data in users_data:
