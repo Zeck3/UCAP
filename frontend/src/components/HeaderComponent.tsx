@@ -55,7 +55,7 @@ export default function HeaderComponent({
   }, [handleClickOutside]);
 
   return (
-    <header className="flex border-b border-[#E9E6E6] bg-white h-16 w-full fixed select-none z-[2500]">
+    <header className="flex border-b border-[#E9E6E6] bg-white h-16 w-full fixed select-none z-2500">
       <div
         className="w-16 flex items-center justify-center"
         onClick={onButtonClick}
@@ -110,7 +110,7 @@ export default function HeaderComponent({
         </div>
 
         {isOpen && (
-          <div className="absolute right-4 top-12 w-40 bg-white border border-[#E9E6E6] rounded-lg shadow-lg z-[2600]">
+          <div className="absolute right-4 top-12 w-40 bg-white border border-[#E9E6E6] rounded-lg shadow-lg z-2600">
             <button
               type="button"
               className="flex items-center gap-2 py-2 w-full cursor-pointer rounded-lg transition hover:bg-gray-100"

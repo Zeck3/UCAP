@@ -17,6 +17,15 @@ interface Props {
   initialOutcomes?: number[];
 }
 
+const BLOOM_COLORS: Record<string, string> = {
+  Remember: "bg-blue-100 text-blue-800 border-blue-300",
+  Understand: "bg-green-100 text-green-800 border-green-300",
+  Apply: "bg-yellow-100 text-yellow-800 border-yellow-300",
+  Analyze: "bg-orange-100 text-orange-800 border-orange-300",
+  Evaluate: "bg-red-100 text-red-800 border-red-300",
+  Create: "bg-purple-100 text-purple-800 border-purple-300",
+};
+
 export default function AssessmentInfoContextMenu({
   x,
   y,
@@ -54,7 +63,7 @@ export default function AssessmentInfoContextMenu({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
-  const handleBloomToggle = useCallback(
+  const toggleBloom = useCallback(
     (id: string) => {
       setSelectedBlooms((prev) => {
         const updated = prev.includes(id)
@@ -69,7 +78,7 @@ export default function AssessmentInfoContextMenu({
     [assessmentId, handleUpdateAssessment]
   );
 
-  const handleOutcomeToggle = useCallback(
+  const toggleOutcome = useCallback(
     (id: string) => {
       setSelectedOutcomes((prev) => {
         const updated = prev.includes(id)
@@ -87,45 +96,52 @@ export default function AssessmentInfoContextMenu({
   const menu = (
     <div
       ref={menuRef}
-      className="bg-white shadow-lg rounded-lg border border-gray-300 p-3 w-64 space-y-3 text-gray-900"
+      className="bg-white shadow-lg rounded-lg border border-[#E9E6E6] p-3 w-64 space-y-4"
       style={{ position: "fixed", top: y, left: x, zIndex: 99999 }}
     >
+      {/* BLOOM TAGS */}
       {bloomsOptions.length > 0 && (
         <div>
           <label className="block text-sm font-medium mb-1">
-            Bloom’s Classification
+            Bloom's Classification
           </label>
-          <div className="max-h-32 overflow-y-auto border rounded p-1">
-            {bloomsOptions.map((b) => (
-              <label key={b.id} className="flex items-center space-x-2 py-0.5">
-                <input
-                  id={`bloom_checkbox-${b.id}-${assessmentId}`}
-                  name={`bloom_checkbox-${b.id}-${assessmentId}`}
-                  type="checkbox"
-                  checked={selectedBlooms.includes(String(b.id))}
-                  onChange={() => handleBloomToggle(String(b.id))}
-                />
-                <span className="text-sm">{b.name}</span>
-              </label>
-            ))}
+
+          <div className="flex flex-wrap gap-1 overflow-hidden">
+            {bloomsOptions.map((b) => {
+              const isSelected = selectedBlooms.includes(String(b.id));
+              const color =
+                BLOOM_COLORS[b.name] || "bg-gray-100 text-gray-800 border-gray-300";
+
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => toggleBloom(String(b.id))}
+                  className={`px-2 py-1 text-xs border rounded-full transition 
+                    ${isSelected ? color : "bg-white text-gray-700 border-gray-300"}
+                  `}
+                >
+                  {b.name}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
+      {/* OUTCOME CHECKBOXES */}
       {outcomesOptions.length > 0 && (
         <div>
           <label className="block text-sm font-medium mb-1">
             Course Outcomes
           </label>
-          <div className="max-h-32 overflow-y-auto border rounded p-1">
+
+          <div className="overflow-hidden space-y-1">
             {outcomesOptions.map((o) => (
-              <label key={o.id} className="flex items-center space-x-2 py-0.5">
+              <label key={o.id} className="flex items-center space-x-2">
                 <input
-                  id={`outcome_checkbox-${o.id}-${assessmentId}`}
-                  name={`outcome_checkbox-${o.id}-${assessmentId}`}
                   type="checkbox"
                   checked={selectedOutcomes.includes(String(o.id))}
-                  onChange={() => handleOutcomeToggle(String(o.id))}
+                  onChange={() => toggleOutcome(String(o.id))}
                 />
                 <span className="text-sm">{o.name}</span>
               </label>

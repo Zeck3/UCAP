@@ -83,7 +83,7 @@ urlpatterns = [
     path("academic_year/", academic_year_list_view),
     path("instructors/", instructor_list_view),
     path("blooms_classification/", blooms_classification_list_view),
-    path("course_outcomes/<str:course_code>", course_outcome_list_view),
+    path("course_outcomes/<int:loaded_course_id>", course_outcome_list_view),
     # ====================================================
     # User Department
     # ====================================================

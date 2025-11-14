@@ -100,7 +100,7 @@ export async function getBloomsOptions(): Promise<BloomsClassification[]> {
   return data;
 }
 
-export async function getCourseOutcomes(courseCode: string): Promise<CourseOutcomes[]> {
-  const { data } = await axiosClient.get(`/course_outcomes/${courseCode}`);
+export async function getCourseOutcomes(loadedCourseId: number): Promise<CourseOutcomes[]> {
+  const { data } = await axiosClient.get(`/course_outcomes/${loadedCourseId}`);
   return data;
 }

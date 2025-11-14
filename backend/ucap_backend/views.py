@@ -1396,13 +1396,12 @@ def blooms_classification_list_view(request):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-def course_outcome_list_view(request, course_code):
+def course_outcome_list_view(request, loaded_course_id):
     try:
         outcomes = (
             CourseOutcome.objects
-            .filter(loaded_course__course__course_code=course_code)
+            .filter(loaded_course_id=loaded_course_id)
             .order_by("course_outcome_id")
-            .select_related("loaded_course__course")
         )
         serializer = CourseOutcomeSerializer(outcomes, many=True)
         return JsonResponse(serializer.data, safe=False)

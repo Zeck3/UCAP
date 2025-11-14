@@ -45,7 +45,7 @@ type ClassRecordState = {
 };
 
 export function useClassRecord() {
-  const { section_id, course_code } = useParams();
+  const { section_id, loaded_course_id } = useParams();
 
   const [classRecord, setClassRecord] = useState<ClassRecordState>({
     headerNodes: [],
@@ -69,7 +69,7 @@ export function useClassRecord() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [canOpenPopup, setCanOpenPopup] = useState(false);
+  const [canOpenPopup, setCanOpenPopup] = useState<boolean>(true);
   const [editingAssessment, setEditingAssessment] = useState<{
     nodeKey: string;
     value: string;
@@ -152,25 +152,32 @@ export function useClassRecord() {
         .filter((c) => c.nodeType === "assessment" && c.key)
         .map((c) => c.key!);
 
-      const assessmentNodes = updatedChildren.filter(c => c.nodeType === "assessment");
-      const otherNodes = updatedChildren.filter(c => c.nodeType !== "assessment");
+      const assessmentNodes = updatedChildren.filter(
+        (c) => c.nodeType === "assessment"
+      );
+      const otherNodes = updatedChildren.filter(
+        (c) => c.nodeType !== "assessment"
+      );
 
-      const totalScoreNodeIndex = otherNodes.findIndex(c => c.title === "Total Score");
+      const totalScoreNodeIndex = otherNodes.findIndex(
+        (c) => c.title === "Total Score"
+      );
       let totalScoreNode: HeaderNode | undefined = undefined;
 
       if (assessmentKeys.length > 1) {
-        totalScoreNode = totalScoreNodeIndex !== -1
-          ? otherNodes[totalScoreNodeIndex]
-          : {
-            title: "Total Score",
-            key: `total-${node.title}`,
-            children: [],
-            calculationType: "sum",
-            groupKeys: assessmentKeys,
-          };
+        totalScoreNode =
+          totalScoreNodeIndex !== -1
+            ? otherNodes[totalScoreNodeIndex]
+            : {
+                title: "Total Score",
+                key: `total-${node.title}`,
+                children: [],
+                calculationType: "sum",
+                groupKeys: assessmentKeys,
+              };
       }
 
-      const updatedOtherNodes = otherNodes.map(c => {
+      const updatedOtherNodes = otherNodes.map((c) => {
         if (c.calculationType === "sum" || c.calculationType === "percentage") {
           return { ...c, groupKeys: assessmentKeys };
         }
@@ -180,7 +187,7 @@ export function useClassRecord() {
       const finalChildren = [
         ...assessmentNodes,
         ...(totalScoreNode ? [totalScoreNode] : []),
-        ...updatedOtherNodes.filter(c => c.title !== "Total Score")
+        ...updatedOtherNodes.filter((c) => c.title !== "Total Score"),
       ];
 
       return { ...node, children: finalChildren };
@@ -203,11 +210,11 @@ export function useClassRecord() {
         generatedHeaders
       );
 
-      const [blooms, outcomes] = course_code
+      const [blooms, outcomes] = loaded_course_id
         ? await Promise.all([
-          getBloomsOptions(),
-          getCourseOutcomes(course_code),
-        ])
+            getBloomsOptions(),
+            getCourseOutcomes(Number(loaded_course_id)),
+          ])
         : [[], []];
 
       const mappedBlooms = blooms.map((b) => ({
@@ -268,7 +275,7 @@ export function useClassRecord() {
     return () => {
       isMounted = false;
     };
-  }, [section_id, course_code]);
+  }, [section_id, loaded_course_id]);
 
   useEffect(() => {
     fetchData();
@@ -530,7 +537,10 @@ export function useClassRecord() {
       setClassRecord((prev) => {
         const addToComponent = (nodes: HeaderNode[]): HeaderNode[] =>
           nodes.map((node) => {
-            if (node.nodeType === "component" && node.componentId === componentId) {
+            if (
+              node.nodeType === "component" &&
+              node.componentId === componentId
+            ) {
               const updatedChildren = insertBeforeCalculations(
                 node.children,
                 newNode
@@ -558,54 +568,70 @@ export function useClassRecord() {
     } catch (err) {
       console.error("Failed to add assessment:", err);
     }
-  }, [headerNodes, componentContextMenu, assessmentContextMenu, insertBeforeCalculations, refreshGroupKeys, setMaxScores]);
+  }, [
+    headerNodes,
+    componentContextMenu,
+    assessmentContextMenu,
+    insertBeforeCalculations,
+    refreshGroupKeys,
+    setMaxScores,
+  ]);
 
-  const handleDeleteAssessment = useCallback(async (assessmentId: number) => {
-    try {
-      await deleteAssessment(assessmentId);
+  const handleDeleteAssessment = useCallback(
+    async (assessmentId: number) => {
+      try {
+        await deleteAssessment(assessmentId);
 
-      const removeAssessment = (nodes: HeaderNode[]): HeaderNode[] =>
-        nodes
-          .map((node) => ({ ...node, children: removeAssessment(node.children) }))
-          .filter((node) => node.nodeType !== "assessment" || Number(node.key) !== assessmentId);
-
-      setClassRecord((prev) => {
-        let updatedHeaderNodes = removeAssessment(prev.headerNodes);
-
-        updatedHeaderNodes = refreshGroupKeys(updatedHeaderNodes);
-
-        const updatedStudentScores = Object.fromEntries(
-          Object.entries(prev.studentScores).map(([sid, scores]) => {
-            const newScores = { ...scores };
-            delete newScores[assessmentId];
-
-            const { midterm, final } = calculateAllTermTotals(
-              newScores,
-              updatedHeaderNodes
+        const removeAssessment = (nodes: HeaderNode[]): HeaderNode[] =>
+          nodes
+            .map((node) => ({
+              ...node,
+              children: removeAssessment(node.children),
+            }))
+            .filter(
+              (node) =>
+                node.nodeType !== "assessment" ||
+                Number(node.key) !== assessmentId
             );
-            newScores["midterm-total-grade"] = midterm;
-            newScores["final-total-grade"] = final;
 
-            return [sid, newScores];
-          })
-        );
+        setClassRecord((prev) => {
+          let updatedHeaderNodes = removeAssessment(prev.headerNodes);
 
-        const updatedMaxScores = { ...prev.maxScores };
-        delete updatedMaxScores[assessmentId];
+          updatedHeaderNodes = refreshGroupKeys(updatedHeaderNodes);
 
-        return {
-          ...prev,
-          headerNodes: updatedHeaderNodes,
-          studentScores: updatedStudentScores,
-          maxScores: updatedMaxScores,
-        };
-      });
-    } catch (err) {
-      console.error("Failed to delete assessment:", err);
-      setError("Failed to delete assessment.");
-    }
-  }, [refreshGroupKeys]);
+          const updatedStudentScores = Object.fromEntries(
+            Object.entries(prev.studentScores).map(([sid, scores]) => {
+              const newScores = { ...scores };
+              delete newScores[assessmentId];
 
+              const { midterm, final } = calculateAllTermTotals(
+                newScores,
+                updatedHeaderNodes
+              );
+              newScores["midterm-total-grade"] = midterm;
+              newScores["final-total-grade"] = final;
+
+              return [sid, newScores];
+            })
+          );
+
+          const updatedMaxScores = { ...prev.maxScores };
+          delete updatedMaxScores[assessmentId];
+
+          return {
+            ...prev,
+            headerNodes: updatedHeaderNodes,
+            studentScores: updatedStudentScores,
+            maxScores: updatedMaxScores,
+          };
+        });
+      } catch (err) {
+        console.error("Failed to delete assessment:", err);
+        setError("Failed to delete assessment.");
+      }
+    },
+    [refreshGroupKeys]
+  );
 
   const handleUpdateAssessment = useCallback(
     async (
@@ -640,16 +666,16 @@ export function useClassRecord() {
 
           const updatedBloomsMap = updated.blooms_classification
             ? {
-              ...prev.assessmentBloomsMap,
-              [assessmentId]: updated.blooms_classification,
-            }
+                ...prev.assessmentBloomsMap,
+                [assessmentId]: updated.blooms_classification,
+              }
             : prev.assessmentBloomsMap;
 
           const updatedOutcomesMap = updated.course_outcome
             ? {
-              ...prev.assessmentOutcomesMap,
-              [assessmentId]: updated.course_outcome,
-            }
+                ...prev.assessmentOutcomesMap,
+                [assessmentId]: updated.course_outcome,
+              }
             : prev.assessmentOutcomesMap;
 
           const updatedCurrentBlooms =
@@ -788,12 +814,7 @@ export function useClassRecord() {
   );
 
   const handleCloseAssessmentInfo = () => {
-    setAssessmentInfoContextMenu({
-      visible: false,
-      x: 0,
-      y: 0,
-      assessmentId: undefined,
-    });
+    setAssessmentInfoContextMenu({ visible: false, x: 0, y: 0, assessmentId: undefined });
   };
 
   const handleRightClickRow = useCallback(

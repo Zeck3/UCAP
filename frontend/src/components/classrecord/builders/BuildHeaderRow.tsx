@@ -27,7 +27,7 @@ interface BuildHeaderRowProps {
   computedMaxValues: Record<string, number>;
   handleEditStart: (
     node: HeaderNode,
-    event: React.MouseEvent<HTMLDivElement>
+    event: React.MouseEvent<HTMLElement>
   ) => void;
   onRightClickNode?: (e: React.MouseEvent, node: HeaderNode) => void;
   handleUpdateAssessment: (
@@ -53,7 +53,7 @@ function BuildHeaderRow({
   });
 
   const handleNodeClick = useCallback(
-    (node: HeaderNode) => (e: React.MouseEvent<HTMLDivElement>) => {
+    (node: HeaderNode) => (e: React.MouseEvent<HTMLElement>) => {
       handleEditStart(node, e);
     },
     [handleEditStart]
@@ -172,7 +172,8 @@ function BuildHeaderRow({
               ? `[writing-mode:vertical-rl] rotate-180 text-left truncate overflow-hidden text-ellipsis w-15 max-w-15`
               : `whitespace-normal ${headerWidth} w-15`
           } ${node.isRowSpan ? "sticky-col sticky-col-1 sticky-rowspan" : ""} ${
-            node.nodeType === "assessment" || node.calculationType === "assignment"
+            node.nodeType === "assessment" ||
+            node.calculationType === "assignment"
               ? "assessment-col"
               : ""
           }`}
@@ -186,7 +187,8 @@ function BuildHeaderRow({
         </th>
       );
 
-      if (hasChildren) node.children.forEach((child) => build(child, level + rowSpan));
+      if (hasChildren)
+        node.children.forEach((child) => build(child, level + rowSpan));
     }
 
     function addButtons(node: HeaderNode) {
@@ -214,7 +216,7 @@ function BuildHeaderRow({
                 onClick={(e) =>
                   openAssessmentInfoContextMenu(e, Number(node.key))
                 }
-                className="w-full h-full bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs py-1.5 px-2"
+                className="w-full h-full bg-gray-100 hover:bg-gray-200 text-xs py-1.5 px-2"
               >
                 Info...
               </button>
@@ -298,7 +300,10 @@ function BuildHeaderRow({
         return;
       }
 
-      if (node.children.length > 0) { node.children.forEach(buildSubRow); return; }
+      if (node.children.length > 0) {
+        node.children.forEach(buildSubRow);
+        return;
+      }
 
       let content: JSX.Element | string = "";
       let bgClass = getCalculatedBg(node.calculationType);
@@ -351,7 +356,14 @@ function BuildHeaderRow({
       subRow.push(
         <th
           key={`sub-${node.key}`}
-          className={`border border-[#E9E6E6] text-center ${bgClass} ${textClass} ${node.calculationType ? "w-15" : ""} ${node.nodeType === "assessment" || node.calculationType === "assignment" ? "assessment-col" : ""}`}
+          className={`border border-[#E9E6E6] text-center ${bgClass} ${textClass} ${
+            node.calculationType ? "w-15" : ""
+          } ${
+            node.nodeType === "assessment" ||
+            node.calculationType === "assignment"
+              ? "assessment-col"
+              : ""
+          }`}
         >
           {content}
         </th>
@@ -383,7 +395,9 @@ function BuildHeaderRow({
         .map((row, i) => (
           <tr
             key={`header-row-${i}`}
-            className={`header-row header-row-${i} ${i < 5 ? "sticky-header" : ""}`}
+            className={`header-row header-row-${i} ${
+              i < 5 ? "sticky-header" : ""
+            }`}
           >
             {row}
           </tr>
