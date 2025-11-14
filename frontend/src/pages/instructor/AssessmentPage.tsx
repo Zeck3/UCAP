@@ -1,4 +1,3 @@
-// Imports necessary React hooks, router utilities, and custom types/components/APIs
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import type { JSX } from "react";
@@ -15,6 +14,12 @@ const bloomOrder = [
   "Create",
 ];
 
+type ExpandedCW = {
+  name: string;
+  blooms: string;
+  coIndex: number;
+};
+
 function bloomRank(b: string): number {
   const idx = bloomOrder.indexOf(b);
   return idx === -1 ? bloomOrder.length : idx;
@@ -23,23 +28,6 @@ function bloomRank(b: string): number {
 function normalizeBlooms(blooms: string[]): string {
   return [...blooms].sort((a, b) => bloomRank(a) - bloomRank(b)).join("/");
 }
-
-function countClasswork(co: AssessmentPageData["pos"][0]["cos"][0]) {
-  return Math.max(1, co.classwork.length) + 3;
-}
-
-function totalClassworkColumns(pos: AssessmentPageData["pos"]) {
-  return pos.reduce(
-    (sum, po) => sum + po.cos.reduce((s, co) => s + countClasswork(co), 0),
-    0
-  );
-}
-
-type ExpandedCW = {
-  name: string;
-  blooms: string;
-  coIndex: number;
-};
 
 function clusterBlooms(items: ExpandedCW[]): ExpandedCW[] {
   if (!items.length) return [];
@@ -53,6 +41,85 @@ function clusterBlooms(items: ExpandedCW[]): ExpandedCW[] {
     }
     return aRanks.length - bRanks.length;
   });
+}
+
+function countClasswork(co: AssessmentPageData["pos"][0]["cos"][0]) {
+  return Math.max(1, co.classwork.length) + 3;
+}
+
+function totalClassworkColumns(pos: AssessmentPageData["pos"]) {
+  return pos.reduce(
+    (sum, po) => sum + po.cos.reduce((s, co) => s + countClasswork(co), 0),
+    0
+  );
+}
+
+function extractCoNumbers(name: string): number[] {
+  const matches = name.match(/CO(\d+)/gi);
+  if (!matches) return [9999];
+  return matches.map(m => parseInt(m.replace(/CO/i, '')));
+}
+
+function extractType(name: string): string {
+  if (name.includes('(Lecture)')) return 'Lecture';
+  if (name.includes('(Laboratory)')) return 'Laboratory';
+  return 'Unknown';
+}
+
+function sortCourseOutcomes(a: { name: string }, b: { name: string }): number {
+  const aNums = extractCoNumbers(a.name);
+  const bNums = extractCoNumbers(b.name);
+  const aType = extractType(a.name);
+  const bType = extractType(b.name);
+
+  if (aNums.length !== bNums.length) {
+    return aNums.length - bNums.length;
+  }
+
+  for (let i = 0; i < aNums.length; i++) {
+    if (aNums[i] !== bNums[i]) {
+      return aNums[i] - bNums[i];
+    }
+  }
+
+  if (aType !== bType) {
+    return aType === 'Lecture' ? -1 : 1;
+  }
+
+  return 0;
+}
+
+function extractPOShortName(poName: string): string {
+  const match = poName.match(/^([a-zA-Z])\s*-\s*/);
+  return match ? `PO-${match[1]}` : poName;
+}
+
+function formatCOLabel(coName: string, counter: number): string {
+  const coMatches = coName.match(/CO\d+/gi);
+  const coNumbers = coMatches && coMatches.length > 0
+    ? coMatches.map(m => m.toUpperCase()).join(' & ')
+    : `CO${counter}`;
+
+  const typeMatch = coName.match(/\((Lecture|Laboratory)\)/i);
+  const type = typeMatch ? typeMatch[1] : '';
+
+  return type ? `${coNumbers} (${type})` : coNumbers;
+}
+
+function groupBloomsBySequence(clustered: ExpandedCW[]): { bloom: string; count: number }[] {
+  const grouped: { bloom: string; count: number }[] = [];
+  let prev: string | null = null;
+  
+  for (const item of clustered.length ? clustered : [{ name: "", blooms: "", coIndex: -1 }]) {
+    if (item.blooms === prev) {
+      grouped[grouped.length - 1].count++;
+    } else {
+      grouped.push({ bloom: item.blooms, count: 1 });
+      prev = item.blooms;
+    }
+  }
+  
+  return grouped;
 }
 
 function ClassworkNameCell({
@@ -80,7 +147,6 @@ function ClassworkNameCell({
   );
 }
 
-// Renders student score cell
 function StudentScoreCell({
   val,
   studentId,
@@ -118,13 +184,17 @@ export default function ResultSheetPage(): JSX.Element {
         setLoading(true);
         if (!section_id) return;
         const response = await getAssessmentPageData(Number(section_id));
-        setData(response);
+        
+        const filteredStudents = response.students.filter((student) => {
+          const hasValidId = student.id && /^\d{10}$/.test(student.id);
+          const hasValidName = student.name?.trim().length > 0;
+          return hasValidId && hasValidName;
+        });
+        
+        setData({ ...response, students: filteredStudents });
       } catch (error: unknown) {
-        if (error instanceof Error) {
-          setError(error.message || "Failed to load assessment page");
-        } else {
-          setError("Failed to load assessment page");
-        }
+        const message = error instanceof Error ? error.message : "Failed to load assessment page";
+        setError(message || "Failed to load assessment page");
       } finally {
         setLoading(false);
       }
@@ -209,10 +279,7 @@ export default function ResultSheetPage(): JSX.Element {
       const posInComp = poIndices.map((idx) => filteredPOs[idx]);
 
       const shortNames = posInComp
-        .map((po) => {
-          const match = po.name.match(/^([a-zA-Z])\s*-\s*/);
-          return match ? `PO-${match[1]}` : po.name;
-        })
+        .map((po) => extractPOShortName(po.name))
         .sort();
 
       const mergedName = shortNames.join(", ");
@@ -228,11 +295,7 @@ export default function ResultSheetPage(): JSX.Element {
 
       const uniqueCos = Array.from(coMap.values());
 
-      uniqueCos.sort((a, b) => {
-        const aNum = parseInt(a.name.match(/\d+/)?.[0] || "0");
-        const bNum = parseInt(b.name.match(/\d+/)?.[0] || "0");
-        return aNum - bNum;
-      });
+      uniqueCos.sort(sortCourseOutcomes);
 
       mergedLayout.push({ name: mergedName, cos: uniqueCos });
     }
@@ -284,7 +347,9 @@ export default function ResultSheetPage(): JSX.Element {
 
   if (loading) return <div className="p-6 text-center">Loading...</div>;
   if (error) return <div className="p-6 text-red-500">{error}</div>;
-  if (!data || !data.pos.length || !data.students.length) {
+  const hasPos = Array.isArray(data?.pos) && data!.pos.length > 0;
+  const hasStudents = Array.isArray(data?.students) && data!.students.length > 0;
+  if (!data || !hasPos || !hasStudents) {
     return (
       <div className="px-6 py-6 text-center text-coa-red">
         No data available to display.
@@ -294,9 +359,7 @@ export default function ResultSheetPage(): JSX.Element {
 
   const poCells = layout.map((po, pIdx) => {
     const span = po.cos.reduce((s, co) => s + countClasswork(co), 0);
-
-    const match = po.name.match(/^([a-zA-Z])\s*-\s*/);
-    const shortLabel = match ? `PO-${match[1]}` : po.name;
+    const shortLabel = extractPOShortName(po.name);
 
     return (
       <td
@@ -313,9 +376,7 @@ export default function ResultSheetPage(): JSX.Element {
   const coCells = layout.flatMap((po, pIdx) =>
     po.cos.map((co, cIdx) => {
       const span = countClasswork(co);
-
-      const shortLabel =
-        co.name.match(/CO\d+/i)?.[0]?.toUpperCase() ?? `CO${coCounter++}`;
+      const shortLabel = formatCOLabel(co.name, coCounter++);
 
       return (
         <td
@@ -396,18 +457,8 @@ export default function ResultSheetPage(): JSX.Element {
           <tr>
             {layout.flatMap((po, pIdx) =>
               po.cos.flatMap((co, cIdx) => {
-                const grouped: { bloom: string; count: number }[] = [];
-                let prev: string | null = null;
-                for (const item of co.clustered.length
-                  ? co.clustered
-                  : [{ name: "", blooms: "" as string, coIndex: -1 }]) {
-                  if (item.blooms === prev) {
-                    grouped[grouped.length - 1].count++;
-                  } else {
-                    grouped.push({ bloom: item.blooms, count: 1 });
-                    prev = item.blooms;
-                  }
-                }
+                const grouped = groupBloomsBySequence(co.clustered);
+                
                 return [
                   ...grouped.map((g, gIdx) => (
                     <td
@@ -681,13 +732,13 @@ export default function ResultSheetPage(): JSX.Element {
 
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40"
+          className="fixed inset-0 bg-black/50 z-[2700]"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {isOpen && (
-        <div className="fixed right-0 top-0 h-full w-250 bg-white z-50 p-4 overflow-y-auto shadow-xl border-l border-gray-200">
+        <div className="fixed right-0 top-0 h-full w-250 bg-white z-[2800] p-4 overflow-y-auto shadow-xl border-l border-gray-200">
           <div className="flex items-center mb-4 pt-8 px-8">
             <button
               onClick={() => setIsOpen(false)}
