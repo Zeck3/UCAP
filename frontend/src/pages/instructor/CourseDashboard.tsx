@@ -49,16 +49,16 @@ export default function CourseDashboard() {
     return filtered.map((course) => ({
       ...course,
       id: course.loaded_course_id,
+      year_sem: `${course.academic_year} / ${course.semester_type}`,
     }));
   }, [searchQuery, courses]);
 
   const goToCoursePage = (course: InstructorCourse) => {
-    navigate(
-      `/instructor/${course.loaded_course_id}/${course.course_code.replace(
-        /\s+/g,
-        ""
-      )}`
-    );
+    navigate(`/instructor/${course.loaded_course_id}`, {
+      state: {
+        course_code: course.course_code,
+      },
+    });
   };
 
   return (
@@ -86,11 +86,7 @@ export default function CourseDashboard() {
           loading={loading}
           title={(course) => course.course_title}
           subtitle={(course) => {
-            const semesterText = course.semester_type
-              .toLowerCase()
-              .replace("semester", "sem")
-              .trim();
-            return `${course.academic_year} ${semesterText} | ${course.department_name}`;
+            return `${course.academic_year} / ${course.semester_type} | ${course.department_name}`;
           }}
         />
       ) : (
@@ -103,9 +99,9 @@ export default function CourseDashboard() {
           columns={[
             { key: "course_code", label: "Code" },
             { key: "course_title", label: "Course Title" },
-            { key: "academic_year", label: "Academic Year" },
-            { key: "semester_type", label: "Semester" },
+            { key: "year_sem", label: "Academic Year / Semester" },
             { key: "department_name", label: "Department" },
+            { key: "year_level_type", label: "Year Level" },
           ]}
         />
       )}

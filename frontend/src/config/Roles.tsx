@@ -32,8 +32,6 @@ export const roleRoutes: Record<number, string> = {
 
 export function useRoleSideNav(): Record<number, { label: string; path: string; icon: ReactNode }[]> {
   const { department } = useDepartment();
-  const departmentId = department?.department_id ?? "";
-  const departmentName = department?.department_name?.replace(/\s+/g, "") ?? "department";
 
   return {
     1: [
@@ -45,16 +43,19 @@ export function useRoleSideNav(): Record<number, { label: string; path: string; 
     ],
     3: [
       { label: "My Courses", path: "/instructor", icon: <HomeIcon /> },
-      { label: "Manage Courses", path: `/department/${departmentId}/${departmentName}`, icon: <CoursesIcon /> },
+      { label: "Manage Courses", path: `/department/${department?.department_id}`, icon: <CoursesIcon /> },
     ],
     4: [
       { label: "My Courses", path: "/instructor", icon: <HomeIcon /> },
+      { label: "Oversee Courses", path: `/college/${department?.department_id}`, icon: <CoursesIcon /> },
     ],
     5: [
       { label: "My Courses", path: "/instructor", icon: <HomeIcon /> },
+      { label: "Oversee Courses", path: `/campus/${department?.department_id}`, icon: <CoursesIcon /> },
     ],
     6: [
       { label: "My Courses", path: "/instructor", icon: <HomeIcon /> },
+      { label: "Oversee Courses", path: `/campus/${department?.department_id}`, icon: <CoursesIcon /> },
     ],
   };
 }

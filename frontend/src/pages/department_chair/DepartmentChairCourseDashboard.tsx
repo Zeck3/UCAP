@@ -115,7 +115,7 @@ export default function DepartmentChairCourseDashboard() {
       (course) =>
         course.course_code.toLowerCase().includes(query) ||
         course.course_title.toLowerCase().includes(query) ||
-        course.academicYearAndSem.toLowerCase().includes(query)
+        course.academic_year_and_semester.toLowerCase().includes(query)
     );
   }, [departmentLoadedCourses, searchQuery]);
 
@@ -179,13 +179,17 @@ export default function DepartmentChairCourseDashboard() {
   ) => {
     const loadedCourseId = course.id;
     const courseCode = course.course_code?.replace(/\s+/g, "") ?? "";
-    navigate(
-      `/department/${department_id}/${department_name}/${loadedCourseId}/${courseCode}`
-    );
+
+    navigate(`/department/${department_id}/${loadedCourseId}`, {
+      state: {
+        course_code: courseCode,
+        department_name: department_name,
+      },
+    });
   };
 
   return (
-    <AppLayout activeItem={`/department/${department_id}/${department_name}`}>
+    <AppLayout activeItem={`/department/${department_id}`}>
       <InfoComponent
         loading={loading}
         title={`Department of ${department?.department_name ?? ""}`}
@@ -228,13 +232,7 @@ export default function DepartmentChairCourseDashboard() {
               fieldTop={(c) => c.course_code}
               title={(c) => c.course_title}
               subtitle={(course) => {
-                const semesterText = course.semester_type
-                  ? course.semester_type
-                      .toLowerCase()
-                      .replace("semester", "sem")
-                      .trim()
-                  : "N/A";
-                return `${course.academic_year ?? "N/A"} ${semesterText} | ${
+                return `${course.academic_year_and_semester}  | ${
                   course.program_name ?? ""
                 }`;
               }}
@@ -252,7 +250,10 @@ export default function DepartmentChairCourseDashboard() {
                 { key: "course_code", label: "Code" },
                 { key: "course_title", label: "Course Title" },
                 { key: "program_name", label: "Program" },
-                { key: "academicYearAndSem", label: "Academic Year & Sem" },
+                {
+                  key: "academic_year_and_semester",
+                  label: "Academic Year / Semester",
+                },
                 { key: "year_level", label: "Year Level" },
               ]}
               onDelete={(course) => handleDelete(Number(course))}

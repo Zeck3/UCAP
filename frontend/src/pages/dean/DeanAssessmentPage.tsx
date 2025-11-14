@@ -1,11 +1,11 @@
 import { useParams } from "react-router-dom";
 import AppLayout from "../../layout/AppLayout";
 
-export default function ClassRecordPage() {
+export default function DeanAssessmentPage() {
   const { department_id } = useParams();
   return (
-    <AppLayout activeItem={`/department/${department_id}`}>
-      <div>Assessment page</div>
+    <AppLayout activeItem={`/college/${department_id}`}>
+      <div>Assessment Page</div>
     </AppLayout>
   );
 }

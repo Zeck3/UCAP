@@ -15,6 +15,12 @@ import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext";
 import { useHeartbeat } from "./context/useHeartbeat";
 import AssessmentPage from "./pages/instructor/AssessmentPage";
+import DeanCourseDashboard from "./pages/dean/DeanCourseDashboard";
+import DeanAssessmentPage from "./pages/dean/DeanAssessmentPage";
+import DeanCoursePage from "./pages/dean/DeanCoursePage";
+import CampusCourseDashboard from "./pages/vpaaAndVpaa/CampusCourseDashboard";
+import CampusCoursePage from "./pages/vpaaAndVpaa/CampusCoursePage";
+import CampusAssessmentPage from "./pages/vpaaAndVpaa/CampusAssessmentPage";
 
 export default function App() {
   const auth = useContext(AuthContext);
@@ -28,16 +34,28 @@ export default function App() {
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<NotFoundPage />} />
 
+      <Route element={<ProtectedRoute allowedRoles={[Roles.ViceChancellorOfAcademicAffairs, Roles.VicePresidentOfAcademicAffairs]} />}>
+        <Route path="/campus/:department_id/:loaded_course_id/:section_id" element={<CampusAssessmentPage />} />
+        <Route path="/campus/:department_id/:loaded_course_id" element={<CampusCoursePage />} />
+        <Route path="/campus/:department_id" element={<CampusCourseDashboard />} />
+      </Route>
+
+      <Route element={<ProtectedRoute allowedRoles={[Roles.Dean]} />}>
+        <Route path="/college/:department_id/:loaded_course_id/:section_id" element={<DeanAssessmentPage />} />
+        <Route path="/college/:department_id/:loaded_course_id" element={<DeanCoursePage />} />
+        <Route path="/college/:department_id" element={<DeanCourseDashboard />} />
+      </Route>
+
       <Route element={<ProtectedRoute allowedRoles={[Roles.DepartmentChair]} />}>
-        <Route path="/department/:department_id/:department_name/:loaded_course_id/:course_code/:year_and_section" element={<DepartmentChairAssessmentPage />} />
-        <Route path="/department/:department_id/:department_name/:loaded_course_id/:course_code" element={<DepartmentChairCoursePage />} />
-        <Route path="/department/:department_id/:department_name" element={<DepartmentChairCourseDashboard />} />
+        <Route path="/department/:department_id/:loaded_course_id/:section_id" element={<DepartmentChairAssessmentPage />} />
+        <Route path="/department/:department_id/:loaded_course_id" element={<DepartmentChairCoursePage />} />
+        <Route path="/department/:department_id" element={<DepartmentChairCourseDashboard />} />
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={[Roles.Instructor]} />}>
-        <Route path="/instructor/:loaded_course_id/:course_code/:section_id/:year_and_section/assessment" element={<AssessmentPage />} />
-        <Route path="/instructor/:loaded_course_id/:course_code/:section_id/:year_and_section" element={<ClassRecordPage />} />
-        <Route path="/instructor/:loaded_course_id/:course_code" element={<CoursePage />} />
+        <Route path="/instructor/:loaded_course_id/:section_id/assessment" element={<AssessmentPage />} />
+        <Route path="/instructor/:loaded_course_id/:section_id" element={<ClassRecordPage />} />
+        <Route path="/instructor/:loaded_course_id" element={<CoursePage />} />
         <Route path="/instructor" element={<CourseDashboard />} />
       </Route>
 

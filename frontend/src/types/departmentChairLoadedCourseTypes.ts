@@ -26,8 +26,7 @@ export interface DepartmentLoadedCoursesDisplay {
   program_name: string
   year_level: string
   semester_type: string
-  academic_year: string
-  academicYearAndSem: string
+  academic_year_and_semester: string
   department_name?: string
   lecture_unit?: number
   lab_unit?: number

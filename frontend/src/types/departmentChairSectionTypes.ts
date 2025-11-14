@@ -1,4 +1,5 @@
 export type CourseDetails = {
+  course_code: string;
   course_title: string;
   academic_year: string;
   semester_type: string;

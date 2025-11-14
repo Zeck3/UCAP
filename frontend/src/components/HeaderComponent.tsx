@@ -5,6 +5,7 @@ import ChevronDown from "../assets/chevron-down-solid.svg?react";
 import LogoutIcon from "../assets/arrow-right-from-bracket-solid.svg?react";
 import UcapLogo from "../assets/ucap-logo.svg?react";
 import ChevronRight from "../assets/chevron-right-solid.svg?react"
+import type { CrumbState } from "../context/useBreadCrumbs";
 
 interface HeaderComponentProps {
   username: string;
@@ -15,10 +16,7 @@ interface HeaderComponentProps {
   crumbs?: {
     label: string;
     path: string;
-    state?: {
-      loadedCourseId: number;
-      instructorId: number;
-    };
+    state?: CrumbState;
   }[];
 }
 

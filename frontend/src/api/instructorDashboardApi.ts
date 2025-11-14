@@ -14,7 +14,7 @@ export const InstructorCourses = async (
 export const fetchCourseDetails = async (
   instructorId: number,
   loaded_course_id: number
-): Promise<CourseDetailsWithSections[]> => {
+): Promise<CourseDetailsWithSections> => {
   const response = await axiosClient.get(
     `/instructor/${instructorId}/${loaded_course_id}`
   );

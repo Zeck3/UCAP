@@ -10,12 +10,16 @@ import AppLayout from "../../layout/AppLayout";
 import { useAuth } from "../../context/useAuth";
 import FileImport from "../../assets/file-import-solid.svg?react";
 import { fetchCourseDetails } from "../../api/instructorDashboardApi";
-import type { CourseDetailsWithSections } from "../../types/instructorDashboardTypes";
+import type {
+  AssignedSection,
+  CourseDetailsWithSections,
+} from "../../types/instructorDashboardTypes";
 import ProgramOutcomesDisplayTable from "../../components/ProgramOutcomesDisplayTableComponent";
 import { useDepartment } from "../../context/useDepartment";
 import CourseOutcomesTableComponent from "../../components/CourseOutcomesTableComponent";
 import OutcomeMappingTableComponent from "../../components/OutcomeMappingTableComponent";
 import GearsSolid from "../../assets/gears-solid-full.svg?react";
+import EvilDog from "../../assets/undraw_page-eaten.svg?react";
 
 export default function CoursePage() {
   const [activeMenu, setActiveMenu] = useState("section");
@@ -28,9 +32,8 @@ export default function CoursePage() {
   const { layout } = useLayout();
   const navigate = useNavigate();
 
-  const [courseDetails, setCourseDetails] = useState<
-    CourseDetailsWithSections[]
-  >([]);
+  const [courseDetails, setCourseDetails] =
+    useState<CourseDetailsWithSections | null>(null);
   const [loading, setLoading] = useState(true);
   const currentUserId = user?.user_id ?? null;
 
@@ -59,11 +62,12 @@ export default function CoursePage() {
     if (!courseDetails) return [];
 
     const query = searchQuery.toLowerCase();
-    return courseDetails
+
+    return courseDetails.sections
       .filter(
         (section) =>
           section.year_and_section.toLowerCase().includes(query) ||
-          section.instructor_assigned.toLowerCase().includes(query)
+          (section.instructor_assigned ?? "").toLowerCase().includes(query)
       )
       .map((section) => ({
         ...section,
@@ -71,12 +75,19 @@ export default function CoursePage() {
       }));
   }, [courseDetails, searchQuery]);
 
-  const goToClassRecord = (item: CourseDetailsWithSections) => {
-    if (!loaded_course_id || !course_code) return;
+  const goBack = () => {
+    navigate(-1);
+  };
 
-    navigate(
-      `/instructor/${loaded_course_id}/${course_code}/${item.section_id}/${item.year_and_section}`
-    );
+  const goToClassRecord = (item: AssignedSection) => {
+    if (!loaded_course_id) return;
+
+    navigate(`/instructor/${loaded_course_id}/${item.section_id}`, {
+      state: {
+        course_code: courseDetails?.course_details.course_code ?? "",
+        year_and_section: item.year_and_section,
+      },
+    });
   };
 
   const handleCourseOutcomesChanged = () => {
@@ -87,27 +98,58 @@ export default function CoursePage() {
     return <div>Unauthorized: No instructor logged in.</div>;
   }
 
-  if (!loaded_course_id || !courseDetails) {
-    return <div>Loading course details...</div>;
+  if (!loading && !courseDetails) {
+    return (
+      <AppLayout activeItem="/instructor">
+        <div className="flex flex-col gap-4 justify-center items-center pt-8">
+          <EvilDog />
+          <span className="text-[#C6C6C6]">
+            Course not found or you are not assigned to this loaded course.
+          </span>
+          <button
+            onClick={goBack}
+            className="bg-ucap-yellow bg-ucap-yellow-hover text-white px-6 py-2.5 rounded-full cursor-pointer transition text-base flex items-center gap-2"
+          >
+            Go Back
+          </button>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!loading && courseDetails?.sections.length === 0) {
+    return (
+      <AppLayout activeItem="/instructor">
+        <div className="flex flex-col gap-4 justify-center items-center pt-16">
+          <EvilDog />
+          <span className="text-[#C6C6C6] text-center">
+            Course not found or you are not assigned to any section <br /> of
+            this course.
+          </span>
+          <button
+            onClick={goBack}
+            className="bg-ucap-yellow bg-ucap-yellow-hover text-white px-6 py-2.5 rounded-full cursor-pointer transition text-base flex items-center gap-2"
+          >
+            Go Back
+          </button>
+        </div>
+      </AppLayout>
+    );
   }
 
   return (
     <AppLayout activeItem="/instructor">
       <InfoComponent
         loading={loading}
-        title={courseDetails[0]?.course_title ?? ""}
+        title={courseDetails?.course_details.course_title ?? ""}
         subtitle={
-          courseDetails.length > 0
-            ? `${courseDetails[0].academic_year} ${
-                courseDetails[0].semester_type ?? "N/A"
-              } | ${courseDetails[0].year_level ?? "N/A"}`
+          courseDetails
+            ? `${courseDetails.course_details.academic_year} ${courseDetails.course_details.semester_type} | ${courseDetails.course_details.year_level}`
             : ""
         }
         details={
-          courseDetails.length > 0
-            ? `Department of ${courseDetails[0].department_name ?? "N/A"} | ${
-                courseDetails[0].college_name ?? "N/A"
-              } | ${courseDetails[0].campus_name ?? "N/A"} Campus`
+          courseDetails
+            ? `Department of ${courseDetails.course_details.department_name} | ${courseDetails.course_details.college_name} | ${courseDetails.course_details.campus_name} Campus`
             : ""
         }
       />
@@ -126,7 +168,7 @@ export default function CoursePage() {
             enableSearch: false,
             enableLayout: false,
             enableButton: true,
-          }
+          },
         ]}
         onSearch={(val) => setSearchQuery(val)}
         onTitleSelect={(val) => setActiveMenu(val)}
@@ -147,7 +189,9 @@ export default function CoursePage() {
               aspectRatio="20/9"
               loading={loading}
               fieldTop={(section) => section.year_and_section}
-              title={(section) => section.instructor_assigned}
+              title={(section) =>
+                section.instructor_assigned || "NO INSTRUCTOR ASSIGNED"
+              }
               subtitle={() => "Instructor Assigned"}
             />
           ) : (
@@ -204,7 +248,6 @@ export default function CoursePage() {
             />
           </div>
 
-
           <div className="flex flex-col gap-8">
             <p className="text-sm">
               The NLP-driven Course Outcome to Program Outcome (CO-PO) Mapping
@@ -214,7 +257,9 @@ export default function CoursePage() {
               remain subject to their discretion.
             </p>
             <button
-              onClick={() => console.log("clicked")}
+              onClick={() => {
+                alert("Feature coming soon!");
+              }}
               className="py-4 border cursor-pointer rounded-lg bg-ucap-yellow bg-ucap-yellow-hover border-[#FCB315] w-full flex flex-row items-center justify-center gap-4"
             >
               <GearsSolid className="w-8 h-8 text-white" />

@@ -138,7 +138,6 @@ def populate_default_data():
         academic_year_end=2026
     )
 
-
 def create_class_record_service(section):
     loaded_course = section.loaded_course
     course = loaded_course.course

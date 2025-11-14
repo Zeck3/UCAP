@@ -62,6 +62,16 @@ urlpatterns = [
     path("department_chair/program_outcomes_management/<int:program_id>/", program_outcome_list_create_view),
     path("department_chair/program_outcomes_management/detail/<int:outcome_id>/", program_outcome_detail_view),
     # ====================================================
+    # Dean
+    # ====================================================
+    path("dean/<int:department_id>/", dean_loaded_courses_view),
+    path("dean/loaded_course/<int:loaded_course_id>/", dean_course_page_view),
+    # ====================================================
+    # VCAA and VPAA
+    # ====================================================
+    path("campus/<int:department_id>/", campus_loaded_courses_view),
+    path("campus/loaded_course/<int:loaded_course_id>/", campus_course_page_view),
+    # ====================================================
     # Dropdown
     # ====================================================
     path("user_role/", user_role_list_view),

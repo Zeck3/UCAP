@@ -15,17 +15,28 @@ export type InstructorCourse = {
   academic_year: string;
   semester_type: string;
   department_name: string;
+  year_level_type: string;
 };
 
-export type CourseDetailsWithSections = {
-  section_id: number;
+export type CourseDetails = {
+  course_code: string;
   course_title: string;
-  academic_year: string;
   semester_type: string;
   year_level: string;
   department_name: string;
   college_name: string;
   campus_name: string;
+  academic_year: string;
+};
+
+
+export type AssignedSection = {
+  section_id: number;
   year_and_section: string;
-  instructor_assigned: string;
+  instructor_assigned: string | null;
+};
+
+export type CourseDetailsWithSections = {
+  course_details: CourseDetails;
+  sections: AssignedSection[];
 };

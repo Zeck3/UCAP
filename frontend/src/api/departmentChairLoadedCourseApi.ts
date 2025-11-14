@@ -28,8 +28,7 @@ export async function getDepartmentLoadedCourses(
     program_name: course.program_name,
     year_level: course.year_level_type,
     semester_type: course.semester_type,
-    academic_year: `${course.academic_year_start}-${course.academic_year_end}`,
-    academicYearAndSem: `${course.academic_year_start}-${course.academic_year_end} ${course.semester_type}`,
+    academic_year_and_semester: `${course.academic_year_start}-${course.academic_year_end} / ${course.semester_type}`,
   }));
 }
 

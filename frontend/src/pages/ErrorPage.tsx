@@ -10,7 +10,7 @@ interface ErrorPageProps {
 
 export default function ErrorPage({
   title = "Page Not Found",
-  description = "Sorry, the page you’re looking for doesn’t exist or an error occurred.",
+  description = "Sorry, the page you're looking for doesn't exist or an error occurred.",
   buttonText = "Go Back",
 }: ErrorPageProps) {
   const navigate = useNavigate();

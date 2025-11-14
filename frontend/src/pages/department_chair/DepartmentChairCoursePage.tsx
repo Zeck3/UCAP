@@ -30,8 +30,7 @@ import InfoComponent from "../../components/InfoComponent";
 export default function DepartmentChairCoursePage() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const { department_id, department_name, loaded_course_id, course_code } =
-    useParams();
+  const { department_id, loaded_course_id } = useParams();
   const loadedCourseId = Number(loaded_course_id ?? 0);
   const { user } = useAuth();
   const { layout } = useLayout();
@@ -66,7 +65,7 @@ export default function DepartmentChairCoursePage() {
       try {
         const [instructorsData, { course_details, sections }] =
           await Promise.all([
-             getInstructors(departmentId),
+            getInstructors(departmentId),
             getSections(Number(loaded_course_id)),
           ]);
 
@@ -213,9 +212,12 @@ export default function DepartmentChairCoursePage() {
   };
 
   const goToDepartmentChairAssessmentPage = (section: SectionDisplay) => {
-    navigate(
-      `/department/${department_id}/${department_name}/${loaded_course_id}/${course_code}/${section.year_and_section}`
-    );
+    navigate(`/department/${department_id}/${loaded_course_id}/${section.id}`, {
+      state: {
+        course_code: courseDetails?.course_code,
+        year_and_section: section.year_and_section,
+      },
+    });
   };
 
   if (!currentUserId) {
@@ -227,7 +229,7 @@ export default function DepartmentChairCoursePage() {
   }
 
   return (
-    <AppLayout activeItem={`/department/${department_id}/${department_name}`}>
+    <AppLayout activeItem={`/department/${department_id}`}>
       {courseDetails && (
         <InfoComponent
           loading={loading}

@@ -266,51 +266,48 @@ class InstructorLoadedCourseSerializer(serializers.ModelSerializer):
     academic_year = serializers.SerializerMethodField()
     semester_type = serializers.CharField(source="loaded_course.course.semester.semester_type", read_only=True)
     department_name = serializers.CharField(source="loaded_course.course.program.department.department_name", read_only=True)
+    year_level_type = serializers.CharField(source="loaded_course.course.year_level.year_level_type", read_only=True)
 
     def get_academic_year(self, obj):
-        return str(obj.loaded_course.academic_year.academic_year_start) + "-" + str(obj.loaded_course.academic_year.academic_year_end)
+        ay = obj.loaded_course.academic_year
+        return f"{ay.academic_year_start}-{ay.academic_year_end}"
+
     class Meta:
         model = Section
         fields = [
-            "loaded_course_id", 
-            "course_code", 
-            "course_title", 
-            "academic_year", 
-            "semester_type", 
-            "department_name"
+            "loaded_course_id",
+            "course_code",
+            "course_title",
+            "academic_year",
+            "semester_type",
+            "department_name",
+            "year_level_type",
         ]
 
+class InstructorCourseDetailsSerializer(serializers.Serializer):
+    course_code = serializers.CharField()
+    course_title = serializers.CharField()
+    semester_type = serializers.CharField()
+    year_level = serializers.CharField()
+    department_name = serializers.CharField()
+    college_name = serializers.CharField()
+    campus_name = serializers.CharField()
+    academic_year = serializers.CharField()
+
 class InstructorAssignedSectionSerializer(serializers.ModelSerializer):
-    course_title = serializers.CharField(source="loaded_course.course.course_title", read_only=True)
-    semester_type = serializers.CharField(source="loaded_course.course.semester.semester_type", read_only=True)
-    year_level = serializers.CharField(source="loaded_course.course.year_level.year_level_type", read_only=True)    
-    department_name = serializers.CharField(source="loaded_course.course.program.department.department_name", read_only=True)
-    college_name = serializers.CharField(source="loaded_course.course.program.department.college.college_name", read_only=True)
-    campus_name = serializers.CharField(source="loaded_course.course.program.department.campus.campus_name", read_only=True)
-    academic_year = serializers.SerializerMethodField()
     instructor_assigned = serializers.SerializerMethodField()
-    
+
     def get_instructor_assigned(self, obj):
         if obj.instructor_assigned:
-            return obj.instructor_assigned.first_name + " " + obj.instructor_assigned.last_name
-        else:
-            return None
-    def get_academic_year(self, obj):
-        return str(obj.loaded_course.academic_year.academic_year_start) + "-" + str(obj.loaded_course.academic_year.academic_year_end)
+            return f"{obj.instructor_assigned.first_name} {obj.instructor_assigned.last_name}"
+        return None
 
     class Meta:
         model = Section
         fields = [
-            "section_id", 
-            "year_and_section", 
-            "instructor_assigned", 
-            "course_title", 
-            "semester_type", 
-            "year_level", 
-            "department_name", 
-            "college_name", 
-            "campus_name", 
-            "academic_year"
+            "section_id",
+            "year_and_section",
+            "instructor_assigned"
         ]
 
 # ====================================================
@@ -653,6 +650,108 @@ class SectionCreateUpdateSerializer(serializers.ModelSerializer):
         ).exists():
             raise serializers.ValidationError("A section with these details already exists.")
         return attrs
+    
+# ====================================================
+# Dean
+# ====================================================
+class DeanLoadedCourseSerializer(serializers.ModelSerializer):
+    course_code = serializers.CharField(source="course.course_code", read_only=True)
+    course_title = serializers.CharField(source="course.course_title", read_only=True)
+    program_name = serializers.CharField(source="course.program.program_name", read_only=True)
+    academic_year_start = serializers.IntegerField(source="academic_year.academic_year_start", read_only=True)
+    academic_year_end = serializers.IntegerField(source="academic_year.academic_year_end", read_only=True)
+    year_level_type = serializers.CharField(source="course.year_level.year_level_type", read_only=True)
+    semester_type = serializers.CharField(source="course.semester.semester_type", read_only=True)
+
+    class Meta:
+        model = LoadedCourse
+        fields = [
+            "loaded_course_id",
+            "course_code",
+            "course_title",
+            "program_name",
+            "academic_year_start",
+            "academic_year_end",
+            "year_level_type",
+            "semester_type",
+        ]
+
+class DeanSectionSerializer(serializers.ModelSerializer):
+    instructor_id = serializers.IntegerField(
+        source="instructor_assigned.user_id",
+        read_only=True,
+        allow_null=True
+    )
+    instructor_assigned = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Section
+        fields = [
+            "section_id",
+            "year_and_section",
+            "instructor_assigned",
+            "instructor_id",
+        ]
+
+    def get_instructor_assigned(self, obj):
+        if obj.instructor_assigned:
+            return f"{obj.instructor_assigned.first_name} {obj.instructor_assigned.last_name}".strip()
+        return "NO INSTRUCTOR ASSIGNED"
+    
+# ====================================================
+# VCAA and VPAA
+# ====================================================
+class CampusLoadedCourseSerializer(serializers.ModelSerializer):
+    course_code = serializers.CharField(source="course.course_code", read_only=True)
+    course_title = serializers.CharField(source="course.course_title", read_only=True)
+    program_name = serializers.CharField(source="course.program.program_name", read_only=True)
+    academic_year_start = serializers.IntegerField(source="academic_year.academic_year_start", read_only=True)
+    academic_year_end = serializers.IntegerField(source="academic_year.academic_year_end", read_only=True)
+    semester_type = serializers.CharField(source="course.semester.semester_type", read_only=True)
+    year_level_type = serializers.CharField(source="course.year_level.year_level_type", read_only=True)
+
+    class Meta:
+        model = LoadedCourse
+        fields = [
+            "loaded_course_id",
+            "course_code",
+            "course_title",
+            "program_name",
+            "academic_year_start",
+            "academic_year_end",
+            "semester_type",
+            "year_level_type",
+        ]
+
+class CampusCourseDetailsSerializer(serializers.Serializer):
+    course_code = serializers.CharField()
+    course_title = serializers.CharField()
+    academic_year = serializers.CharField()
+    semester_type = serializers.CharField()
+    year_level = serializers.CharField()
+    department_name = serializers.CharField()
+    college_name = serializers.CharField()
+    campus_name = serializers.CharField()
+
+class CampusSectionDisplaySerializer(serializers.ModelSerializer):
+    instructor_assigned = serializers.SerializerMethodField()
+    instructor_id = serializers.IntegerField(
+        source="instructor_assigned.user_id", allow_null=True, read_only=True
+    )
+
+    def get_instructor_assigned(self, obj):
+        if obj.instructor_assigned:
+            return f"{obj.instructor_assigned.first_name} {obj.instructor_assigned.last_name}"
+        return "NO INSTRUCTOR ASSIGNED"
+
+    class Meta:
+        model = Section
+        fields = [
+            "section_id",
+            "year_and_section",
+            "instructor_assigned",
+            "instructor_id",
+        ]
 
 # ====================================================
 # Dropdown
