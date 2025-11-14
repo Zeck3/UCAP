@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   startTransition,
+  useRef,
 } from "react";
 import { useParams } from "react-router-dom";
 import { generateHeaderConfig } from "../utils/HeaderConfig";
@@ -68,8 +69,13 @@ export function useClassRecord() {
   } = classRecord;
 
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [canOpenPopup, setCanOpenPopup] = useState<boolean>(true);
+  const [studentNameWidth, setStudentNameWidth] = useState(() => {
+    const saved = localStorage.getItem("studentNameWidth");
+    return saved ? Number(saved) : 120;
+  });
   const [editingAssessment, setEditingAssessment] = useState<{
     nodeKey: string;
     value: string;
@@ -261,9 +267,9 @@ export function useClassRecord() {
           currentAssessmentBlooms: [],
           currentAssessmentOutcomes: [],
         });
-
         setBloomsOptions(mappedBlooms);
         setOutcomesOptions(mappedOutcomes);
+        setInitialized(true);
       });
     } catch (err) {
       console.error("Failed to load class record:", err);
@@ -702,7 +708,7 @@ export function useClassRecord() {
   );
 
   const handleEditAssessmentTitle = useCallback(
-    (node: HeaderNode, event: React.MouseEvent<HTMLDivElement>) => {
+    (node: HeaderNode, event: React.MouseEvent<HTMLElement>) => {
       if (!canOpenPopup) return;
       setCanOpenPopup(false);
 
@@ -793,11 +799,11 @@ export function useClassRecord() {
 
   const handleOpenAssessmentInfo = useCallback(
     (e: React.MouseEvent, assessmentId: number) => {
-      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
 
       setAssessmentInfoContextMenu({
         visible: true,
-        x: rect.left,
+        x: rect.left - 1,
         y: rect.bottom,
         assessmentId,
       });
@@ -814,7 +820,12 @@ export function useClassRecord() {
   );
 
   const handleCloseAssessmentInfo = () => {
-    setAssessmentInfoContextMenu({ visible: false, x: 0, y: 0, assessmentId: undefined });
+    setAssessmentInfoContextMenu({
+      visible: false,
+      x: 0,
+      y: 0,
+      assessmentId: undefined,
+    });
   };
 
   const handleRightClickRow = useCallback(
@@ -863,6 +874,41 @@ export function useClassRecord() {
     }
   };
 
+  const widthRef = useRef(studentNameWidth);
+
+  useEffect(() => {
+    widthRef.current = studentNameWidth;
+  }, [studentNameWidth]);
+
+  const MIN_WIDTH = 50;
+
+  const handleVSeparatorMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLTableCellElement, MouseEvent>) => {
+      e.preventDefault();
+
+      const startX = e.clientX;
+      const startWidth = widthRef.current;
+
+      function onMouseMove(ev: MouseEvent) {
+        const delta = ev.clientX - startX;
+        const next = Math.max(MIN_WIDTH, startWidth + delta);
+
+        widthRef.current = next;
+        setStudentNameWidth(next);
+        localStorage.setItem("studentNameWidth", String(next));
+      }
+
+      function onMouseUp() {
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+      }
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    },
+    []
+  );
+
   return {
     headerNodes,
     maxScores,
@@ -883,6 +929,8 @@ export function useClassRecord() {
     assessmentInfoContextMenu,
     editingAssessment,
     setEditingAssessment,
+    setStudentNameWidth,
+    studentNameWidth,
     handleEditAssessmentTitle,
     handleUpdateAssessmentTitle,
     handleEditAssessmentTitleCancel,
@@ -900,7 +948,9 @@ export function useClassRecord() {
     handleDeleteStudent,
     handleAddAssessment,
     handleDeleteAssessment,
+    handleVSeparatorMouseDown,
     loading,
+    initialized,
     error,
   };
 }

@@ -10,6 +10,7 @@ import {
   getTextClass,
 } from "../utils/ClassRecordFunctions";
 import ScoreInput from "../utils/ScoreInput";
+import RemarksDropdown from "../context/RemarksDropdown";
 
 const GRADE_SCALE = [
   1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25,
@@ -38,6 +39,8 @@ interface BuildStudentRowProps {
     assessmentId: number,
     value: number | null
   ) => Promise<void>;
+  studentNameWidth: number;
+  handleResize: (e: React.MouseEvent<HTMLTableCellElement, MouseEvent>) => void;
 }
 
 function BuildStudentRow({
@@ -51,6 +54,8 @@ function BuildStudentRow({
   onRightClickRow,
   handleUpdateStudent,
   saveRawScore,
+  studentNameWidth,
+  handleResize,
 }: BuildStudentRowProps) {
   const [localStudent, setLocalStudent] = useState(student);
 
@@ -86,7 +91,6 @@ function BuildStudentRow({
       textClass: string;
       bgClass: string;
     } => {
-
       let raw = 0;
       let rounded = 0;
       let cont: string | JSX.Element = "";
@@ -140,26 +144,13 @@ function BuildStudentRow({
 
       if (key.endsWith("remarks")) {
         cont = (
-          <select
-            id={`remarks-${student.student_id}`}
-            name={`remarks-${student.student_id}`}
+          <RemarksDropdown
             value={localStudent.remarks ?? ""}
-            onChange={(e) => handleFieldChange("remarks", e.target.value)}
-            onBlur={() => handleFieldBlur("remarks")}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleFieldBlur("remarks");
-                e.currentTarget.blur();
-              }
+            onChange={(val) => {
+              handleFieldChange("remarks", val);
+              handleUpdateStudent(student.student_id, { remarks: val });
             }}
-            className="w-full bg-transparent border-none focus:outline-none text-center"
-          >
-            <option value=""></option>
-            <option value="INC">INC</option>
-            <option value="Withdrawn">Withdrawn</option>
-            <option value="DF">DF</option>
-            <option value="OD">OD</option>
-          </select>
+          />
         );
       }
 
@@ -169,7 +160,7 @@ function BuildStudentRow({
       student.student_id,
       localStudent.remarks,
       handleFieldChange,
-      handleFieldBlur,
+      handleUpdateStudent,
     ]
   );
 
@@ -184,7 +175,11 @@ function BuildStudentRow({
           return (
             <td
               key={`${baseKey}-vsep`}
-              className="bg-ucap-blue w-4 border border-ucap-blue sticky-vsep"
+              className="bg-ucap-blue border border-ucap-blue cursor-col-resize sticky-vsep"
+              onMouseDown={handleResize}
+              style={{
+                width: 16,
+              }}
             />
           );
         }
@@ -245,6 +240,10 @@ function BuildStudentRow({
             <td
               key={`name-${baseKey}`}
               className="border border-[#E9E6E6] text-left sticky-col sticky-col-3"
+              style={{
+                width: studentNameWidth,
+                minWidth: studentNameWidth,
+              }}
               onContextMenu={(e) => onRightClickRow?.(e, student.student_id)}
             >
               <input
@@ -262,7 +261,15 @@ function BuildStudentRow({
                     e.currentTarget.blur();
                   }
                 }}
-                className="py-2.25 px-2 w-full h-full border-none outline-none bg-transparent"
+                className="
+                  w-full 
+                  bg-transparent 
+                  border-none 
+                  outline-none 
+                  px-2 
+                  py-2.25
+                  truncate
+                "
               />
             </td>,
           ];
@@ -309,7 +316,9 @@ function BuildStudentRow({
         return (
           <td
             key={baseKey}
-            className={`border border-[#E9E6E6] text-center ${bgClass} ${textClass} ${node.calculationType === "assignment" ? "assessment-col" : ""}`}
+            className={`border border-[#E9E6E6] text-center ${bgClass} ${textClass} ${
+              node.calculationType === "assignment" ? "assessment-col" : ""
+            }`}
           >
             {content}
           </td>
@@ -330,13 +339,15 @@ function BuildStudentRow({
       studentScore,
       computedValues,
       maxScores,
+      studentNameWidth,
+      handleResize,
     ]
   );
 
   const rowCells = useMemo(() => buildRowCells(nodes), [nodes, buildRowCells]);
 
   return (
-    <tr key={student.student_id} className="hover:bg-gray-50 select-none">
+    <tr key={student.student_id} className="select-none hover:bg-gray-50!">
       {rowCells}
     </tr>
   );

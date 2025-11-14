@@ -96,10 +96,9 @@ export default function AssessmentInfoContextMenu({
   const menu = (
     <div
       ref={menuRef}
-      className="bg-white shadow-lg rounded-lg border border-[#E9E6E6] p-3 w-64 space-y-4"
+      className="bg-white rounded-lg border border-[#E9E6E6] p-3 w-64 space-y-4"
       style={{ position: "fixed", top: y, left: x, zIndex: 99999 }}
     >
-      {/* BLOOM TAGS */}
       {bloomsOptions.length > 0 && (
         <div>
           <label className="block text-sm font-medium mb-1">
@@ -110,14 +109,19 @@ export default function AssessmentInfoContextMenu({
             {bloomsOptions.map((b) => {
               const isSelected = selectedBlooms.includes(String(b.id));
               const color =
-                BLOOM_COLORS[b.name] || "bg-gray-100 text-gray-800 border-gray-300";
+                BLOOM_COLORS[b.name] ||
+                "bg-gray-100 text-gray-800 border-gray-300";
 
               return (
                 <button
                   key={b.id}
                   onClick={() => toggleBloom(String(b.id))}
                   className={`px-2 py-1 text-xs border rounded-full transition 
-                    ${isSelected ? color : "bg-white text-gray-700 border-gray-300"}
+                    ${
+                      isSelected
+                        ? color
+                        : "bg-white text-gray-700 border-gray-300"
+                    }
                   `}
                 >
                   {b.name}
@@ -128,7 +132,6 @@ export default function AssessmentInfoContextMenu({
         </div>
       )}
 
-      {/* OUTCOME CHECKBOXES */}
       {outcomesOptions.length > 0 && (
         <div>
           <label className="block text-sm font-medium mb-1">

@@ -50,7 +50,7 @@ input[type="number"] {
   --ucap-header-top-4: 0px;
   --ucap-header-top-5: 0px;
   --ucap-header-top-6: 0px;
-  --ucap-sticky-left-boundary: calc(3rem + 8rem + 12rem);
+  --ucap-sticky-left-boundary: calc(3rem + 8rem);
 }
 
 .ucap-table thead th {
@@ -132,7 +132,7 @@ input[type="number"] {
 
 .ucap-table .sticky-vsep {
   position: sticky;
-  left: calc(var(--ucap-sticky-left-boundary) - 23rem);
+  left: calc(var(--ucap-sticky-left-boundary));
   z-index: 120;
 }
 

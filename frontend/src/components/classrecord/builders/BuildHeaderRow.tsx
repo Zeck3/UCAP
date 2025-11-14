@@ -3,6 +3,7 @@ import type React from "react";
 import type { JSX } from "react";
 import type { HeaderNode } from "../types/headerConfigTypes";
 import type { Assessment } from "../../../types/classRecordTypes";
+import ChevronDown from "../../../assets/chevron-down-solid.svg?react";
 import {
   countLeaves,
   getTotalLeafCount,
@@ -34,18 +35,29 @@ interface BuildHeaderRowProps {
     assessmentId: number,
     updates: Partial<Assessment>
   ) => Promise<void>;
+  assessmentInfoContextMenu: {
+    visible: boolean;
+    x: number;
+    y: number;
+    assessmentId?: number;
+  };
+  studentNameWidth: number;
+  handleResize: (e: React.MouseEvent<HTMLTableCellElement, MouseEvent>) => void;
 }
 
 function BuildHeaderRow({
   nodes,
   originalMaxDepth,
   openAssessmentInfoContextMenu,
+  assessmentInfoContextMenu,
   maxScores,
   setMaxScores,
   computedMaxValues,
   handleEditStart,
   onRightClickNode,
   handleUpdateAssessment,
+  studentNameWidth,
+  handleResize,
 }: BuildHeaderRowProps) {
   const [leafRowHeight, setLeafRowHeight] = useState(() => {
     const saved = localStorage.getItem("leafRowHeight");
@@ -74,8 +86,10 @@ function BuildHeaderRow({
       const startHeight = leafRowHeight;
       function onMouseMove(ev: MouseEvent) {
         const delta = ev.clientY - startY;
-        const nextHeight = startHeight + delta;
-        setLeafRowHeight(Math.max(40, nextHeight));
+        const next = Math.max(40, startHeight + delta);
+
+        setLeafRowHeight(next);
+        localStorage.setItem("leafRowHeight", String(next));
       }
       function onMouseUp() {
         document.removeEventListener("mousemove", onMouseMove);
@@ -100,10 +114,10 @@ function BuildHeaderRow({
           <th
             key={node.key || `vsep-${level}-${node.title}-${node.type}`}
             rowSpan={newMaxDepth - level}
-            className="bg-ucap-blue w-1 border border-ucap-blue relative cursor-col-resize sticky-rowspan sticky-vsep"
-          >
-            <div className="absolute top-0 right-0 h-full w-1 cursor-col-resize" />
-          </th>
+            className="bg-ucap-blue border border-ucap-blue cursor-col-resize sticky-rowspan sticky-vsep"
+            onMouseDown={handleResize}
+            style={{ width: 16 }}
+          />
         );
         return;
       }
@@ -216,9 +230,16 @@ function BuildHeaderRow({
                 onClick={(e) =>
                   openAssessmentInfoContextMenu(e, Number(node.key))
                 }
-                className="w-full h-full bg-gray-100 hover:bg-gray-200 text-xs py-1.5 px-2"
+                className="flex items-center justify-center w-full h-full py-1.5 px-2 hover:bg-gray-100"
               >
-                Info...
+                <ChevronDown
+                  className={`h-3 w-3 transition-transform ${
+                    assessmentInfoContextMenu.visible &&
+                    assessmentInfoContextMenu.assessmentId === Number(node.key)
+                      ? "rotate-180"
+                      : ""
+                  }`}
+                />
               </button>
             </th>
           );
@@ -251,11 +272,11 @@ function BuildHeaderRow({
       if (node.type === "v-separator") {
         subRow.push(
           <th
-            key={`vsep-${node.key || node.title}`}
-            className="bg-ucap-blue w-1 border border-ucap-blue relative cursor-col-resize sticky-rowspan sticky-vsep"
-          >
-            <div className="absolute top-0 right-0 h-full w-1 cursor-col-resize" />
-          </th>
+            key={node.key || `vsep-${node.title}-${node.type}`}
+            className="bg-ucap-blue border border-ucap-blue cursor-col-resize sticky-rowspan sticky-vsep"
+            onMouseDown={handleResize}
+            style={{ width: 16 }}
+          />
         );
         return;
       }
@@ -276,7 +297,7 @@ function BuildHeaderRow({
         subRow.push(
           <th
             key="sub-no-col"
-            className="border border-[#E9E6E6] p-2 w-12 text-left font-bold sticky-col sticky-col-1"
+            className="border border-[#E9E6E6] border-b-2 p-2 w-12 text-left font-bold sticky-col sticky-col-1"
           >
             No.
           </th>
@@ -284,7 +305,7 @@ function BuildHeaderRow({
         subRow.push(
           <th
             key="sub-id-col"
-            className="border border-[#E9E6E6] p-2 w-32 text-left font-bold sticky-col sticky-col-2"
+            className="border border-[#E9E6E6] border-b-2 p-2 w-32 text-left font-bold sticky-col sticky-col-2"
           >
             Student ID
           </th>
@@ -292,7 +313,11 @@ function BuildHeaderRow({
         subRow.push(
           <th
             key="sub-name-col"
-            className="border border-[#E9E6E6] p-2 text-left font-bold sticky-col sticky-col-3"
+            style={{
+              width: studentNameWidth,
+              minWidth: studentNameWidth,
+            }}
+            className="border border-[#E9E6E6] border-b-2 p-2 text-left font-bold sticky-col sticky-col-3"
           >
             Name
           </th>
@@ -356,7 +381,7 @@ function BuildHeaderRow({
       subRow.push(
         <th
           key={`sub-${node.key}`}
-          className={`border border-[#E9E6E6] text-center ${bgClass} ${textClass} ${
+          className={`border border-[#E9E6E6] border-b-2 text-center ${bgClass} ${textClass} ${
             node.calculationType ? "w-15" : ""
           } ${
             node.nodeType === "assessment" ||
@@ -386,6 +411,9 @@ function BuildHeaderRow({
     handleUpdateAssessment,
     handleNodeClick,
     handleNodeContextMenu,
+    assessmentInfoContextMenu,
+    studentNameWidth,
+    handleResize,
   ]);
 
   return (

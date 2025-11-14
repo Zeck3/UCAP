@@ -16,7 +16,7 @@ export default function FloatingToolbar({ goToAssessmentPage }: Props) {
   return (
     <>
       <div
-        className={`${containerBase} ${
+        className={`${containerBase} transition-all ${
           toolbarOpen
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-10 pointer-events-none"

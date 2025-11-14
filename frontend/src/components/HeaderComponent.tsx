@@ -55,7 +55,7 @@ export default function HeaderComponent({
   }, [handleClickOutside]);
 
   return (
-    <header className="flex border-b border-[#E9E6E6] bg-white h-16 w-full fixed select-none z-2500">
+    <header className="flex border-b border-[#E9E6E6] bg-white h-16 w-full fixed select-none z-30">
       <div
         className="w-16 flex items-center justify-center"
         onClick={onButtonClick}

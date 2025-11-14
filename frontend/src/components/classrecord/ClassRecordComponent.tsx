@@ -11,7 +11,11 @@ import { useClassRecord } from "./utils/useClassRecord";
 import { getMaxDepth } from "./utils/ClassRecordFunctions";
 import "../../styles.css";
 
-export default function ClassRecordComponent() {
+export default function ClassRecordComponent({
+  onInitialized,
+}: {
+  onInitialized?: () => void;
+}) {
   const {
     headerNodes,
     maxScores,
@@ -29,6 +33,7 @@ export default function ClassRecordComponent() {
     assessmentInfoContextMenu,
     editingAssessment,
     setEditingAssessment,
+    studentNameWidth,
     handleEditAssessmentTitle,
     handleUpdateAssessmentTitle,
     handleEditAssessmentTitleCancel,
@@ -46,7 +51,9 @@ export default function ClassRecordComponent() {
     handleDeleteStudent,
     handleAddAssessment,
     handleDeleteAssessment,
+    handleVSeparatorMouseDown,
     loading,
+    initialized,
     error,
   } = useClassRecord();
 
@@ -62,66 +69,76 @@ export default function ClassRecordComponent() {
 
     function setHeaderOffsets() {
       if (!table) return;
+
       const rows = Array.from(table.querySelectorAll("thead tr"));
       let cum = 0;
+
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i] as HTMLTableRowElement | undefined;
         const h = r ? Math.ceil(r.getBoundingClientRect().height) : 0;
         table.style.setProperty(`--ucap-header-top-${i}`, `${cum}px`);
         cum += h;
       }
-      const col1 = table.querySelector("thead th.sticky-col-1") as
-        | HTMLTableCellElement
-        | null;
-      const col2 = table.querySelector("thead th.sticky-col-2") as
-        | HTMLTableCellElement
-        | null;
-      const col3 = table.querySelector("thead th.sticky-col-3") as
-        | HTMLTableCellElement
-        | null;
+
+      const col1 = table.querySelector(
+        "thead th.sticky-col-1"
+      ) as HTMLTableCellElement | null;
+      const col2 = table.querySelector(
+        "thead th.sticky-col-2"
+      ) as HTMLTableCellElement | null;
+      const col3 = table.querySelector(
+        "thead th.sticky-col-3"
+      ) as HTMLTableCellElement | null;
+
       if (col1 && col2 && col3) {
-        const w1 = Math.ceil(col1.getBoundingClientRect().width) || 0;
-        const w2 = Math.ceil(col2.getBoundingClientRect().width) || 0;
-        const w3 = Math.ceil(col3.getBoundingClientRect().width) || 0;
-        const boundary = w1 + w2 + w3;
-        table.style.setProperty("--ucap-sticky-left-boundary", `${boundary}px`);
+        const w1 = Math.ceil(col1.getBoundingClientRect().width);
+        table.style.setProperty("--ucap-sticky-left-boundary", `${w1}px`);
       }
     }
 
     let frameId: number | null = null;
+
     const schedule = () => {
       if (frameId != null) return;
       frameId = requestAnimationFrame(() => {
-        frameId = null;
-        setHeaderOffsets();
+        requestAnimationFrame(() => {
+          frameId = null;
+          setHeaderOffsets();
+        });
       });
     };
 
     schedule();
-    const onResize = () => schedule();
-    window.addEventListener("resize", onResize);
 
-    const mo = new MutationObserver(() => schedule());
+    window.addEventListener("resize", schedule);
+
+    const mo = new MutationObserver(schedule);
     mo.observe(table, { childList: true, subtree: true, attributes: true });
 
     return () => {
-      window.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", schedule);
       mo.disconnect();
       if (frameId != null) cancelAnimationFrame(frameId);
     };
-  }, [headerNodes]);
+  }, [headerNodes, studentNameWidth]);
 
+  useEffect(() => {
+    if (initialized) onInitialized?.();
+  }, [initialized, onInitialized]);
+
+  if (!initialized) return <ClassRecordLoading />;
   if (loading) return <ClassRecordLoading />;
   if (error) return <ClassRecordError description={error} />;
   if (headerNodes.length === 0 || sortedStudentsData.length === 0)
-    return <ClassRecordError description={"No data for this class record."} />;
+    return <ClassRecordError description="No data for this class record." />;
 
   const overlayVisible =
     !!editingAssessment ||
     studentContextMenu.visible ||
     assessmentContextMenu.visible ||
     componentContextMenu.visible ||
-    (assessmentInfoContextMenu.visible && !!assessmentInfoContextMenu.assessmentId);
+    (assessmentInfoContextMenu.visible &&
+      !!assessmentInfoContextMenu.assessmentId);
 
   return (
     <>
@@ -134,12 +151,15 @@ export default function ClassRecordComponent() {
             nodes={headerNodes}
             originalMaxDepth={originalMaxDepth}
             openAssessmentInfoContextMenu={handleOpenAssessmentInfo}
+            assessmentInfoContextMenu={assessmentInfoContextMenu}
             maxScores={maxScores}
             setMaxScores={setMaxScores}
             computedMaxValues={computedMaxValues}
             handleEditStart={handleEditAssessmentTitle}
             onRightClickNode={handleRightClickNode}
             handleUpdateAssessment={handleUpdateAssessment}
+            studentNameWidth={studentNameWidth}
+            handleResize={handleVSeparatorMouseDown}
           />
         </thead>
         <tbody>
@@ -161,6 +181,8 @@ export default function ClassRecordComponent() {
               updateScoreProp={updateStudentScore}
               onRightClickRow={handleRightClickRow}
               handleUpdateStudent={handleUpdateStudent}
+              studentNameWidth={studentNameWidth}
+              handleResize={handleVSeparatorMouseDown}
             />
           ))}
         </tbody>
