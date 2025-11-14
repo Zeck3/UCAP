@@ -1,22 +1,26 @@
 import { useState } from "react";
-import FileImportIcon from "../assets/file-import-solid.svg?react";
 import AnalyticsIcon from "../assets/chart-simple.svg?react";
 
 type Props = {
   goToAssessmentPage: () => void;
 };
 
-const TOOLBAR_Z = "z-[1500]";
-const containerBase = `fixed bottom-4 left-1/2 -translate-x-1/2 ${TOOLBAR_Z} bg-white border border-[#E9E6E6] shadow-lg rounded-full px-4 py-2 flex items-center space-x-4 transition-all duration-300`;
-const reopenBtnBase = `fixed bottom-4 left-1/2 -translate-x-1/2 ${TOOLBAR_Z} p-2 rounded-full bg-white border border-[#E9E6E6] shadow-md hover:bg-gray-50 transition`;
+const TOOLBAR_Z = "z-35";
+const containerBase = `fixed bottom-4 left-1/2 -translate-x-1/2 ${TOOLBAR_Z} 
+  bg-white border border-[#E9E6E6] shadow-lg rounded-full px-4 py-2 
+  flex items-center space-x-4 transition-all duration-300`;
 
-export default function FloatingToolbar({ goToAssessmentPage }: Props) {
+const reopenBtnBase = `fixed bottom-4 left-1/2 -translate-x-1/2 ${TOOLBAR_Z} 
+  p-2 rounded-full bg-white border border-[#E9E6E6] shadow-md 
+  hover:bg-gray-50 transition`;
+
+export default function ActionBarComponent({ goToAssessmentPage }: Props) {
   const [toolbarOpen, setToolbarOpen] = useState(true);
 
   return (
     <>
       <div
-        className={`${containerBase} transition-all ${
+        className={`${containerBase} ${
           toolbarOpen
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-10 pointer-events-none"
@@ -24,25 +28,14 @@ export default function FloatingToolbar({ goToAssessmentPage }: Props) {
       >
         <button
           type="button"
-          className="relative p-2 rounded-full hover:bg-gray-100 group"
-          title="Import Master List"
-          aria-label="Import Master List"
-        >
-          <FileImportIcon className="w-5 h-5 text-[#767676]" />
-          <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 text-xs text-white bg-[#767676] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition">
-            Import Master List
-          </span>
-        </button>
-
-        <button
-          type="button"
           onClick={goToAssessmentPage}
-          className="relative px-4 py-2 rounded-full flex items-center gap-2 bg-ucap-yellow hover:bg-ucap-yellow-hover transition group"
+          className="relative px-4 py-2 rounded-full flex items-center gap-2 
+          bg-ucap-yellow hover:bg-ucap-yellow-hover hover:cursor-pointer transition group"
           title="Generate COA Result Sheet"
           aria-label="Generate COA Result Sheet"
         >
           <AnalyticsIcon className="w-5 h-5 text-white" />
-          <span className="text-xs text-white">Generate Result Sheet</span>
+          <span className="text-xs text-white">View Analytics</span>
         </button>
 
         <button
@@ -60,7 +53,11 @@ export default function FloatingToolbar({ goToAssessmentPage }: Props) {
             viewBox="0 0 24 24"
             aria-hidden="true"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </button>
       </div>
@@ -81,7 +78,11 @@ export default function FloatingToolbar({ goToAssessmentPage }: Props) {
             viewBox="0 0 24 24"
             aria-hidden="true"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M5 15l7-7 7 7"
+            />
           </svg>
         </button>
       )}

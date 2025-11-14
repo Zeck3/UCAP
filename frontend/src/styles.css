@@ -79,9 +79,21 @@ input[type="number"] {
   background-clip: padding-box;
 }
 
+.ucap-table {
+  --col1-width: 3rem;
+  --col2-width: 8rem;
+}
+
 .ucap-table .sticky-col-1 { left: 0; }
-.ucap-table .sticky-col-2 { left: 3rem; }
-.ucap-table .sticky-col-3 { left: calc(3rem + 8rem); }
+
+.ucap-table .sticky-col-2 {
+  left: var(--col1-width);
+}
+
+.ucap-table .sticky-col-3 {
+  left: calc(var(--col1-width) + var(--col2-width));
+}
+
 
 .ucap-table .sticky-col::after {
   content: "";

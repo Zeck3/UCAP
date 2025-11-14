@@ -1,11 +1,12 @@
 import { useParams } from "react-router-dom";
 import AppLayout from "../../layout/AppLayout";
+import AssessmentPageComponent from "../../components/AssessmentPageComponent";
 
-export default function ClassRecordPage() {
-  const { department_id } = useParams();
+export default function DepartmentChairAssessmentPage() {
+  const { department_id, section_id } = useParams();
   return (
-    <AppLayout activeItem={`/department/${department_id}`}>
-      <div>Assessment page</div>
+    <AppLayout activeItem={`/department/${department_id}`} disablePadding>
+      <AssessmentPageComponent sectionId={Number(section_id)}/>
     </AppLayout>
   );
 }

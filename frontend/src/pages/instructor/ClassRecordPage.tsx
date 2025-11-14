@@ -1,8 +1,8 @@
 import AppLayout from "../../layout/AppLayout";
 import ClassRecordComponent from "../../components/classrecord/ClassRecordComponent";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import ActionBarComponent from "../../components/ActionBarComponent";
 import { useState } from "react";
+import FloatingToolbar from "../../components/FloatingToolbarComponent";
 
 export default function ClassRecordPage() {
   const navigate = useNavigate();
@@ -15,6 +15,9 @@ export default function ClassRecordPage() {
   };
 
   const [crReady, setCrReady] = useState(false);
+  const [refreshFn, setRefreshFn] = useState<(() => Promise<void>) | null>(
+    null
+  );
 
   const goToAssessmentPage = () => {
     navigate(`/instructor/${loaded_course_id}/${section_id}/assessment`, {
@@ -24,10 +27,17 @@ export default function ClassRecordPage() {
 
   return (
     <AppLayout activeItem="/instructor" disablePadding>
-      <ClassRecordComponent onInitialized={() => setCrReady(true)} />
+      <ClassRecordComponent
+        onInitialized={() => setCrReady(true)}
+        onProvideFetchStudents={(fn) => setRefreshFn(() => fn)}
+      />
 
-      {crReady && (
-        <ActionBarComponent goToAssessmentPage={goToAssessmentPage} />
+      {crReady && refreshFn && (
+        <FloatingToolbar
+          sectionId={Number(section_id)}
+          goToAssessmentPage={goToAssessmentPage}
+          refreshStudents={refreshFn}
+        />
       )}
     </AppLayout>
   );

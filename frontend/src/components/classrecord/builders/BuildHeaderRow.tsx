@@ -222,7 +222,7 @@ function BuildHeaderRow({
           buttonRow.push(
             <th
               key={`button-${node.key || node.title}`}
-              className={`border border-gray-200 p-0 text-center ${
+              className={`border border-[#E9E6E6] p-0 text-center ${
                 node.calculationType ? "w-15" : ""
               }`}
             >

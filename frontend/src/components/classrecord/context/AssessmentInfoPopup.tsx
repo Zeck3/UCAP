@@ -110,7 +110,7 @@ export default function AssessmentInfoContextMenu({
               const isSelected = selectedBlooms.includes(String(b.id));
               const color =
                 BLOOM_COLORS[b.name] ||
-                "bg-gray-100 text-gray-800 border-gray-300";
+                "bg-gray-100 text-gray-800 border-[#E9E6E6]";
 
               return (
                 <button
@@ -120,7 +120,7 @@ export default function AssessmentInfoContextMenu({
                     ${
                       isSelected
                         ? color
-                        : "bg-white text-gray-700 border-gray-300"
+                        : "bg-white text-gray-700 border-[#E9E6E6]"
                     }
                   `}
                 >

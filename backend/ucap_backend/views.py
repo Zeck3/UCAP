@@ -1,4 +1,6 @@
 from collections import defaultdict
+import csv
+from io import TextIOWrapper
 import json
 
 from django.http import JsonResponse
@@ -320,6 +322,7 @@ class ClassRecordViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
 
+
 class StudentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = Student.objects.all()
@@ -338,7 +341,9 @@ class StudentViewSet(viewsets.ModelViewSet):
             raise serializers.ValidationError("Section is required")
         student = serializer.save(section_id=section_id)
 
-        assessments = Assessment.objects.filter(course_component__course_unit__course_term__section_id=section_id)
+        assessments = Assessment.objects.filter(
+            course_component__course_unit__course_term__section_id=section_id
+        )
         raw_scores = [
             RawScore(student=student, assessment=assessment, raw_score=0)
             for assessment in assessments
@@ -346,6 +351,189 @@ class StudentViewSet(viewsets.ModelViewSet):
         RawScore.objects.bulk_create(raw_scores)
         return student
 
+    # =====================================================
+    # CSV IMPORT LOGIC (your new feature)
+    # =====================================================
+
+    @action(detail=False, methods=["post"], url_path="import")
+    def import_students(self, request):
+        section_id = request.query_params.get("section")
+        mode = request.query_params.get("mode", "append")  # append | override
+
+        if not section_id:
+            return Response({"detail": "section is required"}, status=400)
+
+        if "file" not in request.FILES:
+            return Response({"detail": "CSV file is required"}, status=400)
+
+        file = request.FILES["file"]
+        students_from_csv = self._parse_grade_sheet_csv(file)
+
+        filtered = []
+        seen = set()
+        for s in students_from_csv:
+            key = (s["id_number"], s["student_name"])
+            if key not in seen:
+                seen.add(key)
+                filtered.append(s)
+
+        existing = Student.objects.filter(section_id=section_id).order_by("student_id")
+
+        if mode == "append":
+            return self._import_append(section_id, existing, filtered)
+
+        if mode == "override":
+            return self._import_override(section_id, existing, filtered)
+
+        return Response({"detail": "invalid mode"}, status=400)
+
+    def _parse_grade_sheet_csv(self, file):
+        wrapper = TextIOWrapper(file, encoding="utf-8", errors="ignore")
+        reader = csv.reader(wrapper)
+        rows = list(reader)
+
+        header_idx = None
+        header = None
+
+        # -------------------------------
+        # 1. Find header row
+        # -------------------------------
+        for i, row in enumerate(rows):
+            normalized = [str(c).strip().lower() for c in row]
+
+            has_id = any(
+                kw in cell for cell in normalized
+                for kw in ["student no", "student number", "id number", "id no"]
+            )
+
+            has_name = any(
+                kw in cell for cell in normalized
+                for kw in ["full name", "student name", "name"]
+            )
+
+            if has_id and has_name:
+                header_idx = i
+                header = normalized
+                break
+
+        if header_idx is None:
+            raise ValueError("Could not find student header in CSV.")
+
+        # -------------------------------
+        # 2. Find ID and Name columns
+        # -------------------------------
+        def find_col(header, keywords):
+            for idx, col in enumerate(header):
+                for kw in keywords:
+                    if kw in col:
+                        return idx
+            return None
+
+        id_col = find_col(header, ["student no", "student number", "id number", "id no"])
+        name_col = find_col(header, ["full name", "student name", "name"])
+
+        if id_col is None or name_col is None:
+            raise ValueError("ID or Name column not found in CSV.")
+
+        # -------------------------------
+        # 3. Extract students after header
+        # -------------------------------
+        students = []
+
+        for row in rows[header_idx + 1:]:
+            # Stop if completely empty row
+            if all(not str(c).strip() for c in row):
+                break
+
+            if len(row) <= max(id_col, name_col):
+                continue
+
+            id_number = str(row[id_col]).strip()
+            student_name = str(row[name_col]).strip()
+
+            if not id_number and not student_name:
+                continue
+
+            # Skip footer lines ("Grade Statistics" etc)
+            if id_number.lower() in ("passed:", "failed:", "incomplete:", "dropped:", "no grade:", "total"):
+                continue
+
+            students.append({
+                "id_number": int(id_number) if id_number.isdigit() else None,
+                "student_name": student_name,
+            })
+
+        return students
+
+
+    def _import_append(self, section_id, existing_rows, new_students):
+        updated = []
+        skipped = []
+
+        db_seen = {
+            (s.id_number, s.student_name)
+            for s in existing_rows
+            if s.id_number or s.student_name
+        }
+
+        for stu in new_students:
+            key = (stu["id_number"], stu["student_name"])
+            if key in db_seen:
+                skipped.append(stu)
+                continue
+
+            blank_row = next(
+                (x for x in existing_rows if not x.id_number and not x.student_name),
+                None
+            )
+            if not blank_row:
+                skipped.append(stu)
+                continue
+
+            blank_row.id_number = stu["id_number"]
+            blank_row.student_name = stu["student_name"]
+            blank_row.save()
+
+            updated.append(stu)
+            db_seen.add(key)
+
+        return Response({
+            "mode": "append",
+            "added": updated,
+            "skipped": skipped,
+        })
+
+    def _import_override(self, section_id, existing_rows, new_students):
+        section = Section.objects.get(pk=section_id)
+
+        blank_rows = [s for s in existing_rows if not s.id_number and not s.student_name]
+        filled_rows = [s for s in existing_rows if s.id_number or s.student_name]
+
+        Student.objects.filter(pk__in=[s.pk for s in filled_rows]).delete()
+
+        need = 40 - len(blank_rows)
+        if need > 0:
+            create_rows = [
+                Student(section=section, id_number=None, student_name=None)
+                for _ in range(need)
+            ]
+            Student.objects.bulk_create(create_rows)
+            blank_rows.extend(create_rows)
+
+        rows = blank_rows[:40]
+        updated = []
+
+        for stu, row in zip(new_students, rows):
+            row.id_number = stu["id_number"]
+            row.student_name = stu["student_name"]
+            row.save()
+            updated.append(stu)
+
+        return Response({
+            "mode": "override",
+            "added": updated,
+            "detail": f"Replaced student list with {len(updated)} entries",
+        })
 
 class AssessmentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -420,7 +608,6 @@ class RawScoreUpdateView(APIView):
         value = request.data.get("value")
         rawscore.raw_score = value
         rawscore.save()
-        return Response({"student_id": student_id, "assessment_id": assessment_id, "value": value})
         return Response({"student_id": student_id, "assessment_id": assessment_id, "value": value})
 
 
@@ -554,8 +741,6 @@ def department_section_detail_view(request, section_id):
     except Exception as e:
         return JsonResponse({"message": str(e)}, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        return JsonResponse({"message": str(e)}, status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
@@ -629,7 +814,6 @@ def program_outcome_detail_view(request, outcome_id):
         return Response({"message": "Program Outcome not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(["GET", "POST"])
@@ -699,7 +883,6 @@ def course_outcome_detail_view(request, outcome_id):
 
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(["GET"])
@@ -757,7 +940,6 @@ def update_outcome_mapping(request, pk):
     except OutcomeMapping.DoesNotExist:
         return Response({"detail": "Mapping not found."}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -934,7 +1116,6 @@ class AssessmentPageAPIView(APIView):
             "students": students_list,
         }
 
-        return Response(response, status=status.HTTP_200_OK)
         return Response(response, status=status.HTTP_200_OK)
 
 

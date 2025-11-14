@@ -11,12 +11,17 @@ import { useClassRecord } from "./utils/useClassRecord";
 import { getMaxDepth } from "./utils/ClassRecordFunctions";
 import "../../styles.css";
 
+interface Props {
+  onInitialized?: () => void;
+  onProvideFetchStudents?: (fn: () => Promise<void>) => void;
+}
+
 export default function ClassRecordComponent({
   onInitialized,
-}: {
-  onInitialized?: () => void;
-}) {
+  onProvideFetchStudents,
+}: Props) {
   const {
+    fetchData,
     headerNodes,
     maxScores,
     setMaxScores,
@@ -121,6 +126,10 @@ export default function ClassRecordComponent({
       if (frameId != null) cancelAnimationFrame(frameId);
     };
   }, [headerNodes, studentNameWidth]);
+
+  useEffect(() => {
+    onProvideFetchStudents?.(fetchData);
+  }, [fetchData, onProvideFetchStudents]);
 
   useEffect(() => {
     if (initialized) onInitialized?.();

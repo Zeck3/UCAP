@@ -136,7 +136,7 @@ export default function CourseOutcomesTableComponent({
                           handleEditSave(o.course_outcome_id, editValue);
                         }
                       }}
-                      className="border border-gray-300 rounded-md px-2 py-1 w-full"
+                      className="border border-[#E9E6E6] rounded-md px-2 py-1 w-full"
                       autoFocus
                     />
                   ) : (
@@ -170,7 +170,7 @@ export default function CourseOutcomesTableComponent({
                   }}
                   placeholder="Enter new CO description..."
                   disabled={adding}
-                  className={`border border-gray-300 rounded-md px-2 py-1 w-full ${
+                  className={`border border-[#E9E6E6] rounded-md px-2 py-1 w-full ${
                     adding ? "bg-gray-100 cursor-not-allowed" : ""
                   }`}
                 />

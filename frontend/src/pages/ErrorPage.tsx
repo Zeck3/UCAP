@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import undrawPageBiten from "../assets/undraw_page-eaten.svg";
-import UcapLogo from "../assets/ucap-logo.svg?react";
 
 interface ErrorPageProps {
   title?: string;
@@ -20,15 +19,8 @@ export default function ErrorPage({
   };
 
   return (
-    <div className="text-[#3E3E3E] min-h-screen flex flex-col">
-      <div className="flex px-12 py-6.5">
-        <div className="flex items-center w-44">
-          <button onClick={goBack} className="cursor-pointer">
-            <UcapLogo className="h-16 w-32" />
-          </button>
-        </div>
-      </div>
-      <div className="w-screen flex flex-1">
+    <div className="flex flex-col pt-8">
+      <div className="w-full flex flex-1">
         <div className="flex w-full justify-center items-center flex-col gap-8 text-center px-4">
           <img
             src={undrawPageBiten}
@@ -37,7 +29,7 @@ export default function ErrorPage({
           />
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl font-semibold">{title}</h1>
-            <p className="text-gray-600 max-w-sm">{description}</p>
+            <p className="max-w-sm">{description}</p>
           </div>
           <button
             onClick={goBack}

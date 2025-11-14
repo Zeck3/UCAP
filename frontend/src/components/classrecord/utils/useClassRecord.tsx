@@ -72,10 +72,6 @@ export function useClassRecord() {
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [canOpenPopup, setCanOpenPopup] = useState<boolean>(true);
-  const [studentNameWidth, setStudentNameWidth] = useState(() => {
-    const saved = localStorage.getItem("studentNameWidth");
-    return saved ? Number(saved) : 120;
-  });
   const [editingAssessment, setEditingAssessment] = useState<{
     nodeKey: string;
     value: string;
@@ -201,7 +197,7 @@ export function useClassRecord() {
   }, []);
 
   const fetchData = useCallback(async () => {
-    let isMounted = true;
+    const isMounted = true;
     setLoading(true);
 
     try {
@@ -277,10 +273,6 @@ export function useClassRecord() {
     } finally {
       if (isMounted) setLoading(false);
     }
-
-    return () => {
-      isMounted = false;
-    };
   }, [section_id, loaded_course_id]);
 
   useEffect(() => {
@@ -874,16 +866,21 @@ export function useClassRecord() {
     }
   };
 
-  const widthRef = useRef(studentNameWidth);
+  const MIN_WIDTH = 120;
+
+  const savedWidth = localStorage.getItem("studentNameWidth");
+  const initialWidth = savedWidth ? Number(savedWidth) : MIN_WIDTH;
+
+  const [studentNameWidth, setStudentNameWidth] = useState(initialWidth);
+
+  const widthRef = useRef(initialWidth);
 
   useEffect(() => {
     widthRef.current = studentNameWidth;
   }, [studentNameWidth]);
 
-  const MIN_WIDTH = 50;
-
   const handleVSeparatorMouseDown = useCallback(
-    (e: React.MouseEvent<HTMLTableCellElement, MouseEvent>) => {
+    (e: React.MouseEvent<HTMLTableCellElement>) => {
       e.preventDefault();
 
       const startX = e.clientX;
@@ -910,6 +907,7 @@ export function useClassRecord() {
   );
 
   return {
+    fetchData,
     headerNodes,
     maxScores,
     setMaxScores,

@@ -1,17 +1,31 @@
 import axiosClient from "./axiosClient";
-import type { AssessmentPageData } from "../types/assessmentPageTypes";
+import type {
+  AssessmentPageData,
+  ClassInfo,
+  CourseOutcome,
+  ProgramOutcome,
+  Student,
+} from "../types/assessmentPageTypes";
 
-function asArray<T>(value: any): T[] {
-  return Array.isArray(value) ? value : [];
+/* -------------------------------------------------------
+   Utility Type Guards
+------------------------------------------------------- */
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
 }
 
-function getFirstKey(obj: any): string | null {
-  if (!obj) return null;
-  const keys = Object.keys(obj);
+function asArray<T>(v: unknown): T[] {
+  return Array.isArray(v) ? v : [];
+}
+
+function getFirstKey(v: unknown): string | null {
+  if (!isRecord(v)) return null;
+  const keys = Object.keys(v);
   return keys.length > 0 ? keys[0] : null;
 }
 
-function buildClassInfo(info: any) {
+function buildClassInfo(info: Record<string, unknown>): ClassInfo {
   return {
     cacode: String(info.university_hierarchy ?? ""),
     program: String(info.program_name ?? ""),
@@ -21,38 +35,48 @@ function buildClassInfo(info: any) {
   };
 }
 
-function parseBloomsClassification(
-  bloomsArr: any[]
-): { classwork: Array<{ name: string; blooms: string[]; maxScore: number }>; assessmentIds: number[] } {
-  const classwork: Array<{ name: string; blooms: string[]; maxScore: number }> = [];
+interface RawClassworkEntry {
+  assessment_id?: unknown;
+  assessment_title?: unknown;
+  assessment_highest_score?: unknown;
+}
+
+interface ParsedClasswork {
+  classwork: Array<{ name: string; blooms: string[]; maxScore: number }>;
+  assessmentIds: number[];
+}
+
+function parseBloomsClassification(items: unknown[]): ParsedClasswork {
+  const classwork: ParsedClasswork["classwork"] = [];
   const assessmentIds: number[] = [];
 
-  for (const bc of bloomsArr) {
-    if (!bc) continue;
-    
-    for (const bloomGroup of Object.keys(bc)) {
-      const entries = asArray<any>(bc[bloomGroup]);
-      
-      for (const entry of entries as any[]) {
-        const assessmentId = Number(entry?.assessment_id);
-        const title = entry?.assessment_title as string | null | undefined;
-        const highest = Number(entry?.assessment_highest_score ?? 0);
-        const blooms = String(bloomGroup)
+  for (const bc of items) {
+    if (!isRecord(bc)) continue;
+
+    for (const bloomsKey of Object.keys(bc)) {
+      const entryList = asArray<RawClassworkEntry>(bc[bloomsKey]);
+
+      for (const entry of entryList) {
+        const id = Number(entry.assessment_id);
+        const title =
+          typeof entry.assessment_title === "string"
+            ? entry.assessment_title.trim()
+            : "";
+
+        const maxScoreNum = Number(entry.assessment_highest_score ?? 0);
+
+        const blooms = bloomsKey
           .split("/")
-          .map((s) => s.trim())
+          .map((v) => v.trim())
           .filter(Boolean);
 
-        const name = title?.trim() ? title : "";
-
-        classwork.push({ 
-          name, 
-          blooms, 
-          maxScore: isFinite(highest) ? highest : 0 
+        classwork.push({
+          name: title,
+          blooms,
+          maxScore: Number.isFinite(maxScoreNum) ? maxScoreNum : 0,
         });
-        
-        if (Number.isFinite(assessmentId)) {
-          assessmentIds.push(assessmentId);
-        }
+
+        if (Number.isFinite(id)) assessmentIds.push(id);
       }
     }
   }
@@ -61,135 +85,152 @@ function parseBloomsClassification(
 }
 
 function processCourseOutcomeSections(
-  coSections: any[],
-  cos: AssessmentPageData["pos"][0]["cos"],
+  sections: unknown[],
+  cos: CourseOutcome[],
   coToAssessmentIds: Map<string, number[]>
 ): void {
-  for (const sectionObj of coSections as any[]) {
-    const secKey = getFirstKey(sectionObj);
-    if (!secKey) continue;
+  for (const sec of sections) {
+    if (!isRecord(sec)) continue;
 
-    const secArr = asArray<any>(sectionObj[secKey]);
-    const allClasswork: Array<{ name: string; blooms: string[]; maxScore: number }> = [];
-    const allAssessmentIds: number[] = [];
+    const coName = getFirstKey(sec);
+    if (!coName) continue;
 
-    for (const secItem of secArr as any[]) {
-      const bloomsArr = asArray<any>(secItem?.blooms_classification);
-      const { classwork, assessmentIds } = parseBloomsClassification(bloomsArr);
-      
-      allClasswork.push(...classwork);
-      allAssessmentIds.push(...assessmentIds);
+    const entryList = asArray<unknown>(sec[coName]);
+
+    const combinedClasswork: CourseOutcome["classwork"] = [];
+    const combinedIds: number[] = [];
+
+    for (const entry of entryList) {
+      if (!isRecord(entry)) continue;
+
+      const bloomsArr = asArray<unknown>(entry.blooms_classification);
+      const parsed = parseBloomsClassification(bloomsArr);
+
+      combinedClasswork.push(...parsed.classwork);
+      combinedIds.push(...parsed.assessmentIds);
     }
 
-    if (allClasswork.length > 0) {
-      cos.push({ name: secKey, classwork: allClasswork });
-      coToAssessmentIds.set(secKey, allAssessmentIds);
+    if (combinedClasswork.length > 0) {
+      cos.push({ name: coName, classwork: combinedClasswork });
+      coToAssessmentIds.set(coName, combinedIds);
     }
   }
 }
 
 function processCourseOutcomes(
-  courseOutcomesArr: any[],
-  cos: AssessmentPageData["pos"][0]["cos"],
-  coToAssessmentIds: Map<string, number[]>
+  rawCo: unknown[],
+  cos: CourseOutcome[],
+  coMap: Map<string, number[]>
 ): void {
-  for (const coObj of courseOutcomesArr as any[]) {
-    const coName = getFirstKey(coObj);
+  for (const obj of rawCo) {
+    if (!isRecord(obj)) continue;
+
+    const coName = getFirstKey(obj);
     if (!coName) continue;
 
-    const coSections = asArray<any>(coObj[coName]);
-    processCourseOutcomeSections(coSections, cos, coToAssessmentIds);
+    const sections = asArray<unknown>(obj[coName]);
+    processCourseOutcomeSections(sections, cos, coMap);
   }
 }
 
 function processProgramOutcomes(
-  programOutcomes: any[],
-  pos: AssessmentPageData["pos"],
-  coToAssessmentIds: Map<string, number[]>
+  rawPos: unknown[],
+  pos: ProgramOutcome[],
+  coMap: Map<string, number[]>
 ): void {
-  for (const poObj of programOutcomes as any[]) {
-    const poName = getFirstKey(poObj);
+  for (const obj of rawPos) {
+    if (!isRecord(obj)) continue;
+
+    const poName = getFirstKey(obj);
     if (!poName) continue;
 
-    const poVal = poObj[poName];
-    const coContainerArr = asArray<any>(poVal);
-    const cos: AssessmentPageData["pos"][0]["cos"] = [];
+    const container = obj[poName];
+    const coContainers = asArray<unknown>(container);
 
-    for (const coContainer of coContainerArr as any[]) {
-      const courseOutcomesArr = asArray<any>(coContainer?.course_outcomes);
-      processCourseOutcomes(courseOutcomesArr, cos, coToAssessmentIds);
+    const cos: CourseOutcome[] = [];
+
+    for (const coContainer of coContainers) {
+      if (!isRecord(coContainer)) continue;
+
+      const rawCOs = asArray<unknown>(coContainer.course_outcomes);
+      processCourseOutcomes(rawCOs, cos, coMap);
     }
 
-    if (cos.length > 0) {
-      pos.push({ name: poName, cos });
-    }
+    if (cos.length > 0) pos.push({ name: poName, cos });
   }
 }
 
-function buildScoreMap(scoreList: any[]): Map<number, number | null> {
-  const scoreMap = new Map<number, number | null>();
-  
-  for (const item of scoreList) {
-    const id = Number(item?.assessment_id);
-    const val = item?.value;
-    
+
+interface RawScore {
+  assessment_id?: unknown;
+  value?: unknown;
+}
+
+function buildScoreMap(raw: RawScore[]): Map<number, number | null> {
+  const map = new Map<number, number | null>();
+
+  for (const sc of raw) {
+    const id = Number(sc.assessment_id);
+    const val = Number.isFinite(sc.value) ? (sc.value as number) : null;
+
     if (Number.isFinite(id)) {
-      scoreMap.set(id, typeof val === "number" ? val : null);
+      map.set(id, val);
     }
   }
-  
-  return scoreMap;
+
+  return map;
 }
 
 function transformStudents(
-  studentsSrc: any[],
-  coToAssessmentIds: Map<string, number[]>
-): AssessmentPageData["students"] {
-  return studentsSrc.map((s: any) => {
-    const scoreList = asArray<any>(s?.scores);
-    const scoreMap = buildScoreMap(scoreList);
+  rawStudents: unknown[],
+  coMap: Map<string, number[]>
+): Student[] {
+  return rawStudents
+    .filter(isRecord)
+    .map((student) => {
+      const rawScores = asArray<RawScore>(student.scores);
+      const scoreMap = buildScoreMap(rawScores);
 
-    const scores: Record<string, { raw: number | null }[]> = {};
-    for (const [coName, idList] of coToAssessmentIds.entries()) {
-      scores[coName] = idList.map((id) => ({ raw: scoreMap.get(id) ?? null }));
-    }
+      const scores: Student["scores"] = {};
 
-    return {
-      id: String(s?.id_number ?? s?.student_id ?? ""),
-      name: String(s?.student_name ?? ""),
-      scores,
-    };
-  });
+      for (const [coName, ids] of coMap.entries()) {
+        scores[coName] = ids.map((id) => ({ raw: scoreMap.get(id) ?? null }));
+      }
+
+      return {
+        id: String(student.id_number ?? student.student_id ?? ""),
+        name: String(student.student_name ?? ""),
+        scores,
+      };
+    });
 }
 
-function transformAssessmentResponse(resp: any): AssessmentPageData {
-  const info = resp?.info ?? {};
-  const classInfo = buildClassInfo(info);
-  
-  const coToAssessmentIds = new Map<string, number[]>();
-  const pos: AssessmentPageData["pos"] = [];
-  const assessments = asArray<any>(resp?.assessments);
+function transformAssessmentResponse(resp: unknown): AssessmentPageData {
+  const root = isRecord(resp) ? resp : {};
 
-  for (const assessmentBlock of assessments as any[]) {
-    const programOutcomes = asArray<any>(assessmentBlock?.program_outcomes);
+  const info = isRecord(root.info) ? root.info : {};
+  const classInfo = buildClassInfo(info);
+
+  const pos: ProgramOutcome[] = [];
+  const coToAssessmentIds = new Map<string, number[]>();
+
+  const assessments = asArray<unknown>(root.assessments);
+
+  for (const block of assessments) {
+    if (!isRecord(block)) continue;
+
+    const programOutcomes = asArray<unknown>(block.program_outcomes);
     processProgramOutcomes(programOutcomes, pos, coToAssessmentIds);
   }
 
-  const studentsSrc = asArray<any>(resp?.students);
-  const students = transformStudents(studentsSrc, coToAssessmentIds);
+  const students = transformStudents(asArray(root.students), coToAssessmentIds);
 
   return { classInfo, pos, students };
 }
 
-export const getAssessmentPageData = async (
-  section_id: number
-): Promise<AssessmentPageData> => {
-  try {
-    const response = await axiosClient.get(`/assessments/${section_id}/`);
-    const raw = response.data;
-    return transformAssessmentResponse(raw);
-  } catch (error) {
-    console.error("Error fetching assessment page data:", error);
-    throw error;
-  }
-};
+export async function getAssessmentPageData(
+  sectionId: number
+): Promise<AssessmentPageData> {
+  const res = await axiosClient.get(`/assessments/${sectionId}/`);
+  return transformAssessmentResponse(res.data);
+}

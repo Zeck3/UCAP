@@ -523,6 +523,9 @@ class OutcomeMappingSerializer(serializers.ModelSerializer):
             "outcome_mapping",
         ]
 
+class StudentImportSerializer(serializers.Serializer):
+    file = serializers.FileField()
+
 # ====================================================    
 # Department Chair Dashboard
 # ====================================================
