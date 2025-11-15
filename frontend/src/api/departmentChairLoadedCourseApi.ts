@@ -1,10 +1,9 @@
 import axiosClient from "./axiosClient";
 import type {
-  DepartmentLoadedCourses,
-  DepartmentLoadedCoursesDisplay,
   DepartmentCourses,
   LoadDepartmentCourse,
 } from "../types/departmentChairLoadedCourseTypes";
+import type { BaseLoadedCourse } from "../types/baseTypes";
 
 export async function getDepartmentCourses(
   departmentId: number
@@ -17,17 +16,14 @@ export async function getDepartmentCourses(
 
 export async function getDepartmentLoadedCourses(
   departmentId: number
-): Promise<DepartmentLoadedCoursesDisplay[]> {
-  const response = await axiosClient.get<DepartmentLoadedCourses[]>(
+): Promise<BaseLoadedCourse[]> {
+  const response = await axiosClient.get<BaseLoadedCourse[]>(
     `department_chair/department_course_management/${departmentId}/`
   );
+
   return response.data.map((course) => ({
+    ...course,
     id: course.loaded_course_id,
-    course_code: course.course_code,
-    course_title: course.course_title,
-    program_name: course.program_name,
-    year_level: course.year_level_type,
-    semester_type: course.semester_type,
     academic_year_and_semester: `${course.academic_year_start}-${course.academic_year_end} / ${course.semester_type}`,
   }));
 }

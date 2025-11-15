@@ -15,7 +15,7 @@ import {
   createStudent,
   deleteAssessment,
   deleteStudent,
-  getAssessmentInfo,
+  getAssessmentInfos,
   getClassRecord,
   updateAssessment,
   updateRawScore,
@@ -196,8 +196,16 @@ export function useClassRecord() {
     });
   }, []);
 
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const fetchData = useCallback(async () => {
-    const isMounted = true;
     setLoading(true);
 
     try {
@@ -230,27 +238,27 @@ export function useClassRecord() {
       }));
 
       const allAssessments = getAllAssessmentNodesPure(generatedHeaders);
-      const infos = await Promise.all(
-        allAssessments.map(async (node) => {
-          try {
-            const info = await getAssessmentInfo(Number(node.key));
-            return {
-              id: String(node.key),
-              blooms: info.blooms_classification ?? [],
-              outcomes: info.course_outcome ?? [],
-            };
-          } catch {
-            return { id: String(node.key), blooms: [], outcomes: [] };
-          }
-        })
-      );
 
-      if (!isMounted) return;
+      const assessmentIds = allAssessments
+        .map((node) => Number(node.key))
+        .filter((id) => Number.isFinite(id));
 
-      const bloomsMap = Object.fromEntries(infos.map((i) => [i.id, i.blooms]));
-      const outcomesMap = Object.fromEntries(
-        infos.map((i) => [i.id, i.outcomes])
-      );
+      let bloomsMap: Record<string, number[]> = {};
+      let outcomesMap: Record<string, number[]> = {};
+
+      if (assessmentIds.length > 0) {
+        const infos = await getAssessmentInfos(assessmentIds);
+
+        bloomsMap = Object.fromEntries(
+          infos.map((i) => [String(i.id), i.blooms])
+        );
+
+        outcomesMap = Object.fromEntries(
+          infos.map((i) => [String(i.id), i.outcomes])
+        );
+      }
+
+      if (!mountedRef.current) return;
 
       startTransition(() => {
         setClassRecord({
@@ -269,9 +277,9 @@ export function useClassRecord() {
       });
     } catch (err) {
       console.error("Failed to load class record:", err);
-      if (isMounted) setError("Failed to load class record data.");
+      if (mountedRef.current) setError("Failed to load class record data.");
     } finally {
-      if (isMounted) setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, [section_id, loaded_course_id]);
 
@@ -344,10 +352,10 @@ export function useClassRecord() {
   }, [assessmentKeys, zeroMaxScoreKeys]);
 
   useEffect(() => {
-    if (!loading && headerNodes.length > 0 && students.length > 0) {
+    if (!loading && students.length > 0) {
       syncStudentScores();
     }
-  }, [loading, headerNodes, students, syncStudentScores]);
+  }, [loading, students.length, syncStudentScores]);
 
   const computedMaxValues = useMemo(() => {
     if (headerNodes.length === 0 || Object.keys(maxScores).length === 0)
@@ -394,14 +402,12 @@ export function useClassRecord() {
       setClassRecord((prev) => {
         const prevStudent = prev.studentScores[studentId] ?? {};
         const updated = { ...prevStudent, [key]: value };
-
         const { midterm, final } = calculateAllTermTotals(
           updated,
           prev.headerNodes
         );
         updated["midterm-total-grade"] = midterm;
         updated["final-total-grade"] = final;
-
         return {
           ...prev,
           studentScores: { ...prev.studentScores, [studentId]: updated },
@@ -525,12 +531,8 @@ export function useClassRecord() {
         needsButton: true,
         maxScore: newAssessment.assessment_highest_score ?? 0,
         termType: parentTermType,
+        componentId, // keep this if you need it later
       };
-
-      setMaxScores((prev) => ({
-        ...prev,
-        [newId]: newAssessment.assessment_highest_score ?? 0,
-      }));
 
       setClassRecord((prev) => {
         const addToComponent = (nodes: HeaderNode[]): HeaderNode[] =>
@@ -549,7 +551,6 @@ export function useClassRecord() {
           });
 
         let updatedHeaderNodes = addToComponent(prev.headerNodes);
-
         updatedHeaderNodes = refreshGroupKeys(updatedHeaderNodes);
 
         const updatedMaxScores = {
@@ -572,7 +573,7 @@ export function useClassRecord() {
     assessmentContextMenu,
     insertBeforeCalculations,
     refreshGroupKeys,
-    setMaxScores,
+    setClassRecord,
   ]);
 
   const handleDeleteAssessment = useCallback(
@@ -869,7 +870,12 @@ export function useClassRecord() {
   const MIN_WIDTH = 120;
 
   const savedWidth = localStorage.getItem("studentNameWidth");
-  const initialWidth = savedWidth ? Number(savedWidth) : MIN_WIDTH;
+  const parsedWidth = savedWidth ? Number(savedWidth) : NaN;
+
+  const initialWidth =
+    Number.isFinite(parsedWidth) && parsedWidth >= MIN_WIDTH
+      ? parsedWidth
+      : MIN_WIDTH;
 
   const [studentNameWidth, setStudentNameWidth] = useState(initialWidth);
 

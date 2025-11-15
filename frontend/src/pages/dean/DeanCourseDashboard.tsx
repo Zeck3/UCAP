@@ -9,10 +9,10 @@ import TableComponent from "../../components/TableComponent";
 import emptyImage from "../../assets/undraw_file-search.svg";
 import { useLayout } from "../../context/useLayout";
 import { fetchDeanLoadedCourses } from "../../api/deanDashboardApi";
-import type { DeanLoadedCourse } from "../../types/deanDashboardTypes";
 import { useAuth } from "../../context/useAuth";
 import InfoComponent from "../../components/InfoComponent";
 import { useDepartment } from "../../context/useDepartment";
+import type { BaseLoadedCourse } from "../../types/baseTypes";
 
 export default function DeanCourseDashboard() {
   const { user } = useAuth();
@@ -21,7 +21,7 @@ export default function DeanCourseDashboard() {
 
   const { layout } = useLayout();
 
-  const [courses, setCourses] = useState<DeanLoadedCourse[]>([]);
+  const [courses, setCourses] = useState<BaseLoadedCourse[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -69,7 +69,7 @@ export default function DeanCourseDashboard() {
     );
   }, [searchQuery, courses]);
 
-  const goToDeanCoursePage = (course: DeanLoadedCourse) => {
+  const goToDeanCoursePage = (course: BaseLoadedCourse) => {
     navigate(`/college/${department_id}/${course.loaded_course_id}`, {
       state: {
         course_code: course.course_code,
@@ -124,7 +124,7 @@ export default function DeanCourseDashboard() {
               key: "academic_year_and_semester",
               label: "Academic Year / Semester",
             },
-            { key: "year_level", label: "Year Level" },
+            { key: "year_level_type", label: "Year Level" },
           ]}
           loading={loading}
         />

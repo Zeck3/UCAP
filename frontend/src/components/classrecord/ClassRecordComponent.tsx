@@ -25,7 +25,6 @@ export default function ClassRecordComponent({
     headerNodes,
     maxScores,
     setMaxScores,
-    studentScores,
     sortedStudentsData,
     computedMaxValues,
     bloomsOptions,
@@ -88,14 +87,8 @@ export default function ClassRecordComponent({
       const col1 = table.querySelector(
         "thead th.sticky-col-1"
       ) as HTMLTableCellElement | null;
-      const col2 = table.querySelector(
-        "thead th.sticky-col-2"
-      ) as HTMLTableCellElement | null;
-      const col3 = table.querySelector(
-        "thead th.sticky-col-3"
-      ) as HTMLTableCellElement | null;
 
-      if (col1 && col2 && col3) {
+      if (col1) {
         const w1 = Math.ceil(col1.getBoundingClientRect().width);
         table.style.setProperty("--ucap-sticky-left-boundary", `${w1}px`);
       }
@@ -172,14 +165,13 @@ export default function ClassRecordComponent({
           />
         </thead>
         <tbody>
-          {sortedStudentsData.map(({ student, computed }, i) => (
+          {sortedStudentsData.map(({ student, score }, i) => (
             <BuildStudentRow
               key={student.student_id}
               student={student}
               index={i}
               nodes={headerNodes}
-              studentScore={studentScores[student.student_id] ?? {}}
-              computedValues={computed}
+              studentScore={score}
               maxScores={maxScores}
               remarks={student.remarks ?? ""}
               updateRemark={(newRemark) =>

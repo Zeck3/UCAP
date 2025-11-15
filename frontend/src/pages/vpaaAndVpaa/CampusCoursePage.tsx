@@ -14,16 +14,16 @@ import { useLayout } from "../../context/useLayout";
 
 import { fetchCampusCoursePage } from "../../api/campusDashboardApi";
 import type {
-  CampusCoursePageResponse,
-  CampusSectionDisplay,
+
 } from "../../types/campusLoadedCourseTypes";
+import type { BaseCoursePageResponse, BaseSection } from "../../types/baseTypes";
 
 export default function CampusCoursePage() {
   const { department_id, loaded_course_id } = useParams();
   const navigate = useNavigate();
   const { layout } = useLayout();
 
-  const [courseData, setCourseData] = useState<CampusCoursePageResponse | null>(
+  const [courseData, setCourseData] = useState<BaseCoursePageResponse | null>(
     null
   );
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,7 +61,7 @@ export default function CampusCoursePage() {
       .map((s) => ({ ...s, id: s.id }));
   }, [courseData, searchQuery]);
 
-  const goToAssessmentPage = (section: CampusSectionDisplay) => {
+  const goToAssessmentPage = (section: BaseSection) => {
     if (!department_id || !loaded_course_id) return;
 
     navigate(`/campus/${department_id}/${loaded_course_id}/${section.id}`, {
@@ -87,7 +87,7 @@ export default function CampusCoursePage() {
       <InfoComponent
         loading={loading}
         title={`${details.course_title}`}
-        subtitle={`${details.academic_year_start}-${details.academic_year_end} ${details.semester_type} | ${details.year_level_type}`}
+        subtitle={`${details.academic_year} ${details.semester_type} | ${details.year_level}`}
         details={`Department of ${details.department_name} | ${details.college_name} | ${details.campus_name} Campus`}
       />
       <ToolBarComponent

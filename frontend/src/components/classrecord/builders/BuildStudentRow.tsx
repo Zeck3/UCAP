@@ -8,6 +8,7 @@ import {
   getCalculatedBg,
   getDesc,
   getTextClass,
+  computeValues,
 } from "../utils/ClassRecordFunctions";
 import ScoreInput from "../utils/ScoreInput";
 import RemarksDropdown from "../context/RemarksDropdown";
@@ -22,7 +23,6 @@ interface BuildStudentRowProps {
   index: number;
   nodes: HeaderNode[];
   studentScore: Record<string, number>;
-  computedValues: Record<string, number>;
   maxScores: Record<string, number>;
   remarks: string;
   updateRemark: (newRemark: string) => void;
@@ -49,7 +49,6 @@ function BuildStudentRow({
   nodes,
   studentScore,
   updateScoreProp,
-  computedValues,
   maxScores,
   onRightClickRow,
   handleUpdateStudent,
@@ -79,6 +78,19 @@ function BuildStudentRow({
       }
     },
     [localStudent, student, handleUpdateStudent]
+  );
+
+  const baseScores = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const [k, v] of Object.entries(studentScore)) {
+      result[k] = typeof v === "number" ? v : 0;
+    }
+    return result;
+  }, [studentScore]);
+
+  const computedValues = useMemo(
+    () => computeValues(baseScores, maxScores, nodes),
+    [baseScores, maxScores, nodes]
   );
 
   const computeComputedContent = useCallback(
@@ -242,7 +254,6 @@ function BuildStudentRow({
               className="border border-[#E9E6E6] text-left sticky-col sticky-col-3"
               style={{
                 width: studentNameWidth,
-                minWidth: studentNameWidth,
               }}
               onContextMenu={(e) => onRightClickRow?.(e, student.student_id)}
             >
@@ -288,15 +299,15 @@ function BuildStudentRow({
             <ScoreInput
               studentId={student.student_id}
               scoreKey={scoreKey}
-              value={value}
+              value={value ?? 0}
               max={max}
               updateScoreProp={updateScoreProp}
               saveRawScore={saveRawScore}
             />
           );
         } else if (node.calculationType === "computed" && node.key) {
-          const mid = computedValues?.["midterm-total-grade"];
-          const fin = computedValues?.["final-total-grade"];
+          const mid = computedValues["midterm-total-grade"] ?? 0;
+          const fin = computedValues["final-total-grade"] ?? 0;
 
           const {
             content: c,
@@ -308,7 +319,7 @@ function BuildStudentRow({
           textClass = t;
           bgClass = b;
         } else if (node.key && computedValues[node.key] !== undefined) {
-          const value = computedValues?.[node.key];
+          const value = computedValues[node.key] ?? 0;
           content = formatValue(value, node.calculationType);
           textClass = getTextClass(value, node.calculationType);
         }
@@ -337,10 +348,10 @@ function BuildStudentRow({
       updateScoreProp,
       saveRawScore,
       studentScore,
-      computedValues,
       maxScores,
       studentNameWidth,
       handleResize,
+      computedValues,
     ]
   );
 
@@ -359,7 +370,6 @@ export default memo(BuildStudentRow, (prev, next) => {
     prev.student.student_name === next.student.student_name &&
     prev.student.id_number === next.student.id_number &&
     prev.studentScore === next.studentScore &&
-    prev.computedValues === next.computedValues &&
     prev.maxScores === next.maxScores
   );
 });

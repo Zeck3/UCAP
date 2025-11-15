@@ -235,7 +235,7 @@ export default function CoursePage() {
             </div>
             <CourseOutcomesTableComponent
               loadedCourseId={Number(loaded_course_id)}
-              onCourseOutcomesChanged={handleCourseOutcomesChanged} // new prop
+              onCourseOutcomesChanged={handleCourseOutcomesChanged}
             />
           </div>
 
@@ -243,7 +243,7 @@ export default function CoursePage() {
           <div className="flex flex-col gap-8">
             <h2 className="text-xl">Outcome Mapping</h2>
             <OutcomeMappingTableComponent
-              key={refreshMappingKey} // triggers re-mount/re-fetch
+              key={refreshMappingKey}
               loadedCourseId={Number(loaded_course_id)}
             />
           </div>

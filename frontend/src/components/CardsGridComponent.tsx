@@ -98,7 +98,13 @@ export default function CardsGridComponent<T extends { id: string | number }>({
   if (items.length === 0) {
     return (
       <div className="flex flex-col justify-center items-center pt-8">
-        <img src={emptyImageSrc} alt="Empty" className="h-50 w-50" />
+        <img
+          src={emptyImageSrc}
+          alt="Empty"
+          className="h-50 w-50"
+          loading="eager"
+          decoding="async"
+        />
         <span className="text-[#C6C6C6]">{emptyMessage}</span>
       </div>
     );
@@ -162,7 +168,7 @@ export default function CardsGridComponent<T extends { id: string | number }>({
                     }}
                   >
                     <span className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:bg-gray-100 hover:text-[#767676] cursor-pointer">
-                      <KebabIcon />
+                      <KebabIcon className="h-5 w-5" />
                     </span>
                   </button>
 

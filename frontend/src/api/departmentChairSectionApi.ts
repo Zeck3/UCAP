@@ -1,15 +1,14 @@
 // api/departmentChairSectionApi.ts
 import axiosClient from "./axiosClient";
 import type {
-  CourseDetails,
-  SectionDisplay,
   SectionPayload,
 } from "../types/departmentChairSectionTypes";
+import type { BaseCourseDetails, BaseSection } from "../types/baseTypes";
 
 export async function getSections(loadedCourseId: number) {
   const { data } = await axiosClient.get<{
-    course_details: CourseDetails;
-    sections: SectionDisplay[];
+    course_details: BaseCourseDetails;
+    sections: BaseSection[];
   }>(`department_chair/section_management/loaded_course/${loadedCourseId}/`);
   return data;
 }
