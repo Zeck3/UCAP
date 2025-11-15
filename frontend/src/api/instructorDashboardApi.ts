@@ -1,12 +1,12 @@
 import axiosClient from "./axiosClient";
 import type {
-  InstructorCourse,
   CourseDetailsWithSections,
 } from "../types/instructorDashboardTypes";
+import type { BaseLoadedCourse } from "../types/baseTypes";
 
 export const InstructorCourses = async (
   instructorId: number
-): Promise<InstructorCourse[]> => {
+): Promise<BaseLoadedCourse[]> => {
   const response = await axiosClient.get(`/instructor/${instructorId}`);
   return response.data;
 };

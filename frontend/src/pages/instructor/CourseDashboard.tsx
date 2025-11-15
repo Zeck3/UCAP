@@ -3,19 +3,19 @@ import { useLayout } from "../../context/useLayout";
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../../context/useAuth";
 import { InstructorCourses } from "../../api/instructorDashboardApi";
-import type { InstructorCourse } from "../../types/instructorDashboardTypes";
 import emptyImage from "../../assets/undraw_file-search.svg";
 import ToolBarComponent from "../../components/ToolBarComponent";
 import CardsGridComponent from "../../components/CardsGridComponent";
 import TableComponent from "../../components/TableComponent";
 import AppLayout from "../../layout/AppLayout";
+import type { BaseLoadedCourse } from "../../types/baseTypes";
 
 export default function CourseDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const { user } = useAuth();
   const { layout } = useLayout();
   const navigate = useNavigate();
-  const [courses, setCourses] = useState<InstructorCourse[]>([]);
+  const [courses, setCourses] = useState<BaseLoadedCourse[]>([]);
   const [loading, setLoading] = useState(true);
 
   const currentUserId = user?.user_id ?? null;
@@ -38,6 +38,7 @@ export default function CourseDashboard() {
 
   const filteredCourses = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
+
     const filtered = query
       ? courses.filter(
           (course) =>
@@ -46,14 +47,19 @@ export default function CourseDashboard() {
         )
       : courses;
 
-    return filtered.map((course) => ({
-      ...course,
-      id: course.loaded_course_id,
-      year_sem: `${course.academic_year} / ${course.semester_type}`,
-    }));
+    return filtered.map((course) => {
+      const academicYear = `${course.academic_year_start}-${course.academic_year_end}`;
+
+      return {
+        ...course,
+        id: course.loaded_course_id,
+        academic_year: academicYear,
+        year_sem: `${academicYear} / ${course.semester_type}`,
+      };
+    });
   }, [searchQuery, courses]);
 
-  const goToCoursePage = (course: InstructorCourse) => {
+  const goToCoursePage = (course: BaseLoadedCourse) => {
     navigate(`/instructor/${course.loaded_course_id}`, {
       state: {
         course_code: course.course_code,
@@ -86,7 +92,7 @@ export default function CourseDashboard() {
           loading={loading}
           title={(course) => course.course_title}
           subtitle={(course) => {
-            return `${course.academic_year} / ${course.semester_type} | ${course.department_name}`;
+            return `${course.academic_year} / ${course.semester_type} | ${course.program_name}`;
           }}
         />
       ) : (
@@ -100,7 +106,7 @@ export default function CourseDashboard() {
             { key: "course_code", label: "Code" },
             { key: "course_title", label: "Course Title" },
             { key: "year_sem", label: "Academic Year / Semester" },
-            { key: "department_name", label: "Department" },
+            { key: "program_name", label: "Department" },
             { key: "year_level_type", label: "Year Level" },
           ]}
         />

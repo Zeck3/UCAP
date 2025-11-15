@@ -10,14 +10,14 @@ import emptyImage from "../../assets/undraw_file-search.svg";
 import { useLayout } from "../../context/useLayout";
 
 import { fetchCampusLoadedCourses } from "../../api/campusDashboardApi";
-import type { CampusCourseDetails } from "../../types/campusLoadedCourseTypes";
+import type { BaseLoadedCourse } from "../../types/baseTypes";
 
 export default function CampusCourseDashboard() {
   const { department_id } = useParams();
   const navigate = useNavigate();
   const { layout } = useLayout();
 
-  const [courses, setCourses] = useState<CampusCourseDetails[]>([]);
+  const [courses, setCourses] = useState<BaseLoadedCourse[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -65,7 +65,7 @@ export default function CampusCourseDashboard() {
       }));
   }, [searchQuery, courses]);
 
-  const goToCampusCoursePage = (course: CampusCourseDetails) => {
+  const goToCampusCoursePage = (course: BaseLoadedCourse) => {
     navigate(`/campus/${department_id}/${course.loaded_course_id}`, {
       state: {
         course_code: course.course_code,

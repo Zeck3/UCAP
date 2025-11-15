@@ -21,11 +21,10 @@ import {
   deleteSection,
 } from "../../api/departmentChairSectionApi";
 import type {
-  CourseDetails,
-  SectionDisplay,
   SectionPayload,
 } from "../../types/departmentChairSectionTypes";
 import InfoComponent from "../../components/InfoComponent";
+import type { BaseCourseDetails, BaseSection } from "../../types/baseTypes";
 
 export default function DepartmentChairCoursePage() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -39,11 +38,11 @@ export default function DepartmentChairCoursePage() {
   const [selectedInstructorId, setSelectedInstructorId] = useState<string>("");
   const [instructors, setInstructors] = useState<Instructor[]>([]);
 
-  const [courseDetails, setCourseDetails] = useState<CourseDetails | null>(
+  const [courseDetails, setCourseDetails] = useState<BaseCourseDetails | null>(
     null
   );
 
-  const [sections, setSections] = useState<SectionDisplay[]>([]);
+  const [sections, setSections] = useState<BaseSection[]>([]);
 
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +52,7 @@ export default function DepartmentChairCoursePage() {
   const [sectionName, setSectionName] = useState<{ [key: string]: string }>({});
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editingSection, setEditingSection] = useState<SectionDisplay | null>(
+  const [editingSection, setEditingSection] = useState<BaseSection | null>(
     null
   );
   const [sidePanelLoading, setSidePanelLoading] = useState(false);
@@ -72,8 +71,9 @@ export default function DepartmentChairCoursePage() {
         setInstructors(instructorsData);
         setCourseDetails(course_details);
 
-        const mappedSections: SectionDisplay[] = sections.map((s) => ({
-          id: s.id,
+        const mappedSections: BaseSection[] = sections.map((s) => ({
+          id: s.section_id,
+          section_id: s.section_id,
           year_and_section: s.year_and_section,
           instructor_assigned: s.instructor_assigned,
           instructor_id: s.instructor_id ?? null,
@@ -90,7 +90,7 @@ export default function DepartmentChairCoursePage() {
     getAllCoursesSections();
   }, [departmentId, loaded_course_id]);
 
-  const mapAndSortSections = (sections: SectionDisplay[]): SectionDisplay[] => {
+  const mapAndSortSections = (sections: BaseSection[]): BaseSection[] => {
     return [...sections].sort((a, b) =>
       a.year_and_section.localeCompare(b.year_and_section, undefined, {
         numeric: true,
@@ -117,7 +117,8 @@ export default function DepartmentChairCoursePage() {
           s.instructor_assigned.toLowerCase().includes(query)
       )
       .map((s) => ({
-        id: s.id,
+        id: s.section_id,
+        section_id: s.section_id,
         year_and_section: s.year_and_section,
         instructor_assigned: s.instructor_assigned,
         instructor_id: s.instructor_id ?? null,
@@ -139,7 +140,7 @@ export default function DepartmentChairCoursePage() {
     }));
   };
 
-  const handleEditClick = (section: SectionDisplay) => {
+  const handleEditClick = (section: BaseSection) => {
     setEditingSection(section);
     setIsEditing(true);
     setSectionName({ year_and_section: section.year_and_section });
@@ -179,7 +180,8 @@ export default function DepartmentChairCoursePage() {
       setSections(
         mapAndSortSections(
           updatedSections.map((s) => ({
-            id: s.id,
+            id: s.section_id,
+            section_id: s.section_id,
             year_and_section: s.year_and_section,
             instructor_assigned: s.instructor_assigned,
             instructor_id: s.instructor_id ?? null,
@@ -211,13 +213,16 @@ export default function DepartmentChairCoursePage() {
     if (success) setSections((prev) => prev.filter((u) => u.id !== id));
   };
 
-  const goToDepartmentChairAssessmentPage = (section: SectionDisplay) => {
-    navigate(`/department/${department_id}/${loaded_course_id}/${section.id}`, {
-      state: {
-        course_code: courseDetails?.course_code,
-        year_and_section: section.year_and_section,
-      },
-    });
+  const goToDepartmentChairAssessmentPage = (section: BaseSection) => {
+    navigate(
+      `/department/${department_id}/${loaded_course_id}/${section.id}`,
+      {
+        state: {
+          course_code: courseDetails?.course_code,
+          year_and_section: section.year_and_section,
+        },
+      }
+    );
   };
 
   if (!currentUserId) {
@@ -265,7 +270,7 @@ export default function DepartmentChairCoursePage() {
           subtitle={() => "Instructor Assigned"}
           onDelete={(section) => handleDelete(Number(section))}
           onEdit={(id) => {
-            const section = sections.find((s) => s.id === Number(id));
+            const section = sections.find((s) => s.section_id === Number(id));
             if (section) handleEditClick(section);
           }}
           enableOption
@@ -281,7 +286,7 @@ export default function DepartmentChairCoursePage() {
             { key: "instructor_assigned", label: "Instructor Assigned" },
           ]}
           onEdit={(id) => {
-            const section = sections.find((s) => s.id === Number(id));
+            const section = sections.find((s) => s.section_id === Number(id));
             if (section) handleEditClick(section);
           }}
           onDelete={handleDelete}

@@ -21,10 +21,10 @@ def populate_default_data():
     )
 
     program_1, _ = Program.objects.get_or_create(
-        department=department_1, program_name="Bachelor of Science in Electronics Engineering"
+        department=department_1, program_name="BS in Electronics Engineering"
     )
     program_2, _ = Program.objects.get_or_create(
-        department=department_2, program_name="Bachelor of Science in Information Technology"
+        department=department_2, program_name="BS in Information Technology"
     )
 
     # ===================================

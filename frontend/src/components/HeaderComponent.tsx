@@ -110,7 +110,7 @@ export default function HeaderComponent({
         </div>
 
         {isOpen && (
-          <div className="absolute right-4 top-12 w-40 bg-white border border-[#E9E6E6] rounded-lg z-2600">
+          <div className="absolute right-4 top-12 w-40 bg-white border border-[#E9E6E6] rounded-lg z-99999999">
             <button
               type="button"
               className="flex items-center gap-2 py-2 w-full cursor-pointer rounded-lg transition hover:bg-gray-100"

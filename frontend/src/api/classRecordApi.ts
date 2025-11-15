@@ -5,6 +5,8 @@ import type {
   Assessment,
   CourseComponent,
   CourseUnit,
+  AssessmentInfosResponse,
+  AssessmentInfo,
 } from "../types/classRecordTypes";
 
 export async function getClassRecord(sectionId: number) {
@@ -48,12 +50,22 @@ export async function createAssessment(assessment: Partial<Assessment>) {
   return data;
 }
 
-export async function getAssessmentInfo(assessmentId: number) {
-  const response = await axiosClient.get(
-    `/instructor/assessments/${assessmentId}/info/`
+export async function getAssessmentInfos(
+  ids: number[]
+): Promise<AssessmentInfo[]> {
+  if (!ids.length) return [];
+
+  const { data } = await axiosClient.post<AssessmentInfosResponse[]>(
+    "/instructor/assessments/infos/",
+    { ids }
   );
-  return response.data;
-};
+
+  return data.map((item) => ({
+    id: item.assessment_id,
+    blooms: item.blooms_classification ?? [],
+    outcomes: item.course_outcome ?? [],
+  }));
+}
 
 export async function updateAssessment(
   assessmentId: number,

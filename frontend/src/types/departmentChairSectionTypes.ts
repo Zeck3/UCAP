@@ -11,6 +11,7 @@ export type CourseDetails = {
 
 export interface SectionDisplay {
   id: number;
+  section_id: number;
   year_and_section: string;
   instructor_assigned: string;
   instructor_id: number | null;

@@ -13,6 +13,12 @@ export interface AssessmentInfo {
   outcomes: number[];
 }
 
+export interface AssessmentInfosResponse {
+  assessment_id: number;
+  blooms_classification: number[];
+  course_outcome: number[];
+};
+
 export interface CourseComponent {
   course_component_id: number;
   course_component_type: string;

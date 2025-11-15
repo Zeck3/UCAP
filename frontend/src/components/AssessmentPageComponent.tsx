@@ -5,6 +5,7 @@ import { getAssessmentPageData } from "../api/assessmentPageApi";
 import ActionBarComponent from "./ActionBarComponent";
 import SidePanelComponent from "./SidePanelComponent";
 import ErrorPage from "../pages/ErrorPage";
+import PageLoading from "../pages/PageLoading";
 
 const bloomOrder = [
   "Remember",
@@ -355,13 +356,18 @@ export default function AssessmentPageComponent({
     });
   }, [layout, coTotalsMemo, studentCount, data]);
 
-  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (loading) return <PageLoading />;
   if (error) return <div className="p-6 text-red-500">{error}</div>;
   const hasPos = Array.isArray(data?.pos) && data!.pos.length > 0;
   const hasStudents =
     Array.isArray(data?.students) && data!.students.length > 0;
   if (!data || !hasPos || !hasStudents) {
-    return <ErrorPage title="No data available to display." description="Check back later for course outcome assessments!" />;
+    return (
+      <ErrorPage
+        title="No data available to display."
+        description="Check back later for course outcome assessments!"
+      />
+    );
   }
 
   const poCells = layout.map((po, pIdx) => {

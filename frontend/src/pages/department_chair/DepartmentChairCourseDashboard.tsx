@@ -21,12 +21,12 @@ import {
 } from "../../api/departmentChairLoadedCourseApi";
 import type {
   DepartmentCourses,
-  DepartmentLoadedCoursesDisplay,
   LoadDepartmentCourse,
 } from "../../types/departmentChairLoadedCourseTypes";
 import DepartmentCoursesTableComponent from "../../components/DepartmentCoursesTableComponent";
 import InfoComponent from "../../components/InfoComponent";
 import ProgramOutcomesTableComponent from "../../components/ProgramOutcomesTableComponent";
+import type { BaseLoadedCourse } from "../../types/baseTypes";
 
 export default function DepartmentChairCourseDashboard() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -39,7 +39,7 @@ export default function DepartmentChairCourseDashboard() {
   const { department } = useDepartment();
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [departmentLoadedCourses, setDepartmentLoadedCourses] = useState<
-    DepartmentLoadedCoursesDisplay[]
+    BaseLoadedCourse[]
   >([]);
   const [departmentCourses, setDepartmentCourses] = useState<
     DepartmentCourses[]
@@ -108,15 +108,19 @@ export default function DepartmentChairCourseDashboard() {
   }, [departmentCourses, searchQuery]);
 
   const filteredDepartmentLoadedCourses = useMemo(() => {
-    if (!searchQuery.trim()) return departmentLoadedCourses;
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return departmentLoadedCourses;
 
-    const query = searchQuery.toLowerCase();
-    return departmentLoadedCourses.filter(
-      (course) =>
+    return departmentLoadedCourses.filter((course) => {
+      const academicYearAndSem =
+        `${course.academic_year_start}-${course.academic_year_end} / ${course.semester_type}`.toLowerCase();
+
+      return (
         course.course_code.toLowerCase().includes(query) ||
         course.course_title.toLowerCase().includes(query) ||
-        course.academic_year_and_semester.toLowerCase().includes(query)
-    );
+        academicYearAndSem.includes(query)
+      );
+    });
   }, [departmentLoadedCourses, searchQuery]);
 
   const handleLoadCourse = async () => {
@@ -174,9 +178,7 @@ export default function DepartmentChairCourseDashboard() {
       setDepartmentLoadedCourses((prev) => prev.filter((u) => u.id !== id));
   };
 
-  const goToDepartmentChairCoursePage = (
-    course: DepartmentLoadedCoursesDisplay
-  ) => {
+  const goToDepartmentChairCoursePage = (course: BaseLoadedCourse) => {
     const loadedCourseId = course.id;
     const courseCode = course.course_code?.replace(/\s+/g, "") ?? "";
 
@@ -232,9 +234,8 @@ export default function DepartmentChairCourseDashboard() {
               fieldTop={(c) => c.course_code}
               title={(c) => c.course_title}
               subtitle={(course) => {
-                return `${course.academic_year_and_semester}  | ${
-                  course.program_name ?? ""
-                }`;
+                const academicYearAndSem = `${course.academic_year_start}-${course.academic_year_end} / ${course.semester_type}`;
+                return `${academicYearAndSem} | ${course.program_name ?? ""}`;
               }}
               loading={loading}
               enableOption
@@ -254,7 +255,7 @@ export default function DepartmentChairCourseDashboard() {
                   key: "academic_year_and_semester",
                   label: "Academic Year / Semester",
                 },
-                { key: "year_level", label: "Year Level" },
+                { key: "year_level_type", label: "Year Level" },
               ]}
               onDelete={(course) => handleDelete(Number(course))}
               loading={loading}

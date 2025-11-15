@@ -4,6 +4,11 @@ import LoginComponent from "../components/LoginComponent";
 import WelcomeComponent from "../components/WelcomeComponent";
 import { useAuth } from "../context/useAuth";
 import { roleRoutes } from "../config/Roles";
+import type { AxiosError } from "axios";
+
+type BackendError = {
+  error?: string;
+};
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -37,7 +42,7 @@ export default function LoginPage() {
     e.preventDefault();
 
     if (!userId.trim() && !password.trim()) {
-      setErrorMessage("Please enter User ID and Password.");
+      setErrorMessage("Please enter your User ID and Password.");
       return;
     } else if (!userId.trim()) {
       setErrorMessage("Please enter your User ID.");
@@ -46,9 +51,7 @@ export default function LoginPage() {
       setErrorMessage("Please enter your Password.");
       return;
     }
-
     setLoading(true);
-
     const parsedUserId = Number(userId);
     if (isNaN(parsedUserId)) {
       setErrorMessage("Invalid Login Credentials");
@@ -57,14 +60,16 @@ export default function LoginPage() {
       setPassword("");
       return;
     }
-
     try {
       await login(parsedUserId, password);
       setLoading(false);
       setUserId("");
       setPassword("");
-    } catch {
-      setErrorMessage("Invalid Login Credentials");
+    } catch (err) {
+      const error = err as AxiosError<BackendError>;
+      const backendError =
+        error.response?.data?.error ?? "Invalid Login Credentials.";
+      setErrorMessage(backendError);
       setLoading(false);
       setUserId("");
       setPassword("");

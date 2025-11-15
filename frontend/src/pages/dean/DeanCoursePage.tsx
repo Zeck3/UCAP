@@ -13,17 +13,18 @@ import emptyImage from "../../assets/undraw_file-search.svg";
 import { useLayout } from "../../context/useLayout";
 
 import { fetchDeanCoursePage } from "../../api/deanDashboardApi";
+import type {} from "../../types/deanDashboardTypes";
 import type {
-  DeanCoursePageResponse,
-  SectionDisplay,
-} from "../../types/deanDashboardTypes";
+  BaseCoursePageResponse,
+  BaseSection,
+} from "../../types/baseTypes";
 
 export default function DeanCoursePage() {
   const { department_id, loaded_course_id } = useParams();
   const navigate = useNavigate();
   const { layout } = useLayout();
 
-  const [courseData, setCourseData] = useState<DeanCoursePageResponse | null>(
+  const [courseData, setCourseData] = useState<BaseCoursePageResponse | null>(
     null
   );
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,7 +62,7 @@ export default function DeanCoursePage() {
       .map((s) => ({ ...s, id: s.id }));
   }, [courseData, searchQuery]);
 
-  const goToAssessmentPage = (section: SectionDisplay) => {
+  const goToAssessmentPage = (section: BaseSection) => {
     if (!loaded_course_id || !department_id) return;
 
     navigate(`/college/${department_id}/${loaded_course_id}/${section.id}`, {

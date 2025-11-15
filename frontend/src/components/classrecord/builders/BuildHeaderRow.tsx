@@ -315,7 +315,6 @@ function BuildHeaderRow({
             key="sub-name-col"
             style={{
               width: studentNameWidth,
-              minWidth: studentNameWidth,
             }}
             className="border border-[#E9E6E6] border-b-2 p-2 text-left font-bold sticky-col sticky-col-3"
           >
