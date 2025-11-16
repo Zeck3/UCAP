@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getOutcomeMappings,
   updateOutcomeMapping,
@@ -18,11 +18,25 @@ export default function OutcomeMappingTableComponent({
   const [loading, setLoading] = useState(true);
   const [updatingCell, setUpdatingCell] = useState<number | null>(null);
 
+  const tableRef = useRef<HTMLDivElement | null>(null);
+  const activeEditIdsRef = useRef<Set<number> | null>(null);
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionStart, setSelectionStart] = useState<{
+    row: number;
+    col: number;
+  } | null>(null);
+  const [selectedCellIds, setSelectedCellIds] = useState<Set<number>>(
+    () => new Set()
+  );
+
   const fetchMappings = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getOutcomeMappings(loadedCourseId);
       setData(res);
+      // reset selection on reload
+      setSelectedCellIds(new Set());
+      setSelectionStart(null);
     } catch (err) {
       console.error("Failed to fetch outcome mappings:", err);
     } finally {
@@ -34,17 +48,38 @@ export default function OutcomeMappingTableComponent({
     fetchMappings();
   }, [fetchMappings]);
 
+  // End selection when mouse is released anywhere
+  useEffect(() => {
+    const handleMouseUp = () => setIsSelecting(false);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => window.removeEventListener("mouseup", handleMouseUp);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      if (!tableRef.current) return;
+      if (!tableRef.current.contains(e.target as Node)) {
+        setSelectedCellIds(new Set());
+        setSelectionStart(null);
+      }
+    };
+
+    window.addEventListener("mousedown", handleMouseDown);
+    return () => window.removeEventListener("mousedown", handleMouseDown);
+  }, []);
+
   const handleCellChange = async (mappingId: number, newValue: string) => {
-    if (!["", "I", "D", "E"].includes(newValue.toUpperCase())) return;
+    const upper = newValue.toUpperCase();
+    if (!["", "I", "D", "E"].includes(upper)) return;
 
     setUpdatingCell(mappingId);
     try {
-      await updateOutcomeMapping(mappingId, newValue.toUpperCase());
+      await updateOutcomeMapping(mappingId, upper);
       setData((prev) => {
         if (!prev) return prev;
         const updated = structuredClone(prev);
         const cell = updated.mapping.find((m) => m.id === mappingId);
-        if (cell) cell.outcome_mapping = newValue.toUpperCase();
+        if (cell) cell.outcome_mapping = upper;
         return updated;
       });
     } catch (err) {
@@ -57,7 +92,7 @@ export default function OutcomeMappingTableComponent({
   if (loading || !data) {
     return (
       <div className="flex justify-center items-center py-12">
-        <LoadingIcon className="h-6 w-6 animate-spin" />
+        <LoadingIcon className="h-8 w-8 animate-spin text-[#ffc000]" />
       </div>
     );
   }
@@ -94,13 +129,33 @@ export default function OutcomeMappingTableComponent({
     return found?.id;
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <LoadingIcon className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
+  const updateSelectionRange = (row: number, col: number) => {
+    if (!selectionStart) return;
+
+    const rowStart = Math.min(selectionStart.row, row);
+    const rowEnd = Math.max(selectionStart.row, row);
+    const colStart = Math.min(selectionStart.col, col);
+    const colEnd = Math.max(selectionStart.col, col);
+
+    const newSelected = new Set<number>();
+
+    for (let r = rowStart; r <= rowEnd; r++) {
+      const co = sortedCourseOutcomes[r];
+      if (!co) continue;
+      for (let c = colStart; c <= colEnd; c++) {
+        const po = sortedProgramOutcomes[c];
+        if (!po) continue;
+        const id = getMappingId(co.course_outcome_id, po.program_outcome_id);
+        if (id != null) newSelected.add(id);
+      }
+    }
+
+    setSelectedCellIds(newSelected);
+
+    if (activeEditIdsRef.current) {
+      activeEditIdsRef.current = new Set(newSelected);
+    }
+  };
 
   if (!data) {
     return (
@@ -155,7 +210,10 @@ export default function OutcomeMappingTableComponent({
           </table>
         </div>
       ) : !noCOs && noPOs ? (
-        <div className="overflow-x-auto border border-[#E9E6E6] rounded-md">
+        <div
+          ref={tableRef}
+          className="overflow-x-auto border border-[#E9E6E6] rounded-md"
+        >
           <table className="min-w-full border-collapse text-sm text-center w-full">
             <thead className="border-b border-[#E9E6E6] bg-gray-50">
               <tr>
@@ -191,8 +249,11 @@ export default function OutcomeMappingTableComponent({
           </table>
         </div>
       ) : (
-        <div className="overflow-x-auto border border-[#E9E6E6] rounded-md">
-          <table className="min-w-full border-collapse text-sm text-center w-full">
+        <div
+          ref={tableRef}
+          className="overflow-x-auto border border-[#E9E6E6] rounded-md"
+        >
+          <table className="min-w-full border-collapse text-sm text-center w-full select-none">
             <thead className="border-b border-[#E9E6E6] bg-gray-50">
               <tr>
                 <th
@@ -221,7 +282,7 @@ export default function OutcomeMappingTableComponent({
             </thead>
 
             <tbody>
-              {sortedCourseOutcomes.map((co) => (
+              {sortedCourseOutcomes.map((co, rowIndex) => (
                 <tr
                   key={co.course_outcome_id}
                   className="border-t border-[#E9E6E6]"
@@ -230,7 +291,7 @@ export default function OutcomeMappingTableComponent({
                     {co.course_outcome_code}
                   </td>
 
-                  {sortedProgramOutcomes.map((po) => {
+                  {sortedProgramOutcomes.map((po, colIndex) => {
                     const value = getMappingValue(
                       co.course_outcome_id,
                       po.program_outcome_id
@@ -239,50 +300,96 @@ export default function OutcomeMappingTableComponent({
                       co.course_outcome_id,
                       po.program_outcome_id
                     );
+                    const isSelected =
+                      currentId != null && selectedCellIds.has(currentId);
 
                     return (
-                      <td key={po.program_outcome_id}>
+                      <td
+                        key={po.program_outcome_id}
+                        onMouseDown={(e) => {
+                          if (e.button !== 0) return; // left button only
+                          if (!currentId) return;
+                          setIsSelecting(true);
+                          setSelectionStart({ row: rowIndex, col: colIndex });
+                          const initial = new Set<number>();
+                          initial.add(currentId);
+                          setSelectedCellIds(initial);
+                        }}
+                        onMouseEnter={() => {
+                          if (!isSelecting) return;
+                          updateSelectionRange(rowIndex, colIndex);
+                        }}
+                        className={`p-0 ${isSelected ? "bg-blue-50" : ""}`}
+                      >
                         <input
+                          name={`mapping_${co.course_outcome_id}_${po.program_outcome_id}`}
                           type="text"
                           value={value}
                           maxLength={1}
-                          onChange={(e) => {
-                            const newVal = e.target.value.toUpperCase();
-                            if (["", "I", "D", "E"].includes(newVal)) {
-                              const updated = { ...data };
-                              const cell = updated.mapping.find(
-                                (m) =>
-                                  m.course_outcome.course_outcome_id ===
-                                    co.course_outcome_id &&
-                                  m.program_outcome.program_outcome_id ===
-                                    po.program_outcome_id
-                              );
-                              if (cell) cell.outcome_mapping = newVal;
-                              setData(updated);
-                            }
+                          readOnly
+                          onFocus={() => {
+                            if (!currentId) return;
+                            const snapshot =
+                              selectedCellIds.size > 0 &&
+                              selectedCellIds.has(currentId)
+                                ? new Set(selectedCellIds)
+                                : new Set<number>([currentId]);
+                            activeEditIdsRef.current = snapshot;
+                            setSelectedCellIds(snapshot);
                           }}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter" && currentId) {
-                              const newVal =
-                                e.currentTarget.value.toUpperCase();
-                              if (["", "I", "D", "E"].includes(newVal)) {
-                                handleCellChange(currentId, newVal);
-                              }
+                            if (!currentId) return;
+
+                            const key = e.key;
+                            const upper = key.toUpperCase();
+                            const isAllowedChar = ["I", "D", "E"].includes(
+                              upper
+                            );
+                            const isErase =
+                              key === "Backspace" || key === "Delete";
+
+                            if (isAllowedChar || isErase) {
+                              e.preventDefault();
+
+                              const snapshot =
+                                activeEditIdsRef.current ??
+                                new Set<number>([currentId]);
+
+                              const newVal = isErase ? "" : upper;
+
+                              setData((prev) => {
+                                if (!prev) return prev;
+                                const updated = structuredClone(prev);
+                                updated.mapping.forEach((m) => {
+                                  if (snapshot.has(m.id)) {
+                                    m.outcome_mapping = newVal;
+                                  }
+                                });
+                                return updated;
+                              });
                             }
                           }}
                           onBlur={(e) => {
-                            if (currentId) {
-                              const newVal =
-                                e.currentTarget.value.toUpperCase();
-                              if (["", "I", "D", "E"].includes(newVal)) {
-                                handleCellChange(currentId, newVal);
-                              }
-                            }
+                            if (!currentId) return;
+                            const newVal = e.currentTarget.value.toUpperCase();
+                            if (!["", "I", "D", "E"].includes(newVal)) return;
+
+                            const snapshot =
+                              activeEditIdsRef.current ??
+                              new Set<number>([currentId]);
+
+                            snapshot.forEach((id) => {
+                              void handleCellChange(id, newVal);
+                            });
+
+                            activeEditIdsRef.current = null;
                           }}
                           disabled={updatingCell === currentId}
-                          className={`text-center w-full h-12 ${
+                          className={`text-center w-full h-12 outline-none cursor-text ${
                             updatingCell === currentId
-                              ? "bg-gray-100 cursor-wait"
+                              ? ""
+                              : isSelected
+                              ? "bg-blue-50"
                               : "bg-white"
                           }`}
                         />
@@ -295,6 +402,7 @@ export default function OutcomeMappingTableComponent({
           </table>
         </div>
       )}
+
       <div className="flex justify-between">
         <button
           onClick={fetchMappings}

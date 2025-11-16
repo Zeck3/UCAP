@@ -26,18 +26,44 @@ def department_course_list_view(request, department_id):
 def department_course_management_view(request, department_id):
     try:
         if request.method == "GET":
-            courses = LoadedCourse.objects.filter(course__program__department__department_id=department_id)
+            courses = LoadedCourse.objects.filter(
+                course__program__department__department_id=department_id
+            )
             serializer = DepartmentLoadedCourseSerializer(courses, many=True)
             return JsonResponse(serializer.data, safe=False)
 
         serializer = CreateDepartmentLoadedCourseSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return JsonResponse({"message": "Course loaded successfully", "data": serializer.data}, status=status.HTTP_200_OK)
-        return JsonResponse({"message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse(
+                {"message": "Course loaded successfully", "data": serializer.data},
+                status=status.HTTP_200_OK,
+            )
+
+        errors = serializer.errors
+        non_field = errors.get("non_field_errors")
+        if isinstance(non_field, list) and non_field:
+            msg = str(non_field[0])
+            return JsonResponse(
+                {
+                    "code": "course_already_loaded",
+                    "message": msg,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return JsonResponse(
+            {
+                "code": "validation_error",
+                "message": "Validation error.",
+                "errors": errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     except Exception as e:
         return JsonResponse({"message": str(e)}, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])

@@ -85,7 +85,7 @@ export default function ProgramOutcomesTableComponent({ programId }: Props) {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <LoadingIcon className="h-6 w-6 animate-spin" />
+        <LoadingIcon className="h-8 w-8 animate-spin text-[#ffc000]" />
       </div>
     );
   }
@@ -114,6 +114,8 @@ export default function ProgramOutcomesTableComponent({ programId }: Props) {
                 <td className="px-4 py-3">
                   {editingId === o.program_outcome_id ? (
                     <input
+                      id={`po-edit-${o.program_outcome_id}`}
+                      name="program_outcome_description"
                       type="text"
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
@@ -149,6 +151,8 @@ export default function ProgramOutcomesTableComponent({ programId }: Props) {
               <td className="px-4 py-3 text-gray-400 italic">Next PO</td>
               <td className="px-4 py-3">
                 <input
+                  id="po-new-description"
+                  name="program_outcome_description"
                   type="text"
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
@@ -181,7 +185,7 @@ export default function ProgramOutcomesTableComponent({ programId }: Props) {
           }`}
         >
           {adding ? (
-            <LoadingIcon className="h-4 w-4 animate-spin" />
+            <LoadingIcon className="h-8 w-8 animate-spin text-white" />
           ) : (
             <>
               <PlusIcon className="h-4 w-4" />

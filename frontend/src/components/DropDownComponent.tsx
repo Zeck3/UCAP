@@ -66,7 +66,7 @@ export default function DropdownComponent({
 
   return (
     <div className="relative w-full" ref={dropdownRef}>
-      <label className="block text-sm mb-1">
+      <label className="block text-sm mb-1" htmlFor={name}>
         {label}
         {required && showAsterisk && (
           <span className="text-red-500 ml-1">*</span>
@@ -76,6 +76,7 @@ export default function DropdownComponent({
       <button
         type="button"
         disabled={loading}
+        id={name}
         className={`flex items-center justify-between w-full h-10 px-3 py-2 border rounded-md ${
           error ? "border-red-500" : "border-[#E9E6E6]"
         } ${ readOnly || loading ? "bg-gray-100 cursor-not-allowed" : ""}`}

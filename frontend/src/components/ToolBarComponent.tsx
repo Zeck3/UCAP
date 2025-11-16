@@ -107,6 +107,8 @@ export default function ToolBarComponent({
               <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-auto" />
               <input
                 type="text"
+                id="search"
+                name="search"
                 placeholder="Search"
                 onChange={(e) => onSearch?.(e.target.value)}
                 className="pl-12 pr-4 py-2 text-base border border-[#E9E6E6] rounded-full w-full"

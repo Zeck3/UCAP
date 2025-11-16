@@ -54,7 +54,6 @@ export default function LoginComponent({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             type="password"
-            autoComplete="current-password"
             className="w-full text-base px-4 py-2 border border-[#E9E6E6] rounded-md"
             disabled={loading}
           />
@@ -75,7 +74,7 @@ export default function LoginComponent({
         >
           {loading ? (
             <>
-              <LoadingIcon className="animate-spin h-4 w-4" />
+              <LoadingIcon className="h-4 w-4 animate-spin text-white" />
             </>
           ) : (
             "Log In"

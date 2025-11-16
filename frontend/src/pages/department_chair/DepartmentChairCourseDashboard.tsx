@@ -20,6 +20,7 @@ import {
   deleteLoadedCourse,
 } from "../../api/departmentChairLoadedCourseApi";
 import type {
+  DepartmentCourseErrorResponse,
   DepartmentCourses,
   LoadDepartmentCourse,
 } from "../../types/departmentChairLoadedCourseTypes";
@@ -27,6 +28,7 @@ import DepartmentCoursesTableComponent from "../../components/DepartmentCoursesT
 import InfoComponent from "../../components/InfoComponent";
 import ProgramOutcomesTableComponent from "../../components/ProgramOutcomesTableComponent";
 import type { BaseLoadedCourse } from "../../types/baseTypes";
+import type { AxiosError } from "axios";
 
 export default function DepartmentChairCourseDashboard() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -38,6 +40,9 @@ export default function DepartmentChairCourseDashboard() {
   const { department_id, department_name } = useParams();
   const { department } = useDepartment();
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [ayLoaded, setAyLoaded] = useState(false);
+  const [loadedCoursesFetched, setLoadedCoursesFetched] = useState(false);
+  const [deptCoursesFetched, setDeptCoursesFetched] = useState(false);
   const [departmentLoadedCourses, setDepartmentLoadedCourses] = useState<
     BaseLoadedCourse[]
   >([]);
@@ -55,30 +60,70 @@ export default function DepartmentChairCourseDashboard() {
 
   const [sidePanelLoading, setSidePanelLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [submitLoading, setSubmitLoading] = useState(false);
 
   const departmentId = user?.department_id ?? 0;
   const programId = department?.program_id ?? 0;
 
   useEffect(() => {
-    async function fetchDepartmentDetailsData() {
-      setLoading(true);
+    if (ayLoaded) return;
+
+    (async () => {
       try {
-        const [loadedCourses, allCourses, years] = await Promise.all([
-          getDepartmentLoadedCourses(departmentId),
-          getDepartmentCourses(departmentId),
-          getAcademicYears(),
-        ]);
-        setDepartmentLoadedCourses(loadedCourses);
-        setDepartmentCourses(allCourses);
+        const years = await getAcademicYears();
         setAcademicYears(years);
+        setAyLoaded(true);
       } catch (err) {
-        console.error("Error loading department data:", err);
+        console.error("Error fetching AY:", err);
+      }
+    })();
+  }, [ayLoaded]);
+
+  useEffect(() => {
+    if (activeMenu !== "courses") return;
+    if (loadedCoursesFetched) return;
+
+    let active = true;
+    setLoading(true);
+
+    (async () => {
+      try {
+        const loadedCourses = await getDepartmentLoadedCourses(departmentId);
+        if (!active) return;
+        setDepartmentLoadedCourses(loadedCourses);
+        setLoadedCoursesFetched(true);
       } finally {
         setLoading(false);
       }
-    }
-    fetchDepartmentDetailsData();
-  }, [departmentId]);
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [activeMenu, departmentId, loadedCoursesFetched]);
+
+  useEffect(() => {
+    if (!isPanelOpen) return;
+    if (deptCoursesFetched) return;
+
+    let active = true;
+    setSidePanelLoading(true);
+
+    (async () => {
+      try {
+        const courses = await getDepartmentCourses(departmentId);
+        if (!active) return;
+        setDepartmentCourses(courses);
+        setDeptCoursesFetched(true);
+      } finally {
+        setSidePanelLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [isPanelOpen, departmentId, deptCoursesFetched]);
 
   const handleClearError = (field: string) => {
     if (errors[field]) {
@@ -123,9 +168,10 @@ export default function DepartmentChairCourseDashboard() {
     });
   }, [departmentLoadedCourses, searchQuery]);
 
-  const handleLoadCourse = async () => {
+  const handleLoadCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
     setErrors({});
-    setSidePanelLoading(true);
+    setSubmitLoading(true); // <<< use submitLoading, not sidePanelLoading
 
     const newErrors: { [key: string]: string } = {};
     if (!selectedAcademicYear) {
@@ -137,29 +183,69 @@ export default function DepartmentChairCourseDashboard() {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      setSidePanelLoading(false);
+      setSubmitLoading(false); // <<< submitLoading
       return;
     }
 
+    const duplicateCourseCodes: string[] = [];
+
     try {
+      const academicYearId = selectedAcademicYear!;
+
       for (const course of selectedCourses) {
         const courseCode = course.course_code?.replace(/\s+/g, "") ?? "";
-        const academicYearId = selectedAcademicYear ?? "";
         const loadCourse: LoadDepartmentCourse = {
           course: courseCode,
-          academic_year: parseInt(academicYearId),
+          academic_year: parseInt(academicYearId, 10),
         };
-        await addLoadedCourse(departmentId, loadCourse);
+
+        try {
+          await addLoadedCourse(departmentId, loadCourse);
+        } catch (err) {
+          const axiosErr = err as AxiosError<DepartmentCourseErrorResponse>;
+          const status = axiosErr.response?.status;
+          const data = axiosErr.response?.data;
+
+          if (status === 400 && data?.code === "course_already_loaded") {
+            duplicateCourseCodes.push(course.course_code);
+            continue;
+          }
+
+          throw err;
+        }
       }
 
       const updatedCourses = await getDepartmentLoadedCourses(departmentId);
       setDepartmentLoadedCourses(updatedCourses);
-      resetPanelState();
+
+      if (duplicateCourseCodes.length > 0) {
+        const msg =
+          duplicateCourseCodes.length === 1
+            ? `This course is already loaded for the given academic year: ${duplicateCourseCodes[0]}.`
+            : `These courses are already loaded for the given academic year: [${duplicateCourseCodes.join(
+                ", "
+              )}].`;
+
+        setErrors((prev) => ({
+          ...prev,
+          courses: msg,
+        }));
+      } else {
+        resetPanelState();
+      }
     } catch (error) {
       console.error("Error loading courses:", error);
-      setErrors({ submit: "An error occurred while loading the courses." });
+      const axiosErr = error as AxiosError<DepartmentCourseErrorResponse>;
+      const backendMessage = axiosErr.response?.data?.message;
+
+      setErrors((prev) => ({
+        ...prev,
+        courses:
+          backendMessage ??
+          "An unexpected error occurred while loading the courses.",
+      }));
     } finally {
-      setSidePanelLoading(false);
+      setSubmitLoading(false); 
     }
   };
 
@@ -169,6 +255,7 @@ export default function DepartmentChairCourseDashboard() {
     setSelectedAcademicYear(null);
     setErrors({});
     setSidePanelLoading(false);
+    setSubmitLoading(false);
   };
 
   const handleDelete = async (id: number) => {
@@ -234,7 +321,7 @@ export default function DepartmentChairCourseDashboard() {
               fieldTop={(c) => c.course_code}
               title={(c) => c.course_title}
               subtitle={(course) => {
-                const academicYearAndSem = `${course.academic_year_start}-${course.academic_year_end} / ${course.semester_type}`;
+                const academicYearAndSem = `${course.academic_year_start}-${course.academic_year_end} | ${course.semester_type}`;
                 return `${academicYearAndSem} | ${course.program_name ?? ""}`;
               }}
               loading={loading}
@@ -281,7 +368,8 @@ export default function DepartmentChairCourseDashboard() {
         onSubmit={handleLoadCourse}
         buttonFunction="Load Courses"
         singleColumn
-        loading={sidePanelLoading}
+        loading={sidePanelLoading || submitLoading}
+        disableSubmit={departmentCourses.length === 0 || submitLoading}
       >
         <div className="mb-4">
           <DepartmentCoursesTableComponent
@@ -297,6 +385,7 @@ export default function DepartmentChairCourseDashboard() {
             onClearError={handleClearError}
           />
         </div>
+
         <div className="mb-4">
           <DropdownComponent
             label="Academic Year"

@@ -7,6 +7,7 @@ type Props = {
   goToAssessmentPage: () => void;
   sectionId: number;
   refreshStudents: () => Promise<void>;
+  canGenerateResultSheet: boolean;
 };
 
 const TOOLBAR_Z = "z-[1500]";
@@ -17,6 +18,7 @@ export default function FloatingToolbarComponent({
   goToAssessmentPage,
   sectionId,
   refreshStudents,
+  canGenerateResultSheet,
 }: Props) {
   const [toolbarOpen, setToolbarOpen] = useState(true);
 
@@ -24,7 +26,9 @@ export default function FloatingToolbarComponent({
   const [showImportModal, setShowImportModal] = useState(false);
 
   // append / override mode (chosen before uploading)
-  const [pendingMode, setPendingMode] = useState<"append" | "override" | null>(null);
+  const [pendingMode, setPendingMode] = useState<"append" | "override" | null>(
+    null
+  );
 
   return (
     <>
@@ -84,8 +88,17 @@ export default function FloatingToolbarComponent({
         <button
           type="button"
           onClick={goToAssessmentPage}
-          className="relative px-4 py-2 rounded-full flex items-center gap-2 bg-ucap-yellow hover:bg-ucap-yellow-hover hover:cursor-pointer transition group"
-          title="Generate COA Result Sheet"
+          disabled={!canGenerateResultSheet}
+          className={`relative px-4 py-2 rounded-full bg-ucap-yellow flex items-center gap-2 transition group ${
+            canGenerateResultSheet
+              ? "hover:bg-ucap-yellow-hover hover:cursor-pointer"
+              : "opacity-50 cursor-not-allowed"
+          }`}
+          title={
+            canGenerateResultSheet
+              ? "Generate COA Result Sheet"
+              : "Set Course Outcomes and CO-PO Mapping first"
+          }
           aria-label="Generate COA Result Sheet"
         >
           <AnalyticsIcon className="w-5 h-5 text-white" />
@@ -107,7 +120,11 @@ export default function FloatingToolbarComponent({
             viewBox="0 0 24 24"
             aria-hidden="true"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </button>
       </div>
@@ -129,7 +146,11 @@ export default function FloatingToolbarComponent({
             viewBox="0 0 24 24"
             aria-hidden="true"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M5 15l7-7 7 7"
+            />
           </svg>
         </button>
       )}

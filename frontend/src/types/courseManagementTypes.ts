@@ -1,3 +1,8 @@
+export type CourseBackendErrors = {
+  course_code?: string[];
+  [key: string]: string[] | undefined;
+};
+
 export interface CourseInfoDisplay {
   id: string;
   course_code: string;

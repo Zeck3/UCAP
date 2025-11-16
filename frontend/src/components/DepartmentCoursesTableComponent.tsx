@@ -63,6 +63,58 @@ export default function DepartmentCoursesTableComponent({
     if (onClearError) onClearError("courses");
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col">
+        <div className="text-sm py-2">
+          Program Curriculum Courses<span className="text-red-500 ml-1">*</span>
+        </div>
+
+        <div className="overflow-x-auto w-full border border-[#E9E6E6] rounded-md">
+          <table className="min-w-full text-sm text-left border-collapse">
+            <thead>
+              <tr>
+                <th className="w-12"></th>
+                <th className="px-4 py-3"></th>
+                <th className="px-4 py-3"></th>
+                <th className="px-4 py-3"></th>
+                <th className="px-4 py-3"></th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {[1, 2, 3].map((i) => (
+                <tr key={i} className="border-t border-[#E9E6E6]">
+                  <td className="px-2 py-3">
+                    <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="h-4 w-40 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="h-4 w-10 mx-auto bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="h-4 w-10 mx-auto bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="h-4 w-10 mx-auto bg-gray-200 rounded animate-pulse" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="h-5 py-2" />
+      </div>
+    );
+  }
+
   if (!courses || courses.length === 0) {
     return (
       <div className="text-center text-gray-500 py-8">
@@ -78,7 +130,7 @@ export default function DepartmentCoursesTableComponent({
       </span>
       <div
         className={`overflow-x-auto w-full border border-[#E9E6E6] rounded-md ${
-          loading ? "opacity-60 cursor-not-allowed select-none" : ""
+          loading ? "opacity-50 cursor-not-allowed select-none" : ""
         }`}
       >
         <table className="min-w-full text-sm text-left border-collapse">
@@ -110,6 +162,8 @@ export default function DepartmentCoursesTableComponent({
                       <td className="px-2 py-3 text-center">
                         <input
                           type="checkbox"
+                          id={`bulk-${year}-${sem}`}
+                          name={`bulk-${year}-${sem}`}
                           disabled={loading}
                           onChange={(e) => {
                             if (loading) return;
@@ -150,6 +204,8 @@ export default function DepartmentCoursesTableComponent({
                         <td className="px-2 py-3 text-center">
                           <input
                             type="checkbox"
+                            id={`course-${c.course_code}`}
+                            name="department_course"
                             disabled={loading}
                             checked={selectedCourses.includes(c.course_code)}
                             onChange={() => toggleSelection(c.course_code)}

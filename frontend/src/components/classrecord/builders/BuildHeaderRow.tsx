@@ -183,7 +183,7 @@ function BuildHeaderRow({
           }}
           className={`border border-[#E9E6E6] p-2 text-center ${headerClass} ${
             isLeafDeep
-              ? `[writing-mode:vertical-rl] rotate-180 text-left truncate overflow-hidden text-ellipsis w-15 max-w-15`
+              ? `[writing-mode:vertical-rl] rotate-180 text-left truncate overflow-hidden text-ellipsis select-none w-15 max-w-15`
               : `whitespace-normal ${headerWidth} w-15`
           } ${node.isRowSpan ? "sticky-col sticky-col-1 sticky-rowspan" : ""} ${
             node.nodeType === "assessment" ||

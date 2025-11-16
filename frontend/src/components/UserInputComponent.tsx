@@ -60,6 +60,7 @@ export default function UserInputComponent({
         onChange={handleChange}
         disabled={loading}
         readOnly={readOnly}
+        autoComplete={name === "email" ? "email" : "off"}
         className={`w-full text-base h-10 px-3 py-2 border rounded-md ${
           error ? "border-red-500" : "border-[#E9E6E6]"
         } ${

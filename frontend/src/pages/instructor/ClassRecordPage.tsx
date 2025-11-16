@@ -6,6 +6,7 @@ import FloatingToolbar from "../../components/FloatingToolbarComponent";
 
 export default function ClassRecordPage() {
   const navigate = useNavigate();
+  const [canGenerateResultSheet, setCanGenerateResultSheet] = useState(false);
   const { loaded_course_id, section_id } = useParams();
   const location = useLocation();
 
@@ -30,6 +31,7 @@ export default function ClassRecordPage() {
       <ClassRecordComponent
         onInitialized={() => setCrReady(true)}
         onProvideFetchStudents={(fn) => setRefreshFn(() => fn)}
+        onCanGenerateResultSheetChange={setCanGenerateResultSheet}
       />
 
       {crReady && refreshFn && (
@@ -37,6 +39,7 @@ export default function ClassRecordPage() {
           sectionId={Number(section_id)}
           goToAssessmentPage={goToAssessmentPage}
           refreshStudents={refreshFn}
+          canGenerateResultSheet={canGenerateResultSheet}
         />
       )}
     </AppLayout>

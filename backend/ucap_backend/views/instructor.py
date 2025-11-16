@@ -86,6 +86,20 @@ def instructor_assigned_sections_view(request, instructor_id, loaded_course_id):
 # ====================================================
 # Class Record
 # ====================================================
+def can_generate_result_sheet(section: Section) -> bool:
+    loaded_course = section.loaded_course
+
+    has_cos = CourseOutcome.objects.filter(
+        loaded_course=loaded_course
+    ).exists()
+
+    has_mappings = OutcomeMapping.objects.filter(
+        course_outcome__loaded_course=loaded_course
+    ).exclude(outcome_mapping__isnull=True).exclude(outcome_mapping="")
+    has_mappings = has_mappings.exists()
+
+    return has_cos and has_mappings
+
 class ClassRecordViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
@@ -104,28 +118,43 @@ class ClassRecordViewSet(viewsets.ViewSet):
                                     Prefetch(
                                         "coursecomponent_set",
                                         queryset=CourseComponent.objects.prefetch_related(
-                                            Prefetch("assessment_set", queryset=Assessment.objects.prefetch_related("blooms_classification", "course_outcome"))
-                                        )
+                                            Prefetch(
+                                                "assessment_set",
+                                                queryset=Assessment.objects.prefetch_related(
+                                                    "blooms_classification",
+                                                    "course_outcome",
+                                                ),
+                                            )
+                                        ),
                                     )
-                                )
+                                ),
                             )
-                        )
+                        ),
                     ),
                     Prefetch(
                         "student_set",
                         queryset=Student.objects.prefetch_related(
-                            Prefetch("rawscore_set", queryset=RawScore.objects.select_related("assessment"))
-                        )
-                    )
+                            Prefetch(
+                                "rawscore_set",
+                                queryset=RawScore.objects.select_related("assessment"),
+                            )
+                        ),
+                    ),
                 )
                 .get(pk=pk)
             )
         except Section.DoesNotExist:
-            return Response({"detail": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
-        
-        serializer = ClassRecordSerializer(section)
-        return Response(serializer.data)
+            return Response(
+                {"detail": "Section not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
+        serializer = ClassRecordSerializer(section)
+        data = serializer.data
+        data["can_generate_result_sheet"] = can_generate_result_sheet(section)
+
+        return Response(data)
+    
 class StudentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = Student.objects.all()

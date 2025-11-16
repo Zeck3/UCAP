@@ -1,9 +1,12 @@
 import axiosClient from "./axiosClient";
+import axios from "axios";
 
 import type {
+  BackendFieldErrors,
   FacultyInfo,
   FacultyInfoDisplay,
   FacultyPayload,
+  UserMutationResult,
 } from "../types/userManagementTypes";
 
 function mapUser(user: FacultyInfo): FacultyInfoDisplay {
@@ -42,35 +45,38 @@ export async function getUser(id: number): Promise<FacultyInfo | null> {
 
 export async function addUser(
   payload: FacultyPayload
-): Promise<FacultyInfoDisplay | null> {
+): Promise<UserMutationResult> {
   try {
     const res = await axiosClient.post<FacultyInfo>(
       "/admin/user_management/",
       payload
     );
-    return mapUser(res.data);
-  } catch (error) {
-    console.error("Error adding user:", error);
-    return null;
+    return { data: mapUser(res.data) };
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response?.status === 400) {
+      const backendErrors = error.response.data.errors as BackendFieldErrors;
+      return { errors: backendErrors };
+    }
+    throw error;
   }
 }
 
 export async function editUser(
   id: number,
   updates: Partial<FacultyPayload>
-): Promise<FacultyInfoDisplay | null> {
+): Promise<UserMutationResult> {
   try {
-    const payload = {
-      ...updates,
-    };
     const res = await axiosClient.put<FacultyInfo>(
       `/admin/user_management/${id}`,
-      payload
+      updates
     );
-    return mapUser(res.data);
-  } catch (error) {
-    console.error("Error editing user:", error);
-    return null;
+    return { data: mapUser(res.data) };
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response?.status === 400) {
+      const backendErrors = error.response.data.errors as BackendFieldErrors;
+      return { errors: backendErrors };
+    }
+    throw error;
   }
 }
 

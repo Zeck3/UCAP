@@ -33,7 +33,7 @@ export default function ProgramOutcomesDisplayTable({ programId }: Props) {
       <div className="border border-[#E9E6E6] rounded-md overflow-hidden">
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <LoadingIcon className="h-6 w-6 animate-spin" />
+            <LoadingIcon className="h-8 w-8 animate-spin text-[#ffc000]" />
           </div>
         ) : outcomes.length === 0 ? (
           <div className="text-center text-gray-600 py-12">

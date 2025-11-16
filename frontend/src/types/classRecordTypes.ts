@@ -64,4 +64,5 @@ export interface ClassRecord {
   info: ClassRecordInfo;
   course_terms: CourseTerm[];
   students: Student[];
+  canGenerateResultSheet: boolean;
 }

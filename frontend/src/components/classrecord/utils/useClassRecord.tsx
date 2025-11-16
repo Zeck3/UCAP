@@ -43,6 +43,7 @@ type ClassRecordState = {
 
   currentAssessmentBlooms: number[];
   currentAssessmentOutcomes: number[];
+  canGenerateResultSheet: boolean;
 };
 
 export function useClassRecord() {
@@ -57,6 +58,7 @@ export function useClassRecord() {
     assessmentOutcomesMap: {},
     currentAssessmentBlooms: [],
     currentAssessmentOutcomes: [],
+    canGenerateResultSheet: false,
   });
 
   const {
@@ -66,6 +68,7 @@ export function useClassRecord() {
     studentScores,
     currentAssessmentBlooms,
     currentAssessmentOutcomes,
+    canGenerateResultSheet,
   } = classRecord;
 
   const [loading, setLoading] = useState(true);
@@ -270,6 +273,7 @@ export function useClassRecord() {
           assessmentOutcomesMap: outcomesMap,
           currentAssessmentBlooms: [],
           currentAssessmentOutcomes: [],
+          canGenerateResultSheet: data.canGenerateResultSheet ?? false,
         });
         setBloomsOptions(mappedBlooms);
         setOutcomesOptions(mappedOutcomes);
@@ -358,12 +362,7 @@ export function useClassRecord() {
   }, [loading, students.length, syncStudentScores]);
 
   const computedMaxValues = useMemo(() => {
-    if (headerNodes.length === 0 || Object.keys(maxScores).length === 0)
-      return {};
-    const hasAnyMaxScore = Object.entries(maxScores).some(
-      ([k, v]) => !k.includes("-total-grade") && v > 0
-    );
-    if (!hasAnyMaxScore) return {};
+    if (headerNodes.length === 0) return {};
     return computeValues(maxScores, maxScores, headerNodes);
   }, [maxScores, headerNodes]);
 
@@ -792,13 +791,20 @@ export function useClassRecord() {
 
   const handleOpenAssessmentInfo = useCallback(
     (e: React.MouseEvent, assessmentId: number) => {
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const target = e.currentTarget as HTMLElement;
+      const rect = target.getBoundingClientRect();
 
-      setAssessmentInfoContextMenu({
-        visible: true,
-        x: rect.left - 1,
-        y: rect.bottom,
-        assessmentId,
+      setAssessmentInfoContextMenu((prev) => {
+        if (prev.visible && prev.assessmentId === assessmentId) {
+          return { visible: false, x: 0, y: 0, assessmentId: undefined };
+        }
+
+        return {
+          visible: true,
+          x: rect.left - 1,
+          y: rect.bottom,
+          assessmentId,
+        };
       });
 
       setClassRecord((prev) => ({
@@ -924,6 +930,7 @@ export function useClassRecord() {
     outcomesOptions,
     currentAssessmentBlooms,
     currentAssessmentOutcomes,
+    canGenerateResultSheet,
     studentContextMenu,
     setStudentContextMenu,
     assessmentContextMenu,

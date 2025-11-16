@@ -13,6 +13,7 @@ import type {
   FacultyInfo,
   FacultyFormData,
   FacultyPayload,
+  UserMutationResult,
 } from "../../types/userManagementTypes";
 import ToolBarComponent from "../../components/ToolBarComponent";
 import PlusIcon from "../../assets/plus-solid.svg?react";
@@ -46,6 +47,7 @@ export default function AdminUserDashboard() {
   const [isEditing, setIsEditing] = useState(false);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [dropdownsLoaded, setDropdownsLoaded] = useState(false);
   const [errors, setErrors] = useState<{
     user_id?: string;
     first_name?: string;
@@ -67,20 +69,28 @@ export default function AdminUserDashboard() {
   });
 
   useEffect(() => {
-    async function fetchAll() {
+    async function fetchUsers() {
       setLoading(true);
-      const [usersData, rolesData, deptsData] = await Promise.all([
-        getUsers(),
-        getRoles(),
-        getDepartments(),
-      ]);
-      setUsers(usersData);
-      setRoles(rolesData);
-      setDepartments(deptsData);
-      setLoading(false);
+      try {
+        const usersData = await getUsers();
+        setUsers(usersData);
+      } finally {
+        setLoading(false);
+      }
     }
-    fetchAll();
+    fetchUsers();
   }, []);
+
+  async function ensureDropdownsLoaded() {
+    if (dropdownsLoaded) return;
+    const [rolesData, deptsData] = await Promise.all([
+      getRoles(),
+      getDepartments(),
+    ]);
+    setRoles(rolesData);
+    setDepartments(deptsData);
+    setDropdownsLoaded(true);
+  }
 
   const handleClearError = (name: string) => {
     setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -95,10 +105,16 @@ export default function AdminUserDashboard() {
 
   const openEditPanel = async (id: number) => {
     try {
-      const faculty = await getUser(id);
+      setSidePanelLoading(true);
+      const [faculty] = await Promise.all([
+        getUser(id),
+        ensureDropdownsLoaded(),
+      ]);
+
+      if (!faculty) return;
+
       setIsEditing(true);
       setEditingFaculty(faculty);
-      if (!faculty) return;
 
       setFormData({
         user_id: String(faculty.user_id),
@@ -110,9 +126,12 @@ export default function AdminUserDashboard() {
         user_role: faculty.user_role_id ? String(faculty.user_role_id) : "",
         department: faculty.department_id ? String(faculty.department_id) : "",
       });
+
       setIsPanelOpen(true);
     } catch (err) {
       console.error("Failed to load faculty info:", err);
+    } finally {
+      setSidePanelLoading(false);
     }
   };
 
@@ -131,6 +150,9 @@ export default function AdminUserDashboard() {
       newErrors.user_id = "User ID is required";
     } else if (!/^\d+$/.test(formData.user_id)) {
       newErrors.user_id = "User ID must be a number";
+    }
+    if (!formData.first_name?.trim()) {
+      newErrors.last_name = "First Name is required";
     }
     if (!formData.last_name?.trim()) {
       newErrors.last_name = "Last Name is required";
@@ -155,31 +177,57 @@ export default function AdminUserDashboard() {
     e.preventDefault();
     setSidePanelLoading(true);
 
-    if (!validateForm()) return setSidePanelLoading(false);
+    if (!validateForm()) {
+      setSidePanelLoading(false);
+      return;
+    }
 
     const payload = formDataToPayload(formData);
- 
+
+    let response: UserMutationResult;
+
     try {
-      let result;
       if (editingFaculty) {
-        result = await editUser(editingFaculty.user_id, payload);
+        response = await editUser(editingFaculty.user_id, payload);
       } else {
-        result = await addUser(payload);
+        response = await addUser(payload);
       }
-      if (result) {
+
+      if (response.errors) {
+        const backend = response.errors;
+        const newErrors: typeof errors = {};
+
+        if (backend.user_id) {
+          newErrors.user_id = backend.user_id[0];
+        }
+
+        if (backend.email) {
+          newErrors.email = backend.email[0];
+        }
+
+        setErrors(newErrors);
+        setSidePanelLoading(false);
+        return;
+      }
+
+      if (response.data) {
+        const newUser = response.data;
+
         if (editingFaculty) {
           setUsers((prev) =>
-            prev.map((u) => (u.id === result.id ? result : u))
+            prev.map((u) => (u.id === newUser.id ? newUser : u))
           );
         } else {
-          setUsers((prev) => [...prev, result]);
+          setUsers((prev) => [...prev, newUser]);
         }
-        setFormData(initialFormData);
-        setEditingFaculty(null);
-        setIsPanelOpen(false);
-        setSidePanelLoading(false);
       }
-    } catch {
+
+      setFormData(initialFormData);
+      setEditingFaculty(null);
+      setIsPanelOpen(false);
+      setSidePanelLoading(false);
+    } catch (err) {
+      console.error(err);
       setSidePanelLoading(false);
     }
   };
@@ -204,7 +252,16 @@ export default function AdminUserDashboard() {
         onSearch={(val) => setSearchQuery(val)}
         buttonLabel="Add Faculty"
         buttonIcon={<PlusIcon className="text-white h-5 w-5" />}
-        onButtonClick={() => setIsPanelOpen(true)}
+        onButtonClick={async () => {
+          setIsEditing(false);
+          setEditingFaculty(null);
+          setFormData(initialFormData);
+          setIsPanelOpen(true);
+
+          setSidePanelLoading(true);
+          await ensureDropdownsLoaded();
+          setSidePanelLoading(false);
+        }}
       />
       <TableComponent
         data={filteredUsers}
@@ -217,8 +274,8 @@ export default function AdminUserDashboard() {
           { key: "role", label: "Role" },
           { key: "department", label: "Department" },
         ]}
-        onEdit={(u) => openEditPanel(u)}
-        onDelete={handleDelete}
+        onEdit={(id) => openEditPanel(Number(id))}
+        onDelete={(id) => handleDelete(Number(id))}
         loading={loading}
         skeletonRows={5}
         showActions
@@ -242,6 +299,8 @@ export default function AdminUserDashboard() {
         <UserInputComponent
           label="First Name"
           name="first_name"
+          required
+          error={errors.first_name}
           value={formData.first_name}
           onChange={handleInputChange}
           onClearError={handleClearError}

@@ -1,3 +1,8 @@
+export interface DepartmentCourseErrorResponse {
+  message?: string;
+  code?: string;
+}
+
 export interface DepartmentCourses {
   course_code: string
   course_title: string

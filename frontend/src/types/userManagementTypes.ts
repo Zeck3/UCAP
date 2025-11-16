@@ -1,3 +1,14 @@
+export type BackendFieldErrors = Record<string, string[]>;
+
+export interface BackendErrorResponse {
+  errors: BackendFieldErrors;
+}
+
+export interface UserMutationResult {
+  data?: FacultyInfoDisplay;
+  errors?: BackendFieldErrors;
+}
+
 export type CurrentUser = {
   user_id: number | null;
   role_id: number;
@@ -8,7 +19,7 @@ export type CurrentUser = {
 };
 
 export interface FacultyInfoDisplay {
-  id: number;
+  id: number | string;
   name: string;
   email: string;
   role: string;

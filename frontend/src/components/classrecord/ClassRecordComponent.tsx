@@ -14,11 +14,13 @@ import "../../styles.css";
 interface Props {
   onInitialized?: () => void;
   onProvideFetchStudents?: (fn: () => Promise<void>) => void;
+  onCanGenerateResultSheetChange?: (can: boolean) => void;
 }
 
 export default function ClassRecordComponent({
   onInitialized,
   onProvideFetchStudents,
+  onCanGenerateResultSheetChange,
 }: Props) {
   const {
     fetchData,
@@ -31,6 +33,7 @@ export default function ClassRecordComponent({
     outcomesOptions,
     currentAssessmentBlooms,
     currentAssessmentOutcomes,
+    canGenerateResultSheet,
     studentContextMenu,
     assessmentContextMenu,
     componentContextMenu,
@@ -123,6 +126,12 @@ export default function ClassRecordComponent({
   useEffect(() => {
     onProvideFetchStudents?.(fetchData);
   }, [fetchData, onProvideFetchStudents]);
+
+  useEffect(() => {
+    if (onCanGenerateResultSheetChange) {
+      onCanGenerateResultSheetChange(canGenerateResultSheet);
+    }
+  }, [canGenerateResultSheet, onCanGenerateResultSheetChange]);
 
   useEffect(() => {
     if (initialized) onInitialized?.();

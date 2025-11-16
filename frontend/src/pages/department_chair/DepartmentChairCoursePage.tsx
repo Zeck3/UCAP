@@ -20,9 +20,7 @@ import {
   editSection,
   deleteSection,
 } from "../../api/departmentChairSectionApi";
-import type {
-  SectionPayload,
-} from "../../types/departmentChairSectionTypes";
+import type { SectionPayload } from "../../types/departmentChairSectionTypes";
 import InfoComponent from "../../components/InfoComponent";
 import type { BaseCourseDetails, BaseSection } from "../../types/baseTypes";
 
@@ -35,6 +33,7 @@ export default function DepartmentChairCoursePage() {
   const { layout } = useLayout();
   const navigate = useNavigate();
 
+  const [instructorsLoaded, setInstructorsLoaded] = useState(false);
   const [selectedInstructorId, setSelectedInstructorId] = useState<string>("");
   const [instructors, setInstructors] = useState<Instructor[]>([]);
 
@@ -59,19 +58,34 @@ export default function DepartmentChairCoursePage() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
-    async function getAllCoursesSections() {
-      setLoading(true);
+    let active = true;
+    setLoading(true);
+
+    (async () => {
       try {
-        const [instructorsData, { course_details, sections }] =
-          await Promise.all([
-            getInstructors(departmentId),
-            getSections(Number(loaded_course_id)),
-          ]);
-
-        setInstructors(instructorsData);
+        const { course_details } = await getSections(Number(loaded_course_id));
+        if (!active) return;
         setCourseDetails(course_details);
+      } catch (err) {
+        console.error("Failed to fetch course details:", err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
 
-        const mappedSections: BaseSection[] = sections.map((s) => ({
+    return () => {
+      active = false;
+    };
+  }, [loaded_course_id]);
+  useEffect(() => {
+    let active = true;
+
+    (async () => {
+      try {
+        const { sections } = await getSections(Number(loaded_course_id));
+        if (!active) return;
+
+        const mapped: BaseSection[] = sections.map((s) => ({
           id: s.section_id,
           section_id: s.section_id,
           year_and_section: s.year_and_section,
@@ -79,16 +93,30 @@ export default function DepartmentChairCoursePage() {
           instructor_id: s.instructor_id ?? null,
         }));
 
-        setSections(mapAndSortSections(mappedSections));
-      } catch (error) {
-        console.error("Error fetching course sections:", error);
-      } finally {
-        setLoading(false);
+        setSections(mapAndSortSections(mapped));
+      } catch (err) {
+        console.error("Failed to fetch sections:", err);
       }
-    }
+    })();
 
-    getAllCoursesSections();
-  }, [departmentId, loaded_course_id]);
+    return () => {
+      active = false;
+    };
+  }, [loaded_course_id]);
+
+  useEffect(() => {
+    if (instructorsLoaded) return;
+
+    (async () => {
+      try {
+        const data = await getInstructors(departmentId);
+        setInstructors(data);
+        setInstructorsLoaded(true); // Mark as cached
+      } catch (err) {
+        console.error("Failed to load instructors:", err);
+      }
+    })();
+  }, [instructorsLoaded, departmentId]);
 
   const mapAndSortSections = (sections: BaseSection[]): BaseSection[] => {
     return [...sections].sort((a, b) =>
@@ -214,15 +242,12 @@ export default function DepartmentChairCoursePage() {
   };
 
   const goToDepartmentChairAssessmentPage = (section: BaseSection) => {
-    navigate(
-      `/department/${department_id}/${loaded_course_id}/${section.id}`,
-      {
-        state: {
-          course_code: courseDetails?.course_code,
-          year_and_section: section.year_and_section,
-        },
-      }
-    );
+    navigate(`/department/${department_id}/${loaded_course_id}/${section.id}`, {
+      state: {
+        course_code: courseDetails?.course_code,
+        year_and_section: section.year_and_section,
+      },
+    });
   };
 
   if (!currentUserId) {
@@ -235,14 +260,20 @@ export default function DepartmentChairCoursePage() {
 
   return (
     <AppLayout activeItem={`/department/${department_id}`}>
-      {courseDetails && (
-        <InfoComponent
-          loading={loading}
-          title={courseDetails.course_title}
-          subtitle={`${courseDetails.academic_year} ${courseDetails.semester_type} | ${courseDetails.year_level}`}
-          details={`Department of ${courseDetails.department_name} | ${courseDetails.college_name} | ${courseDetails.campus_name} Campus`}
-        />
-      )}
+      <InfoComponent
+        loading={loading}
+        title={courseDetails?.course_title ?? ""}
+        subtitle={
+          courseDetails
+            ? `${courseDetails.academic_year} ${courseDetails.semester_type} | ${courseDetails.year_level}`
+            : ""
+        }
+        details={
+          courseDetails
+            ? `Department of ${courseDetails.department_name} | ${courseDetails.college_name} | ${courseDetails.campus_name} Campus`
+            : ""
+        }
+      />
       <ToolBarComponent
         titleOptions={[
           {

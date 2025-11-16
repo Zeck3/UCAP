@@ -39,9 +39,10 @@ class CreateDepartmentLoadedCourseSerializer(serializers.ModelSerializer):
 
         if LoadedCourse.objects.filter(course=course, academic_year=academic_year).exists():
             raise serializers.ValidationError(
-                "This course is already loaded for the given academic year."
+                f"Course {course.course_code} is already loaded for the given academic year."
             )
         return attrs
+
 
 class DepartmentChairSectionSerializer(BaseSectionSerializer):
     class Meta(BaseSectionSerializer.Meta):

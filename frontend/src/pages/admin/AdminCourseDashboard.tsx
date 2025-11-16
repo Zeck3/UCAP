@@ -23,6 +23,7 @@ import DropdownComponent from "../../components/DropDownComponent";
 import AppLayout from "../../layout/AppLayout";
 import type { Program, Semester, YearLevel } from "../../types/dropdownTypes";
 import type {
+  CourseBackendErrors,
   CourseFormData,
   CourseInfo,
   CourseInfoDisplay,
@@ -52,6 +53,7 @@ export default function AdminCourseDashboard() {
   const [yearLevels, setYearLevels] = useState<YearLevel[]>([]);
   const [editingCourse, setEditingCourse] = useState<CourseInfo | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [dropdownLoaded, setDropdownLoaded] = useState(false);
   const [formData, setFormData] = useState<CourseFormData>({
     ...initialFormData,
   });
@@ -76,15 +78,25 @@ export default function AdminCourseDashboard() {
       const coursesData = await getCourses();
       setCourses(coursesData);
       setLoading(false);
-      const programs = await getPrograms();
-      setPrograms(programs);
-      const semesters = await getSemesters();
-      setSemesters(semesters);
-      const yearLevels = await getYearLevels();
-      setYearLevels(yearLevels);
     }
     fetchCourses();
   }, []);
+
+  async function ensureDropdownData() {
+    if (dropdownLoaded) return;
+
+    const [programs, semesters, yearLevels] = await Promise.all([
+      getPrograms(),
+      getSemesters(),
+      getYearLevels(),
+    ]);
+
+    setPrograms(programs);
+    setSemesters(semesters);
+    setYearLevels(yearLevels);
+
+    setDropdownLoaded(true);
+  }
 
   const filteredCourses = useMemo(() => {
     if (!searchQuery.trim()) return courses;
@@ -99,7 +111,13 @@ export default function AdminCourseDashboard() {
 
   const openEditPanel = async (courseCode: string) => {
     try {
-      const course = await getCourse(courseCode);
+      setSidePanelLoading(true);
+
+      const [course] = await Promise.all([
+        getCourse(courseCode),
+        ensureDropdownData(),
+      ]);
+
       if (!course) return;
 
       setIsEditing(true);
@@ -117,8 +135,8 @@ export default function AdminCourseDashboard() {
       });
 
       setIsPanelOpen(true);
-    } catch (err) {
-      console.error("Failed to load course info:", err);
+    } finally {
+      setSidePanelLoading(false);
     }
   };
 
@@ -183,6 +201,7 @@ export default function AdminCourseDashboard() {
           editingCourse.course_code,
           payload
         );
+
         setCourses((prev) =>
           prev.map((c) =>
             c.course_code === updatedCourse.course_code ? updatedCourse : c
@@ -190,14 +209,23 @@ export default function AdminCourseDashboard() {
         );
       } else {
         const newCourse = await addCourse(payload);
-        if (newCourse) setCourses((prev) => [...prev, newCourse]);
+        setCourses((prev) => [...prev, newCourse]);
       }
-    } catch (err) {
-      console.error("Error submitting course:", err);
-    } finally {
+
       setFormData(initialFormData);
       setEditingCourse(null);
       setIsPanelOpen(false);
+      setSidePanelLoading(false);
+    } catch (err: unknown) {
+      const backend = err as CourseBackendErrors;
+
+      if (backend.course_code && backend.course_code.length > 0) {
+        setErrors({ course_code: backend.course_code[0] });
+        setSidePanelLoading(false);
+        return;
+      }
+
+      console.error("Error submitting course:", err);
       setSidePanelLoading(false);
     }
   };
@@ -222,7 +250,12 @@ export default function AdminCourseDashboard() {
         onSearch={(val) => setSearchQuery(val)}
         buttonLabel="Add Course"
         buttonIcon={<PlusIcon className="text-white h-5 w-5" />}
-        onButtonClick={() => setIsPanelOpen(true)}
+        onButtonClick={async () => {
+          setIsPanelOpen(true);
+          setSidePanelLoading(true);
+          await ensureDropdownData();
+          setSidePanelLoading(false);
+        }}
       />
       {layout === "cards" ? (
         <CardsGridComponent
@@ -241,7 +274,7 @@ export default function AdminCourseDashboard() {
                   .replace("semester", "sem")
                   .trim()
               : "Undefined";
-            return `${course.year_level_type ?? ""} ${semesterText} | ${
+            return `${course.year_level_type ?? ""} - ${semesterText} | ${
               course.program_name ?? ""
             }`;
           }}
