@@ -4,7 +4,7 @@ from ucap_backend.views.admin import course_detail_view, course_management_view,
 from ucap_backend.views.base import academic_year_list_view, blooms_classification_list_view, course_outcome_list_view, credit_unit_list_view, department_list_view, instructor_list_view, program_list_view, semester_list_view, user_role_list_view, year_level_list_view
 from ucap_backend.views.dean import dean_course_page_view, dean_loaded_courses_view
 from ucap_backend.views.department_chair import department_course_detail_view, department_course_list_view, department_course_management_view, department_section_detail_view, department_section_management_view, program_outcome_detail_view, program_outcome_list_create_view
-from ucap_backend.views.instructor import AssessmentPageAPIView, AssessmentViewSet, ClassRecordViewSet, CourseComponentViewSet, CourseUnitViewSet, RawScoreUpdateView, StudentViewSet, course_outcome_detail_view, course_outcome_list_create_view, instructor_assigned_sections_view, instructor_loaded_courses_view, outcome_mapping_view, update_outcome_mapping
+from ucap_backend.views.instructor import AssessmentPageAPIView, AssessmentViewSet, ClassRecordViewSet, CourseComponentViewSet, CourseUnitViewSet, RawScoreUpdateView, StudentViewSet, SyllabusExtractView, course_outcome_detail_view, course_outcome_list_create_view, instructor_assigned_sections_view, instructor_loaded_courses_view, outcome_mapping_view, update_outcome_mapping
 from ucap_backend.views.user import csrf_token_view, heartbeat_view, login_view, logout_view, me_view, user_department_view
 from ucap_backend.views.vcaa_and_vpaa import campus_course_page_view, campus_loaded_courses_view
 
@@ -45,6 +45,8 @@ urlpatterns = [
 
     path("instructor/outcome_mapping_management/<int:loaded_course_id>/", outcome_mapping_view),
     path("instructor/outcome_mapping_management/update/<int:pk>/", update_outcome_mapping),
+
+    path("instructor/extract_syllabus/", SyllabusExtractView.as_view()),
     # ====================================================
     # Class Record
     # ====================================================

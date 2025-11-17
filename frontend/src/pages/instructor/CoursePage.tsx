@@ -224,7 +224,6 @@ export default function CoursePage() {
             <ProgramOutcomesDisplayTable programId={programId} />
           </div>
 
-          {/* Course Outcomes */}
           <div className="flex flex-col gap-8">
             <div className="gap-2">
               <h2 className="text-xl">Course Outcomes</h2>
@@ -239,7 +238,6 @@ export default function CoursePage() {
             />
           </div>
 
-          {/* Outcome Mapping */}
           <div className="flex flex-col gap-8">
             <h2 className="text-xl">Outcome Mapping</h2>
             <OutcomeMappingTableComponent

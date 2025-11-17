@@ -1,42 +1,58 @@
 [
   {
-    "CO": "CO1",
-    "Description": "Understand the nature and purpose of accounting and financial statements in the field of computing.",
-    "Mapped_POs": [
-      "PO-g",
-      "PO-h",
-      "PO-o"
-    ]
+    "course_outcome_code": "CO1",
+    "course_outcome_description": "Justify how resources will be allocated for the various administrative domains.",
+    "outcome_mapping": {
+      "PO-A": "E",
+      "PO-B": "E",
+      "PO-C": "E",
+      "PO-D": "E",
+      "PO-G": "E",
+      "PO-H": "E",
+      "PO-I": "E",
+      "PO-K": "E"
+    }
   },
   {
-    "CO": "CO2",
-    "Description": "Describe the accounting cycle, write simple journal entries, compute a trial balance and simple financial statements.",
-    "Mapped_POs": [
-      "PO-g",
-      "PO-h"
-    ]
+    "course_outcome_code": "CO2",
+    "course_outcome_description": "Formulate policies governing the use of IT Systems within the organization",
+    "outcome_mapping": {
+      "PO-A": "E",
+      "PO-B": "E",
+      "PO-C": "E",
+      "PO-D": "E",
+      "PO-G": "E",
+      "PO-H": "E",
+      "PO-I": "E",
+      "PO-K": "E"
+    }
   },
   {
-    "CO": "CO3",
-    "Description": "Perform simple financial statement analysis.",
-    "Mapped_POs": [
-      "PO-g",
-      "PO-h"
-    ]
+    "course_outcome_code": "CO3",
+    "course_outcome_description": "Recommend measures on how to administer and maintain systems effectively.",
+    "outcome_mapping": {
+      "PO-A": "E",
+      "PO-B": "E",
+      "PO-C": "E",
+      "PO-D": "E",
+      "PO-G": "E",
+      "PO-H": "E",
+      "PO-I": "E",
+      "PO-K": "E"
+    }
   },
   {
-    "CO": "CO4",
-    "Description": "Prepare skills set leading to IT profession and computing practices based on legal and ethical principles. 3. Course Outline: Allotted Time Course Outcomes (CO) Intended Learning Outcomes (ILO) Topic/s Suggested Readings Teaching- Learning Activities Assessment Tasks/Tools Grading Criteria Remarks 3.0 Hours 1 Week August 7 – August 9 - Course Orientation - University’s VMGO - CITC VMGO - Class Policies and Agree,emt Technology with more emphasis on Technopreneurship, management, IT solutions and the likes through research collaborations; and",
-    "Mapped_POs": [
-      "PO-b",
-      "PO-d",
-      "PO-e",
-      "PO-g",
-      "PO-i",
-      "PO-j",
-      "PO-k",
-      "PO-l",
-      "PO-m"
-    ]
+    "course_outcome_code": "CO4",
+    "course_outcome_description": "Modify configuration of an operating system to implement policy.",
+    "outcome_mapping": {
+      "PO-A": "E",
+      "PO-B": "E",
+      "PO-C": "E",
+      "PO-D": "E",
+      "PO-G": "E",
+      "PO-H": "E",
+      "PO-I": "E",
+      "PO-K": "E"
+    }
   }
 ]

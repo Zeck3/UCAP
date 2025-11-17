@@ -2,6 +2,7 @@ import { useState } from "react";
 import FileImportIcon from "../assets/file-import-solid.svg?react";
 import AnalyticsIcon from "../assets/chart-simple.svg?react";
 import { importStudentsCSV } from "../api/instructorStudentListUploadApi";
+import type { AxiosError } from "axios";
 
 type Props = {
   goToAssessmentPage: () => void;
@@ -22,17 +23,14 @@ export default function FloatingToolbarComponent({
 }: Props) {
   const [toolbarOpen, setToolbarOpen] = useState(true);
 
-  // modal
   const [showImportModal, setShowImportModal] = useState(false);
 
-  // append / override mode (chosen before uploading)
   const [pendingMode, setPendingMode] = useState<"append" | "override" | null>(
     null
   );
 
   return (
     <>
-      {/* Hidden file input (fires only AFTER picking append/override) */}
       <input
         type="file"
         accept=".csv"
@@ -44,21 +42,26 @@ export default function FloatingToolbarComponent({
 
           try {
             await importStudentsCSV(sectionId, file, pendingMode);
-            alert("Master List Imported Successfully.");
+            alert("Student List Imported Successfully.");
             await refreshStudents();
           } catch (err) {
-            console.error(err);
-            alert("Failed to import CSV. Check the file format.");
+            const error = err as AxiosError<{ detail?: string }>;
+
+            console.error(error);
+
+            const message =
+              error.response?.data?.detail ??
+              "Failed to import CSV. Please check the file format.";
+
+            alert(message);
           }
 
-          // cleanup
           setPendingMode(null);
           setShowImportModal(false);
           e.target.value = "";
         }}
       />
 
-      {/* Toolbar */}
       <div
         className={`${containerBase} transition-all ${
           toolbarOpen
@@ -66,13 +69,12 @@ export default function FloatingToolbarComponent({
             : "opacity-0 translate-y-10 pointer-events-none"
         }`}
       >
-        {/* IMPORT MASTER LIST BUTTON */}
         <button
           type="button"
           className="relative p-2 rounded-full hover:bg-gray-100 hover:cursor-pointer group"
           title="Import Master List"
           aria-label="Import Master List"
-          onClick={() => setShowImportModal(true)} // <--- NOW OPENS MODAL FIRST
+          onClick={() => setShowImportModal(true)}
         >
           <FileImportIcon className="w-5 h-5 text-[#767676]" />
           <span
@@ -84,7 +86,6 @@ export default function FloatingToolbarComponent({
           </span>
         </button>
 
-        {/* RESULT SHEET */}
         <button
           type="button"
           onClick={goToAssessmentPage}
@@ -129,7 +130,6 @@ export default function FloatingToolbarComponent({
         </button>
       </div>
 
-      {/* REOPEN TOOLBAR */}
       {!toolbarOpen && (
         <button
           type="button"
@@ -155,12 +155,11 @@ export default function FloatingToolbarComponent({
         </button>
       )}
 
-      {/* IMPORT MODAL */}
       {showImportModal && (
         <div className="fixed inset-0 bg-[#3e3e3e30] border-[#E9E6E6] flex items-center justify-center z-2000">
           <div className="bg-white p-6 rounded-xl space-y-4 w-120">
             <div className="flex flex-col gap-1">
-              <h2 className="text-lg">Import Master List</h2>
+              <h2 className="text-lg">Import Student List in CSV Format</h2>
               <p className="text-sm">How do you want to apply this CSV?</p>
             </div>
 

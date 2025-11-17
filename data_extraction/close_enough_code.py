@@ -5,66 +5,122 @@ import fitz  # PyMuPDF
 
 
 # -----------------------------------------------------------
-# 1) Extract CO → PO Mapping from Table (Camelot)
+# 1) Extract CO → PO Mapping from Tables (Camelot)
 # -----------------------------------------------------------
 def extract_po_mapping(filepath):
     try:
         tables = camelot.read_pdf(filepath, pages="all", flavor="lattice")
-    except:
+    except Exception:
         tables = camelot.read_pdf(filepath, pages="all", flavor="stream")
 
     results = []
+    canonical_po_letters = None
+    seen_cos = set()
+    last_po_levels = None
 
     for table in tables:
         df = table.df
 
         header_row_index = None
-        po_columns = {}  # {col_index: "a"}
+        po_columns = {}
 
         for i, row in df.iterrows():
-            clean_cells = [c.strip().lower() for c in row]
+            cells = [str(c).strip() for c in row]
 
-            # We look for a row that contains many **single letters**
             candidates = [
-                (col_i, c) for col_i, c in enumerate(clean_cells)
-                if len(c) == 1 and c.isalpha()
+                (idx, cell.lower())
+                for idx, cell in enumerate(cells)
+                if len(cell) == 1 and cell.isalpha()
             ]
+            if not candidates:
+                continue
 
-            if len(candidates) >= 5:  # Expect at least a,b,c,d,e...
+            letters_set = {c for _, c in candidates}
+            if len(candidates) >= 3 and not letters_set.issubset({"i", "d", "e"}):
                 header_row_index = i
-                po_columns = {col_i: c for col_i, c in candidates}
+
+                header_letters = [c.upper() for _, c in candidates]
+
+                if canonical_po_letters is None:
+                    canonical_po_letters = header_letters
+
+                po_columns = {idx: c.upper() for idx, c in candidates}
                 break
 
-        if not po_columns:
-            continue  # no mapping table here
+        for i, row in df.iterrows():
+            if header_row_index is not None and i <= header_row_index:
+                continue
 
-        for i in range(header_row_index + 1, len(df)):
-            row = df.iloc[i]
-            row_text = " ".join(row)
+            row_cells = [str(c).strip() for c in row]
+            row_text = " ".join(row_cells)
 
             co_match = re.search(r"\bCO\s*\d+\b", row_text, re.I)
             if not co_match:
                 continue
 
             co = co_match.group(0).replace(" ", "").upper()
-            desc = row[0].strip()
-            mapped_pos = []
 
-            # Check only PO columns
-            for col_i, po_letter in po_columns.items():
-                cell_val = row[col_i].strip().upper()
-                if cell_val in ("I", "D", "E"):
-                    mapped_pos.append(f"PO-{po_letter}")
-
-            # ✅ Skip fake/empty duplicated CO lines
-            if not mapped_pos:
+            if co in seen_cos:
                 continue
 
-            results.append({
-                "CO": co,
-                "Description": desc,
-                "Mapped_POs": sorted(set(mapped_pos))
-            })
+            desc_part = row_text[co_match.end():]
+            desc_part = re.sub(r"^[\s:\-–]+", "", desc_part)
+
+            desc_part = re.sub(
+                r"\b(I|D|E)\b(?:\s+\b(I|D|E)\b)+\s*$", "", desc_part, flags=re.I
+            )
+
+            desc_part = re.sub(
+                r"\bUSTP[\-–_ ]?ACAD[\-–_ ]?\d+\b", "", desc_part, flags=re.I
+            )
+
+            desc = desc_part.strip()
+
+            po_levels: dict[str, str] = {}
+
+            if po_columns:
+                for idx, po_letter in po_columns.items():
+                    if idx >= len(row_cells):
+                        continue
+                    val = row_cells[idx].strip().upper()
+                    if len(val) == 1 and val in {"I", "D", "E"}:
+                        po_key = f"PO-{po_letter}"
+                        po_levels[po_key] = val
+
+            if not po_levels and canonical_po_letters:
+                tokens = re.findall(r"\b[IDE]\b", row_text, flags=re.I)
+                if tokens:
+                    count = min(len(tokens), len(canonical_po_letters))
+                    for j in range(count):
+                        po_letter = canonical_po_letters[j]
+                        level = tokens[j].upper()
+                        po_key = f"PO-{po_letter}"
+                        po_levels[po_key] = level
+
+            if not po_levels and last_po_levels:
+                po_levels = dict(last_po_levels)
+
+            if not po_levels:
+                continue
+
+            def po_sort_key(po_key: str) -> int:
+                letter = po_key.split("-")[-1]
+                if canonical_po_letters and letter in canonical_po_letters:
+                    return canonical_po_letters.index(letter)
+                return ord(letter[0]) - ord("A")
+
+            mapped_pos = sorted(po_levels.keys(), key=po_sort_key)
+
+            results.append(
+                {
+                    "CO": co,
+                    "Description": desc,
+                    "Mapped_POs": mapped_pos,
+                    "PO_Levels": po_levels,
+                }
+            )
+            seen_cos.add(co)
+            last_po_levels = po_levels
 
     return results
 
@@ -80,60 +136,79 @@ def extract_co_descriptions(filepath):
     for page in doc:
         text = page.get_text("text")
 
-        # --- Normalize and remove repeating headers/footers ---
         text = re.sub(r"Document Code No\..*?Page No\..*", "", text, flags=re.I)
         text = re.sub(r"Rev\..*?Page", "", text, flags=re.I)
         text = re.sub(r"\s+", " ", text)
 
-        # --- Detect if Course Outcomes section begins ---
         if re.search(r"Course Outcomes?|Intended Learning Outcomes", text, re.I):
             capture = True
 
         if capture:
             co_text_parts.append(text)
 
-        # --- Stop only at Course Outline (not before) ---
         if re.search(r"\bIII\.\s*Course Outline\b", text, re.I):
             break
 
     if not co_text_parts:
         return {}
 
-    # Combine captured pages
     section_text = " ".join(co_text_parts)
 
-    # =====================================================
-    # 🧹 CLEAN NOISE BETWEEN PAGES
-    # =====================================================
+    section_text = re.sub(
+        r"Document Code No\..*?(Page No\.\s*\d+\s*of\s*\d+)?",
+        "",
+        section_text,
+        flags=re.I,
+    )
+    section_text = re.sub(
+        r"Rev\..*?Effective Date.*?\d{1,2}\s*of\s*\d+",
+        "",
+        section_text,
+        flags=re.I,
+    )
+    section_text = re.sub(
+        r"\bFM[\-–_ ]?USTP[\-–_ ]?ACAD[\-–_ ]?\d+\b",
+        "",
+        section_text,
+        flags=re.I,
+    )
 
-    # Remove page codes, headers, and misc codes
-    section_text = re.sub(r"Document Code No\..*?(Page No\.\s*\d+\s*of\s*\d+)?", "", section_text, flags=re.I)
-    section_text = re.sub(r"Rev\..*?Effective Date.*?\d{1,2}\s*of\s*\d+", "", section_text, flags=re.I)
-    section_text = re.sub(r"\bFM[\-–_ ]?USTP[\-–_ ]?ACAD[\-–_ ]?\d+\b", "", section_text, flags=re.I)
+    section_text = re.sub(
+        r"\bUSTP[\-–_ ]?ACAD[\-–_ ]?\d+\b",
+        "",
+        section_text,
+        flags=re.I,
+    )
 
-    # Remove known section headings but preserve following text
-    section_text = re.sub(r"\bUSTP\s*Core\s*Values\s*:", "\n---CORE_VALUES---", section_text, flags=re.I)
-    section_text = re.sub(r"\bProgram\s*Educational\s*Objectives\s*:", "\n---PEO_SECTION---", section_text, flags=re.I)
-    section_text = re.sub(r"\bPEO\d\s*:", "\n---PEO_SECTION---", section_text, flags=re.I)
+    section_text = re.sub(
+        r"\bUSTP\s*Core\s*Values\s*:", "\n---CORE_VALUES---", section_text, flags=re.I
+    )
+    section_text = re.sub(
+        r"\bProgram\s*Educational\s*Objectives\s*:",
+        "\n---PEO_SECTION---",
+        section_text,
+        flags=re.I,
+    )
+    section_text = re.sub(
+        r"\bPEO\d\s*:", "\n---PEO_SECTION---", section_text, flags=re.I
+    )
 
-    # Remove redundant I/D/E clusters
-    section_text = re.sub(r"\b(I|D|E)\b(?:\s+\b(I|D|E)\b)+", "", section_text, flags=re.I)
+    section_text = re.sub(
+        r"\b(I|D|E)\b(?:\s+\b(I|D|E)\b)+", "", section_text, flags=re.I
+    )
 
-    # Normalize whitespace
     section_text = re.sub(r"\s+", " ", section_text).strip()
 
-    # =====================================================
-    # 🧩 MATCH CO BLOCKS (stop at USTP Core Values / PEO / Course Outline)
-    # =====================================================
     co_descriptions = {}
     pattern = re.compile(
         r"(CO\s*\d+)\s*[:\-]\s*(.*?)(?=\bCO\s*\d+[:\-]|\-\-\-CORE_VALUES\-\-\-|\-\-\-PEO_SECTION\-\-\-|\bIII\.|\bIV\.|$)",
-        re.I | re.S
+        re.I | re.S,
     )
 
     for match in pattern.finditer(section_text):
         co = match.group(1).replace(" ", "").upper()
         desc = match.group(2).strip()
+        desc = re.sub(r"\s+", " ", desc).strip()
         co_descriptions[co] = desc
 
     return co_descriptions
@@ -143,20 +218,46 @@ def extract_co_descriptions(filepath):
 # 3) Merge mapping + descriptions
 # -----------------------------------------------------------
 def merge_co_data(mapping_list, desc_map):
-    merged = []
+    enriched = []
 
     for entry in mapping_list:
         co = entry["CO"]
-        if co in desc_map:
-            entry["Description"] = desc_map[co]
+
+        desc_from_table = entry.get("Description", "").strip()
+        desc_from_text = desc_map.get(co, "").strip()
+
+        if desc_from_text:
+            final_desc = desc_from_text
+        elif desc_from_table:
+            final_desc = desc_from_table
         else:
-            # If description still empty from table, leave placeholder
-            entry["Description"] = entry["Description"].strip()
+            final_desc = ""
 
-        merged.append(entry)
+        enriched.append(
+            {
+                "CO": co,
+                "Description": final_desc,
+                "PO_Levels": entry.get("PO_Levels", {}),
+            }
+        )
 
-    # Sort by CO number
-    return sorted(merged, key=lambda x: int(re.search(r"\d+", x["CO"]).group()))
+    def co_number(e):
+        m = re.search(r"\d+", e["CO"])
+        return int(m.group()) if m else 9999
+
+    enriched_sorted = sorted(enriched, key=co_number)
+
+    formatted = []
+    for item in enriched_sorted:
+        formatted.append(
+            {
+                "course_outcome_code": item["CO"],
+                "course_outcome_description": item["Description"],
+                "outcome_mapping": item["PO_Levels"],  # {"PO-A": "I", ...}
+            }
+        )
+
+    return formatted
 
 
 # -----------------------------------------------------------
@@ -172,13 +273,12 @@ def extract_co_po(filepath):
 # 5) Run & Save
 # -----------------------------------------------------------
 def main(filepath, output="co_po_mapping.json"):
-    print(f"📘 Processing: {filepath}")
+    print(f"Processing: {filepath}")
     result = extract_co_po(filepath)
     with open(output, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2, ensure_ascii=False)
-    print(f"✅ Done! Saved → {output}")
+    print(f"Done → {output}")
 
 
-# Example usage
 if __name__ == "__main__":
-    main("IT215-AccountingPrinciples-syllabus-APPROVED.pdf")
+    main("IT412-System-Admi-and-Main -APPROVED.pdf")

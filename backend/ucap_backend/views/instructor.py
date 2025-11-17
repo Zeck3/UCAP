@@ -4,11 +4,13 @@ from io import TextIOWrapper
 from django.db.models import Prefetch
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
+from django.core.files.storage import default_storage
 from rest_framework import status, viewsets, serializers
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from ucap_backend.services.data_extraction import extract_co_po
 from ucap_backend.models import Assessment, CourseComponent, CourseOutcome, CourseTerm, CourseUnit, LoadedCourse, OutcomeMapping, ProgramOutcome, RawScore, Section, Student, User
 from ucap_backend.serializers.instructor import AssessmentSerializer, ClassRecordSerializer, CourseComponentSerializer, CourseOutcomeSerializer, CourseUnitSerializer, InstructorCourseDetailsSerializer, InstructorLoadedCourseSerializer, InstructorSectionSerializer, OutcomeMappingSerializer, ProgramOutcomeSerializer, StudentSerializer
 
@@ -195,8 +197,24 @@ class StudentViewSet(viewsets.ModelViewSet):
             return Response({"detail": "CSV file is required"}, status=400)
 
         file = request.FILES["file"]
-        students_from_csv = self._parse_grade_sheet_csv(file)
 
+        # --- VALIDATE FILE FORMAT ---
+        if not file.name.lower().endswith(".csv"):
+            return Response({"detail": "Invalid file format. Only .csv is allowed."}, status=400)
+
+        # --- PARSE + CATCH ERRORS ---
+        try:
+            students_from_csv = self._parse_grade_sheet_csv(file)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=400)
+        except Exception:
+            return Response({"detail": "Failed to read CSV file."}, status=400)
+
+        # --- CHECK EMPTY RESULT ---
+        if not students_from_csv:
+            return Response({"detail": "No student data could be extracted from CSV."}, status=400)
+
+        # Remove duplicates
         filtered = []
         seen = set()
         for s in students_from_csv:
@@ -214,6 +232,7 @@ class StudentViewSet(viewsets.ModelViewSet):
             return self._import_override(section_id, existing, filtered)
 
         return Response({"detail": "invalid mode"}, status=400)
+
 
     def _parse_grade_sheet_csv(self, file):
         wrapper = TextIOWrapper(file, encoding="utf-8", errors="ignore")
@@ -242,7 +261,8 @@ class StudentViewSet(viewsets.ModelViewSet):
                 break
 
         if header_idx is None:
-            raise ValueError("Could not find student header in CSV.")
+            raise ValueError("No valid header found. Ensure the CSV contains ID and Name columns.")
+
 
         def find_col(header, keywords):
             for idx, col in enumerate(header):
@@ -829,3 +849,23 @@ def update_outcome_mapping(request, pk):
         return Response({"detail": "Mapping not found."}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+# ====================================================
+# Course Syllabus Data Extraction
+# ====================================================
+class SyllabusExtractView(APIView):
+    def post(self, request):
+        if "file" not in request.FILES:
+            return Response({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
+
+        pdf_file = request.FILES["file"]
+
+        # Save temporarily
+        path = default_storage.save(f"tmp/{pdf_file.name}", pdf_file)
+        filepath = default_storage.path(path)
+
+        try:
+            result = extract_co_po(filepath)
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

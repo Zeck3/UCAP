@@ -1,6 +1,6 @@
 import camelot
 
-tables = camelot.read_pdf("IT-TECHNO 2025 Syllabus-APPROVED.pdf", pages="all", flavor="lattice")
+tables = camelot.read_pdf("IT212 - Fundl of DBMS Syllabus-APPROVED.pdf", pages="all", flavor="lattice")
 
 output_path = "camelot_tables_output.txt"
 with open(output_path, "w", encoding="utf-8") as f:

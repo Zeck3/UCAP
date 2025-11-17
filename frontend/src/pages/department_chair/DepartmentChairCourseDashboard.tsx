@@ -183,7 +183,7 @@ export default function DepartmentChairCourseDashboard() {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      setSubmitLoading(false); // <<< submitLoading
+      setSubmitLoading(false);
       return;
     }
 
