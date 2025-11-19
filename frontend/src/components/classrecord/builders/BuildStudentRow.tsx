@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, memo } from "react";
+import { useCallback, useEffect, useMemo, useState, memo, useRef } from "react";
 import type React from "react";
 import type { JSX } from "react";
 import type { HeaderNode } from "../types/headerConfigTypes";
@@ -17,6 +17,33 @@ const GRADE_SCALE = [
   1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25,
   4.5, 4.75, 5.0,
 ];
+
+function shallowEqualNumberRecord(
+  a: Record<string, number | null | undefined>,
+  b: Record<string, number | null | undefined>
+): boolean {
+  if (a === b) return true;
+
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+
+  for (const k of aKeys) {
+    if (a[k] !== b[k]) return false;
+  }
+
+  return true;
+}
+
+function useStableNumberRecord<
+  T extends Record<string, number | null | undefined>
+>(record: T): T {
+  const ref = useRef<T>(record);
+  if (!shallowEqualNumberRecord(ref.current, record)) {
+    ref.current = record;
+  }
+  return ref.current;
+}
 
 interface BuildStudentRowProps {
   student: Student;
@@ -58,6 +85,9 @@ function BuildStudentRow({
 }: BuildStudentRowProps) {
   const [localStudent, setLocalStudent] = useState(student);
 
+  const stableStudentScore = useStableNumberRecord(studentScore);
+  const stableMaxScores = useStableNumberRecord(maxScores);
+
   useEffect(() => {
     setLocalStudent(student);
   }, [student]);
@@ -80,18 +110,15 @@ function BuildStudentRow({
     [localStudent, student, handleUpdateStudent]
   );
 
-  const baseScores = useMemo(() => {
-    const result: Record<string, number> = {};
-    for (const [k, v] of Object.entries(studentScore)) {
-      result[k] = typeof v === "number" ? v : 0;
-    }
-    return result;
-  }, [studentScore]);
+  const computedValues = useMemo(() => {
+    const base: Record<string, number> = {};
 
-  const computedValues = useMemo(
-    () => computeValues(baseScores, maxScores, nodes),
-    [baseScores, maxScores, nodes]
-  );
+    for (const [k, v] of Object.entries(stableStudentScore)) {
+      base[k] = typeof v === "number" ? v : 0;
+    }
+
+    return computeValues(base, stableMaxScores, nodes);
+  }, [stableStudentScore, stableMaxScores, nodes]);
 
   const computeComputedContent = useCallback(
     (
@@ -292,8 +319,8 @@ function BuildStudentRow({
 
         if (node.calculationType === "assignment" && node.key) {
           const scoreKey = node.key;
-          const value = studentScore[scoreKey] ?? 0;
-          const max = maxScores?.[node.key] ?? 0;
+          const value = stableStudentScore[scoreKey] ?? 0;
+          const max = stableMaxScores?.[node.key] ?? 0;
 
           content = (
             <ScoreInput
@@ -347,8 +374,8 @@ function BuildStudentRow({
       computeComputedContent,
       updateScoreProp,
       saveRawScore,
-      studentScore,
-      maxScores,
+      stableStudentScore,
+      stableMaxScores,
       studentNameWidth,
       handleResize,
       computedValues,
@@ -369,7 +396,9 @@ export default memo(BuildStudentRow, (prev, next) => {
     prev.student.student_id === next.student.student_id &&
     prev.student.student_name === next.student.student_name &&
     prev.student.id_number === next.student.id_number &&
-    prev.studentScore === next.studentScore &&
-    prev.maxScores === next.maxScores
+    shallowEqualNumberRecord(prev.studentScore, next.studentScore) &&
+    shallowEqualNumberRecord(prev.maxScores, next.maxScores) &&
+    prev.studentNameWidth === next.studentNameWidth &&
+    prev.nodes === next.nodes
   );
 });

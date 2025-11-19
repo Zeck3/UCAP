@@ -70,14 +70,18 @@ export default function ClassRecordComponent({
     [headerNodes]
   );
 
+  // ClassRecordComponent.tsx
+  // REPLACE your current "header offsets" useEffect with this:
+
   useEffect(() => {
     const table = tableRef.current;
     if (!table) return;
 
-    function setHeaderOffsets() {
-      if (!table) return;
+    const thead = table.querySelector("thead");
+    if (!thead) return;
 
-      const rows = Array.from(table.querySelectorAll("thead tr"));
+    const setHeaderOffsets = () => {
+      const rows = Array.from(thead.querySelectorAll("tr"));
       let cum = 0;
 
       for (let i = 0; i < rows.length; i++) {
@@ -95,7 +99,7 @@ export default function ClassRecordComponent({
         const w1 = Math.ceil(col1.getBoundingClientRect().width);
         table.style.setProperty("--ucap-sticky-left-boundary", `${w1}px`);
       }
-    }
+    };
 
     let frameId: number | null = null;
 
@@ -110,11 +114,17 @@ export default function ClassRecordComponent({
     };
 
     schedule();
-
     window.addEventListener("resize", schedule);
 
-    const mo = new MutationObserver(schedule);
-    mo.observe(table, { childList: true, subtree: true, attributes: true });
+    const mo = new MutationObserver(() => {
+      schedule();
+    });
+
+    mo.observe(thead, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+    });
 
     return () => {
       window.removeEventListener("resize", schedule);

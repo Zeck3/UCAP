@@ -101,7 +101,7 @@ function BuildHeaderRow({
     [leafRowHeight, setLeafRowHeight]
   );
 
-  const rowsToRender = useMemo(() => {
+  const staticRows = useMemo(() => {
     const newMaxDepth = originalMaxDepth + 1;
     const rows: JSX.Element[][] = Array.from({ length: newMaxDepth }, () => []);
     const hSeparators: JSX.Element[] = [];
@@ -208,6 +208,7 @@ function BuildHeaderRow({
     function addButtons(node: HeaderNode) {
       if (["v-separator", "spacer", "h-separator"].includes(node.type || ""))
         return;
+
       if (
         node.isRowSpan ||
         node.customRowSpan ||
@@ -216,46 +217,49 @@ function BuildHeaderRow({
         if (node.children.length > 0) node.children.forEach(addButtons);
         return;
       }
-      if (node.children.length > 0) node.children.forEach(addButtons);
-      else {
-        if (node.needsButton) {
-          buttonRow.push(
-            <th
-              key={`button-${node.key || node.title}`}
-              className={`border border-[#E9E6E6] p-0 text-center ${
-                node.calculationType ? "w-15" : ""
-              }`}
+
+      if (node.children.length > 0) {
+        node.children.forEach(addButtons);
+        return;
+      }
+
+      if (node.needsButton) {
+        buttonRow.push(
+          <th
+            key={`button-${node.key || node.title}`}
+            className={`border border-[#E9E6E6] p-0 text-center ${
+              node.calculationType ? "w-15" : ""
+            }`}
+          >
+            <button
+              onClick={(e) =>
+                openAssessmentInfoContextMenu(e, Number(node.key))
+              }
+              className="flex items-center justify-center w-full h-full py-1.5 px-2 hover:bg-gray-100"
+              data-assessment-info-toggle={node.key}
             >
-              <button
-                onClick={(e) =>
-                  openAssessmentInfoContextMenu(e, Number(node.key))
-                }
-                className="flex items-center justify-center w-full h-full py-1.5 px-2 hover:bg-gray-100"
-                data-assessment-info-toggle={node.key}
-              >
-                <ChevronDown
-                  className={`h-3 w-3 transition-transform ${
-                    assessmentInfoContextMenu.visible &&
-                    assessmentInfoContextMenu.assessmentId === Number(node.key)
-                      ? "rotate-180"
-                      : ""
-                  }`}
-                />
-              </button>
-            </th>
-          );
-        } else {
-          const bgClass =
-            node.calculationType === "roundedGrade" ? "bg-ucap-yellow" : "";
-          buttonRow.push(
-            <th
-              key={`empty-${node.key || node.title}`}
-              className={`border border-[#E9E6E6] p-2 text-center ${bgClass} ${
-                node.calculationType ? "w-15" : ""
-              }`}
-            />
-          );
-        }
+              <ChevronDown
+                className={`h-3 w-3 transition-transform ${
+                  assessmentInfoContextMenu.visible &&
+                  assessmentInfoContextMenu.assessmentId === Number(node.key)
+                    ? "rotate-180"
+                    : ""
+                }`}
+              />
+            </button>
+          </th>
+        );
+      } else {
+        const bgClass =
+          node.calculationType === "roundedGrade" ? "bg-ucap-yellow" : "";
+        buttonRow.push(
+          <th
+            key={`empty-${node.key || node.title}`}
+            className={`border border-[#E9E6E6] p-2 text-center ${bgClass} ${
+              node.calculationType ? "w-15" : ""
+            }`}
+          />
+        );
       }
     }
 
@@ -267,11 +271,25 @@ function BuildHeaderRow({
     const allRows = [...rows];
     if (hSeparators.length > 0) allRows.push(hSeparators);
 
-    const subRow: JSX.Element[] = [];
+    return allRows;
+  }, [
+    nodes,
+    originalMaxDepth,
+    leafRowHeight,
+    handleHResizeStart,
+    openAssessmentInfoContextMenu,
+    assessmentInfoContextMenu,
+    handleNodeClick,
+    handleNodeContextMenu,
+    handleResize,
+  ]);
+
+  const subRow = useMemo(() => {
+    const sub: JSX.Element[] = [];
 
     function buildSubRow(node: HeaderNode) {
       if (node.type === "v-separator") {
-        subRow.push(
+        sub.push(
           <th
             key={node.key || `vsep-${node.title}-${node.type}`}
             className="bg-ucap-blue border border-ucap-blue cursor-col-resize sticky-rowspan sticky-vsep"
@@ -283,7 +301,7 @@ function BuildHeaderRow({
       }
 
       if (node.type === "spacer") {
-        subRow.push(
+        sub.push(
           <th
             key={`spacer-${node.key || node.title}`}
             className="bg-white w-20 border border-[#E9E6E6]"
@@ -295,7 +313,7 @@ function BuildHeaderRow({
       if (node.type === "h-separator") return;
 
       if (node.isRowSpan) {
-        subRow.push(
+        sub.push(
           <th
             key="sub-no-col"
             className="border border-[#E9E6E6] border-b-2 p-2 w-12 text-left font-bold sticky-col sticky-col-1"
@@ -303,7 +321,7 @@ function BuildHeaderRow({
             No.
           </th>
         );
-        subRow.push(
+        sub.push(
           <th
             key="sub-id-col"
             className="border border-[#E9E6E6] border-b-2 p-2 w-32 text-left font-bold sticky-col sticky-col-2"
@@ -311,7 +329,7 @@ function BuildHeaderRow({
             Student ID
           </th>
         );
-        subRow.push(
+        sub.push(
           <th
             key="sub-name-col"
             style={{
@@ -378,7 +396,7 @@ function BuildHeaderRow({
         }
       }
 
-      subRow.push(
+      sub.push(
         <th
           key={`sub-${node.key}`}
           className={`border border-[#E9E6E6] border-b-2 text-center ${bgClass} ${textClass} ${
@@ -396,25 +414,21 @@ function BuildHeaderRow({
     }
 
     nodes.forEach(buildSubRow);
-    allRows.push(subRow);
-
-    return allRows;
+    return sub;
   }, [
     nodes,
-    originalMaxDepth,
-    leafRowHeight,
-    handleHResizeStart,
-    openAssessmentInfoContextMenu,
     maxScores,
     setMaxScores,
     computedMaxValues,
     handleUpdateAssessment,
-    handleNodeClick,
-    handleNodeContextMenu,
-    assessmentInfoContextMenu,
     studentNameWidth,
     handleResize,
   ]);
+
+  const rowsToRender = useMemo(
+    () => [...staticRows, subRow],
+    [staticRows, subRow]
+  );
 
   return (
     <>
