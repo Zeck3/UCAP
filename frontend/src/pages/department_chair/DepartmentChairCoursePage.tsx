@@ -23,6 +23,7 @@ import {
 import type { SectionPayload } from "../../types/departmentChairSectionTypes";
 import InfoComponent from "../../components/InfoComponent";
 import type { BaseCourseDetails, BaseSection } from "../../types/baseTypes";
+import { toast } from "react-toastify";
 
 export default function DepartmentChairCoursePage() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -56,34 +57,18 @@ export default function DepartmentChairCoursePage() {
   );
   const [sidePanelLoading, setSidePanelLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-
   useEffect(() => {
     let active = true;
     setLoading(true);
 
     (async () => {
       try {
-        const { course_details } = await getSections(Number(loaded_course_id));
+        const { course_details, sections } = await getSections(
+          Number(loaded_course_id)
+        );
         if (!active) return;
+
         setCourseDetails(course_details);
-      } catch (err) {
-        console.error("Failed to fetch course details:", err);
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [loaded_course_id]);
-  useEffect(() => {
-    let active = true;
-
-    (async () => {
-      try {
-        const { sections } = await getSections(Number(loaded_course_id));
-        if (!active) return;
 
         const mapped: BaseSection[] = sections.map((s) => ({
           id: s.section_id,
@@ -95,7 +80,9 @@ export default function DepartmentChairCoursePage() {
 
         setSections(mapAndSortSections(mapped));
       } catch (err) {
-        console.error("Failed to fetch sections:", err);
+        console.error("Failed to fetch sections or course details:", err);
+      } finally {
+        if (active) setLoading(false);
       }
     })();
 
@@ -111,7 +98,7 @@ export default function DepartmentChairCoursePage() {
       try {
         const data = await getInstructors(departmentId);
         setInstructors(data);
-        setInstructorsLoaded(true); // Mark as cached
+        setInstructorsLoaded(true);
       } catch (err) {
         console.error("Failed to load instructors:", err);
       }
@@ -197,8 +184,10 @@ export default function DepartmentChairCoursePage() {
     try {
       if (isEditing && editingSection) {
         await editSection(editingSection.id, payload);
+        toast.success("Section updated successfully");
       } else {
         await addSection(loadedCourseId, payload);
+        toast.success("Section added successfully");
       }
 
       const { course_details, sections: updatedSections } = await getSections(
@@ -220,6 +209,7 @@ export default function DepartmentChairCoursePage() {
       resetPanelState();
     } catch (error: unknown) {
       console.error("Section save failed:", error);
+      toast.error("Failed to save section");
       setErrors({ submit: "Something went wrong while saving the section." });
     } finally {
       setSidePanelLoading(false);
@@ -238,7 +228,13 @@ export default function DepartmentChairCoursePage() {
 
   const handleDelete = async (id: number) => {
     const success = await deleteSection(Number(id));
-    if (success) setSections((prev) => prev.filter((u) => u.id !== id));
+
+    if (success) {
+      setSections((prev) => prev.filter((u) => u.id !== id));
+      toast.success("Section deleted successfully");
+    } else {
+      toast.error("Failed to delete section");
+    }
   };
 
   const goToDepartmentChairAssessmentPage = (section: BaseSection) => {
@@ -277,7 +273,7 @@ export default function DepartmentChairCoursePage() {
       <ToolBarComponent
         titleOptions={[
           {
-            label: "Sections",
+            label: "Section Records",
             value: "section",
             enableSearch: true,
             enableLayout: true,
@@ -292,6 +288,7 @@ export default function DepartmentChairCoursePage() {
       {layout === "cards" ? (
         <CardsGridComponent
           items={filteredSections}
+          loading={loading}
           onCardClick={(section) => goToDepartmentChairAssessmentPage(section)}
           emptyImageSrc={emptyImage}
           emptyMessage="No Sections Available!"

@@ -153,7 +153,7 @@ class ClassRecordViewSet(viewsets.ViewSet):
 
         serializer = ClassRecordSerializer(section)
         data = serializer.data
-        data["can_generate_result_sheet"] = can_generate_result_sheet(section)
+        data["canGenerateResultSheet"] = can_generate_result_sheet(section)
 
         return Response(data)
     
@@ -198,11 +198,9 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         file = request.FILES["file"]
 
-        # --- VALIDATE FILE FORMAT ---
         if not file.name.lower().endswith(".csv"):
             return Response({"detail": "Invalid file format. Only .csv is allowed."}, status=400)
 
-        # --- PARSE + CATCH ERRORS ---
         try:
             students_from_csv = self._parse_grade_sheet_csv(file)
         except ValueError as e:
@@ -210,11 +208,9 @@ class StudentViewSet(viewsets.ModelViewSet):
         except Exception:
             return Response({"detail": "Failed to read CSV file."}, status=400)
 
-        # --- CHECK EMPTY RESULT ---
         if not students_from_csv:
             return Response({"detail": "No student data could be extracted from CSV."}, status=400)
 
-        # Remove duplicates
         filtered = []
         seen = set()
         for s in students_from_csv:

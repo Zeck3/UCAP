@@ -234,7 +234,7 @@ export default function AdminUserDashboard() {
   const handleDelete = async (id: number) => {
     const success = await deleteUser(id);
     if (success) setUsers((prev) => prev.filter((u) => u.id !== id));
-    toast.success("User Deleted!");
+    toast.success("User deleted successfully");
   };
 
   return (

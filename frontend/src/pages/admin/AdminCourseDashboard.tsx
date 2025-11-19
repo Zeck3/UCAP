@@ -29,6 +29,7 @@ import type {
   CourseInfoDisplay,
   CoursePayload,
 } from "../../types/courseManagementTypes";
+import { toast } from "react-toastify";
 
 const initialFormData: CourseFormData = {
   course_code: "",
@@ -215,9 +216,14 @@ export default function AdminCourseDashboard() {
             c.course_code === updatedCourse.course_code ? updatedCourse : c
           )
         );
+
+        toast.success("Course updated successfully");
       } else {
         const newCourse = await addCourse(payload);
+
         setCourses((prev) => [...prev, newCourse]);
+
+        toast.success("Course added successfully");
       }
 
       setFormData(initialFormData);
@@ -234,13 +240,20 @@ export default function AdminCourseDashboard() {
       }
 
       console.error("Error submitting course:", err);
+      toast.error("Something went wrong");
       setSidePanelLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     const success = await deleteCourse(id);
-    if (success) setCourses((prev) => prev.filter((c) => c.id !== id));
+
+    if (success) {
+      setCourses((prev) => prev.filter((c) => c.id !== id));
+      toast.success("Course deleted successfully");
+    } else {
+      toast.error("Failed to delete course");
+    }
   };
 
   return (
@@ -259,6 +272,10 @@ export default function AdminCourseDashboard() {
         buttonLabel="Add Course"
         buttonIcon={<PlusIcon className="text-white h-5 w-5" />}
         onButtonClick={async () => {
+          setEditingCourse(null);
+          setIsEditing(false);
+          setFormData(initialFormData);
+          setErrors({});
           setIsPanelOpen(true);
           setSidePanelLoading(true);
           await ensureDropdownData();

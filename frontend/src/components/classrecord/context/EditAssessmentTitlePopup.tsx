@@ -80,7 +80,7 @@ export default function EditAssessmentTitlePopup({
         type="text"
         value={inputValue}
         autoFocus
-        onBlur={handleLocalSave} // blur saves
+        onBlur={handleLocalSave}
         className="border-none outline-none p-2 px-4 rounded w-full"
         onChange={(e) => setInputValue(e.target.value)}
         onMouseDown={(e) => {

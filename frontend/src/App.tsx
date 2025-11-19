@@ -1,5 +1,5 @@
-import { Routes, Route, Navigate } from "react-router-dom";
-import { useContext } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useContext, useEffect } from "react";
 import { Roles } from "./config/Roles";
 import { AuthContext } from "./context/AuthContext";
 import { useHeartbeat } from "./context/useHeartbeat";
@@ -21,7 +21,7 @@ import CampusCoursePage from "./pages/vpaaAndVpaa/CampusCoursePage";
 import CampusCourseDashboard from "./pages/vpaaAndVpaa/CampusCourseDashboard";
 import DeanCoursePage from "./pages/dean/DeanCoursePage";
 import AssessmentPage from "./pages/instructor/AssessmentPage";
-import { ToastContainer } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function App() {
@@ -30,11 +30,17 @@ export default function App() {
   const { user } = auth;
   useHeartbeat(user, 1000);
 
+  const location = useLocation();
+
+  useEffect(() => {
+    toast.dismiss();
+  }, [location.pathname]);
+
   return (
     <>
       <ToastContainer
         position="bottom-left"
-        autoClose={3000}
+        autoClose={2500}
         hideProgressBar={false}
         newestOnTop={false}
         closeOnClick

@@ -92,7 +92,7 @@ export default function CourseDashboard() {
           loading={loading}
           title={(course) => course.course_title}
           subtitle={(course) => {
-            return `${course.academic_year} / ${course.semester_type} | ${course.program_name}`;
+            return `${course.academic_year} | ${course.semester_type} | ${course.program_name}`;
           }}
         />
       ) : (

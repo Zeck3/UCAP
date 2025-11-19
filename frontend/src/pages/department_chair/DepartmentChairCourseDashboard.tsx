@@ -29,6 +29,7 @@ import InfoComponent from "../../components/InfoComponent";
 import ProgramOutcomesTableComponent from "../../components/ProgramOutcomesTableComponent";
 import type { BaseLoadedCourse } from "../../types/baseTypes";
 import type { AxiosError } from "axios";
+import { toast } from "react-toastify";
 
 export default function DepartmentChairCourseDashboard() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -171,7 +172,7 @@ export default function DepartmentChairCourseDashboard() {
   const handleLoadCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-    setSubmitLoading(true); // <<< use submitLoading, not sidePanelLoading
+    setSubmitLoading(true);
 
     const newErrors: { [key: string]: string } = {};
     if (!selectedAcademicYear) {
@@ -188,6 +189,7 @@ export default function DepartmentChairCourseDashboard() {
     }
 
     const duplicateCourseCodes: string[] = [];
+    let successCount = 0;
 
     try {
       const academicYearId = selectedAcademicYear!;
@@ -201,6 +203,7 @@ export default function DepartmentChairCourseDashboard() {
 
         try {
           await addLoadedCourse(departmentId, loadCourse);
+          successCount++;
         } catch (err) {
           const axiosErr = err as AxiosError<DepartmentCourseErrorResponse>;
           const status = axiosErr.response?.status;
@@ -221,8 +224,8 @@ export default function DepartmentChairCourseDashboard() {
       if (duplicateCourseCodes.length > 0) {
         const msg =
           duplicateCourseCodes.length === 1
-            ? `This course is already loaded for the given academic year: ${duplicateCourseCodes[0]}.`
-            : `These courses are already loaded for the given academic year: [${duplicateCourseCodes.join(
+            ? `This course is already loaded for the academic year: ${duplicateCourseCodes[0]}.`
+            : `These courses are already loaded for the academic year: [${duplicateCourseCodes.join(
                 ", "
               )}].`;
 
@@ -230,7 +233,17 @@ export default function DepartmentChairCourseDashboard() {
           ...prev,
           courses: msg,
         }));
-      } else {
+      }
+
+      if (successCount > 0) {
+        toast.success(
+          successCount === 1
+            ? "1 course loaded successfully"
+            : `${successCount} courses loaded successfully`
+        );
+      }
+      
+      if (successCount > 0 && duplicateCourseCodes.length === 0) {
         resetPanelState();
       }
     } catch (error) {
@@ -245,7 +258,7 @@ export default function DepartmentChairCourseDashboard() {
           "An unexpected error occurred while loading the courses.",
       }));
     } finally {
-      setSubmitLoading(false); 
+      setSubmitLoading(false);
     }
   };
 
@@ -261,8 +274,12 @@ export default function DepartmentChairCourseDashboard() {
   const handleDelete = async (id: number) => {
     const success = await deleteLoadedCourse(id);
 
-    if (success)
+    if (success) {
       setDepartmentLoadedCourses((prev) => prev.filter((u) => u.id !== id));
+      toast.success("Course deleted successfully");
+    } else {
+      toast.error("Failed to delete course");
+    }
   };
 
   const goToDepartmentChairCoursePage = (course: BaseLoadedCourse) => {

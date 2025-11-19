@@ -21,26 +21,9 @@ body {
   font-weight: 500 !important;
   color: #3e3e3e !important;
   background: #ffffff;
-}
-
-.Toastify__toast--success {
-  background-color: #16a34a !important; /* green-600 */
-  color: white !important;
-}
-
-.Toastify__toast--error {
-  background-color: #dc2626 !important; /* red-600 */
-  color: white !important;
-}
-
-.Toastify__toast--warning {
-  background-color: #f97316 !important; /* orange-500 */
-  color: white !important;
-}
-
-.Toastify__toast--info {
-  background-color: #2563eb !important; /* blue-600 */
-  color: white !important;
+  border: 1px solid #E9E6E6 !important;
+  box-shadow: none !important;
+  font-size: 14px !important;
 }
 
 .font-tilt-warp { font-family: "Tilt Warp", sans-serif; }

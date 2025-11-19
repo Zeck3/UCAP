@@ -24,7 +24,7 @@ import EvilDog from "../../assets/undraw_page-eaten.svg?react";
 export default function CoursePage() {
   const [activeMenu, setActiveMenu] = useState("section");
   const [searchQuery, setSearchQuery] = useState("");
-  const { loaded_course_id, course_code } = useParams();
+  const { loaded_course_id } = useParams();
   const [refreshMappingKey, setRefreshMappingKey] = useState(0);
   const { department } = useDepartment();
   const programId = department?.program_id ?? 0;
@@ -62,6 +62,7 @@ export default function CoursePage() {
     if (!courseDetails) return [];
 
     const query = searchQuery.toLowerCase();
+    const courseCode = courseDetails.course_details.course_code;
 
     return courseDetails.sections
       .filter(
@@ -72,6 +73,8 @@ export default function CoursePage() {
       .map((section) => ({
         ...section,
         id: section.section_id,
+
+        combined_course_section: `${courseCode} - ${section.year_and_section}`,
       }));
   }, [courseDetails, searchQuery]);
 
@@ -156,7 +159,7 @@ export default function CoursePage() {
       <ToolBarComponent
         titleOptions={[
           {
-            label: "My Sections",
+            label: "My Records",
             value: "section",
             enableSearch: true,
             enableLayout: true,
@@ -188,7 +191,7 @@ export default function CoursePage() {
               emptyMessage="No Sections Available!"
               aspectRatio="20/9"
               loading={loading}
-              fieldTop={(section) => section.year_and_section}
+              fieldTop={(section) => section.combined_course_section}
               title={(section) =>
                 section.instructor_assigned || "NO INSTRUCTOR ASSIGNED"
               }
@@ -202,7 +205,7 @@ export default function CoursePage() {
               emptyMessage="No Sections Available!"
               loading={loading}
               columns={[
-                { key: "year_and_section", label: "Section" },
+                { key: "combined_course_section", label: "Course & Section" },
                 { key: "instructor_assigned", label: "Instructor Assigned" },
               ]}
             />
@@ -212,7 +215,6 @@ export default function CoursePage() {
 
       {activeMenu === "mapping" && (
         <div className="pb-20 pt-12 flex flex-col gap-16">
-          {/* Program Outcomes */}
           <div className="flex flex-col gap-8">
             <div className="gap-2">
               <h2 className="text-xl">Program Outcomes</h2>
@@ -228,8 +230,9 @@ export default function CoursePage() {
             <div className="gap-2">
               <h2 className="text-xl">Course Outcomes</h2>
               <span className="text-gray-500">
-                Upon completion of the {course_code} course, students are able
-                to:
+                Upon completion of the{" "}
+                {courseDetails?.course_details.course_code} course, students are
+                able to:
               </span>
             </div>
             <CourseOutcomesTableComponent
