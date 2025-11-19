@@ -153,7 +153,7 @@ class ClassRecordViewSet(viewsets.ViewSet):
 
         serializer = ClassRecordSerializer(section)
         data = serializer.data
-        data["can_generate_result_sheet"] = can_generate_result_sheet(section)
+        data["canGenerateResultSheet"] = can_generate_result_sheet(section)
 
         return Response(data)
     

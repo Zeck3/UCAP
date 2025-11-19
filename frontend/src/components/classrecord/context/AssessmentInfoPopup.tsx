@@ -55,13 +55,25 @@ export default function AssessmentInfoContextMenu({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      const target = e.target as HTMLElement;
+      
+      // Check if click is on the chevron button for this assessment
+      const toggleButton = target.closest('[data-assessment-info-toggle]');
+      if (toggleButton) {
+        const toggleAssessmentId = toggleButton.getAttribute('data-assessment-info-toggle');
+        if (toggleAssessmentId === String(assessmentId)) {
+          // Don't close if clicking the same chevron button
+          return;
+        }
+      }
+      
+      if (menuRef.current && !menuRef.current.contains(target)) {
         onClose();
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
+  }, [onClose, assessmentId]);
 
   const toggleBloom = useCallback(
     (id: string) => {

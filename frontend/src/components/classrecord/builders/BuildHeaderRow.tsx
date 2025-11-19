@@ -231,6 +231,7 @@ function BuildHeaderRow({
                   openAssessmentInfoContextMenu(e, Number(node.key))
                 }
                 className="flex items-center justify-center w-full h-full py-1.5 px-2 hover:bg-gray-100"
+                data-assessment-info-toggle={node.key}
               >
                 <ChevronDown
                   className={`h-3 w-3 transition-transform ${
