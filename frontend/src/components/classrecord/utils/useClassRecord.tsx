@@ -707,13 +707,29 @@ export function useClassRecord() {
       const target = event.currentTarget as HTMLElement;
       const rect = target.getBoundingClientRect();
 
-      setEditingAssessment({
+      const editAssessmentState = {
         nodeKey: node.key!,
         value: node.title || "",
         coords: {
           x: rect.left - 0.5,
           y: rect.bottom - 0.5,
         },
+      };
+
+      setEditingAssessment((prev) => {
+        if (prev && prev.nodeKey === node.key) {
+          setCanOpenPopup(true);
+          return prev;
+        }
+
+        if (prev && prev.nodeKey !== node.key) {
+          requestAnimationFrame(() => {
+            setEditingAssessment(editAssessmentState);
+          });
+          return null;
+        }
+
+        return editAssessmentState;
       });
 
       setTimeout(() => setCanOpenPopup(true), 100);
@@ -794,28 +810,36 @@ export function useClassRecord() {
       const target = e.currentTarget as HTMLElement;
       const rect = target.getBoundingClientRect();
 
-      setAssessmentInfoContextMenu((prev) => {
-        if (prev.visible && prev.assessmentId === assessmentId) {
-          return { visible: false, x: 0, y: 0, assessmentId: undefined };
-        }
+      const shouldClose = assessmentInfoContextMenu.visible && 
+                          assessmentInfoContextMenu.assessmentId === assessmentId;
 
-        return {
+      if (shouldClose) {
+        // Close the menu
+        setAssessmentInfoContextMenu({
+          visible: false,
+          x: 0,
+          y: 0,
+          assessmentId: undefined,
+        });
+      } else {
+        // Open the menu and update blooms/outcomes
+        setAssessmentInfoContextMenu({
           visible: true,
           x: rect.left - 1,
           y: rect.bottom,
           assessmentId,
-        };
-      });
+        });
 
-      setClassRecord((prev) => ({
-        ...prev,
-        currentAssessmentBlooms:
-          prev.assessmentBloomsMap[String(assessmentId)] ?? [],
-        currentAssessmentOutcomes:
-          prev.assessmentOutcomesMap[String(assessmentId)] ?? [],
-      }));
+        setClassRecord((prev) => ({
+          ...prev,
+          currentAssessmentBlooms:
+            prev.assessmentBloomsMap[String(assessmentId)] ?? [],
+          currentAssessmentOutcomes:
+            prev.assessmentOutcomesMap[String(assessmentId)] ?? [],
+        }));
+      }
     },
-    [setAssessmentInfoContextMenu, setClassRecord]
+    [assessmentInfoContextMenu, setAssessmentInfoContextMenu, setClassRecord]
   );
 
   const handleCloseAssessmentInfo = () => {
