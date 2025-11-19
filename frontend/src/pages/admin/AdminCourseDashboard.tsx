@@ -99,13 +99,21 @@ export default function AdminCourseDashboard() {
   }
 
   const filteredCourses = useMemo(() => {
-    if (!searchQuery.trim()) return courses;
+    const list = searchQuery.trim()
+      ? courses.filter((course) => {
+          const query = searchQuery.toLowerCase();
+          return (
+            course.course_code.toLowerCase().includes(query) ||
+            course.course_title.toLowerCase().includes(query)
+          );
+        })
+      : courses;
 
-    const query = searchQuery.toLowerCase();
-    return courses.filter(
-      (course) =>
-        course.course_code.toLowerCase().includes(query) ||
-        course.course_title.toLowerCase().includes(query)
+    return [...list].sort((a, b) =>
+      a.course_code.localeCompare(b.course_code, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      })
     );
   }, [searchQuery, courses]);
 

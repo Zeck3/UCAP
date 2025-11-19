@@ -117,8 +117,13 @@ export default function DepartmentCoursesTableComponent({
 
   if (!courses || courses.length === 0) {
     return (
-      <div className="text-center text-gray-500 py-8">
-        No department courses available.
+      <div className="flex flex-col">
+        <span className="text-sm py-2">
+          Program Curriculum Courses<span className="text-red-500 ml-1">*</span>
+        </span>
+        <div className="text-center text-gray-500 py-16 border border-[#E9E6E6] rounded-md">
+          No department courses available.
+        </div>
       </div>
     );
   }

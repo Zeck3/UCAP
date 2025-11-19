@@ -23,6 +23,7 @@ import SidePanelComponent from "../../components/SidePanelComponent";
 import UserInputComponent from "../../components/UserInputComponent";
 import DropdownComponent from "../../components/DropDownComponent";
 import AppLayout from "../../layout/AppLayout";
+import { toast } from "react-toastify";
 
 const initialFormData = {
   user_id: "",
@@ -197,13 +198,8 @@ export default function AdminUserDashboard() {
         const backend = response.errors;
         const newErrors: typeof errors = {};
 
-        if (backend.user_id) {
-          newErrors.user_id = backend.user_id[0];
-        }
-
-        if (backend.email) {
-          newErrors.email = backend.email[0];
-        }
+        if (backend.user_id) newErrors.user_id = backend.user_id[0];
+        if (backend.email) newErrors.email = backend.email[0];
 
         setErrors(newErrors);
         setSidePanelLoading(false);
@@ -217,8 +213,10 @@ export default function AdminUserDashboard() {
           setUsers((prev) =>
             prev.map((u) => (u.id === newUser.id ? newUser : u))
           );
+          toast.success("User updated successfully");
         } else {
           setUsers((prev) => [...prev, newUser]);
+          toast.success("User added successfully");
         }
       }
 
@@ -228,6 +226,7 @@ export default function AdminUserDashboard() {
       setSidePanelLoading(false);
     } catch (err) {
       console.error(err);
+      toast.error("Something went wrong");
       setSidePanelLoading(false);
     }
   };
@@ -235,6 +234,7 @@ export default function AdminUserDashboard() {
   const handleDelete = async (id: number) => {
     const success = await deleteUser(id);
     if (success) setUsers((prev) => prev.filter((u) => u.id !== id));
+    toast.success("User Deleted!");
   };
 
   return (
