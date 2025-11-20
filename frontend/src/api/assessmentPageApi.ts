@@ -200,6 +200,7 @@ function transformStudents(
       return {
         id: String(student.id_number ?? student.student_id ?? ""),
         name: String(student.student_name ?? ""),
+        remarks: student.remarks ? String(student.remarks) : null,
         scores,
       };
     });

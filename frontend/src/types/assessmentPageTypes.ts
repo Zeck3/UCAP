@@ -26,6 +26,7 @@ export interface ProgramOutcome {
 export interface Student {
   id: string;
   name: string;
+  remarks?: string | null;
   scores: Record<string, { raw: number | null }[]>;
 }
 

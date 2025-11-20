@@ -749,6 +749,7 @@ class AssessmentPageAPIView(APIView):
             "student_id": s.student_id,
             "id_number": s.id_number,
             "student_name": s.student_name,
+            "remarks": s.remarks,
             "scores": [
                 {"assessment_id": aid, "value": scores_by_student.get(s.student_id, {}).get(aid)}
                 for aid in ordered_assessment_ids

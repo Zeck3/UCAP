@@ -189,6 +189,7 @@ class ProgramOutcomeDisplaySerializer(serializers.Serializer):
 class StudentScoreSerializer(serializers.Serializer):
     id = serializers.CharField()
     name = serializers.CharField()
+    remarks = serializers.CharField(allow_null=True, allow_blank=True, required=False)
     scores = serializers.DictField(child=serializers.ListField())
 
 class AssessmentPageSerializer(serializers.Serializer):
