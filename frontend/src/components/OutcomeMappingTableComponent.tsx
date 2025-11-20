@@ -34,7 +34,6 @@ export default function OutcomeMappingTableComponent({
     try {
       const res = await getOutcomeMappings(loadedCourseId);
       setData(res);
-      // reset selection on reload
       setSelectedCellIds(new Set());
       setSelectionStart(null);
     } catch (err) {
@@ -48,7 +47,6 @@ export default function OutcomeMappingTableComponent({
     fetchMappings();
   }, [fetchMappings]);
 
-  // End selection when mouse is released anywhere
   useEffect(() => {
     const handleMouseUp = () => setIsSelecting(false);
     window.addEventListener("mouseup", handleMouseUp);
@@ -159,7 +157,7 @@ export default function OutcomeMappingTableComponent({
 
   if (!data) {
     return (
-      <div className="text-center text-gray-600 py-12">
+      <div className="text-center text-[#3E3E3E] py-12">
         Failed to load CO-PO mapping.
       </div>
     );
@@ -171,7 +169,7 @@ export default function OutcomeMappingTableComponent({
   return (
     <div className="flex flex-col gap-4">
       {noCOs && noPOs ? (
-        <div className="text-center text-gray-600 py-12 border border-[#E9E6E6] rounded-md">
+        <div className="text-center text-[#3E3E3E] py-12 border border-[#E9E6E6] rounded-md">
           No Course Outcome to Program Outcome mappings available.
         </div>
       ) : noCOs && !noPOs ? (
@@ -201,7 +199,7 @@ export default function OutcomeMappingTableComponent({
               <tr>
                 <td
                   colSpan={sortedProgramOutcomes.length}
-                  className="py-6 text-gray-500"
+                  className="py-6 text-[#3E3E3E]"
                 >
                   No Course Outcomes available.
                 </td>
@@ -228,7 +226,7 @@ export default function OutcomeMappingTableComponent({
                 </th>
               </tr>
               <tr>
-                <th className="px-2 py-3 text-gray-500 font-normal">
+                <th className="px-2 py-3 text-[#3E3E3E] font-normal">
                   No Program Outcomes available.
                 </th>
               </tr>
@@ -242,7 +240,7 @@ export default function OutcomeMappingTableComponent({
                   <td className="px-4 py-3 text-left font-medium w-56">
                     {co.course_outcome_code}
                   </td>
-                  <td className="px-4 py-3 text-gray-400 italic">—</td>
+                  <td className="px-4 py-3 text-[#3E3E3E] italic">—</td>
                 </tr>
               ))}
             </tbody>

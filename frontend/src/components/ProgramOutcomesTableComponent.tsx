@@ -96,10 +96,10 @@ export default function ProgramOutcomesTableComponent({ programId }: Props) {
         <table className="min-w-full rounded-md text-sm text-left border-collapse">
           <thead className="border-b border-[#E9E6E6] bg-gray-50">
             <tr>
-              <th className="px-4 py-3 w-40 font-medium text-gray-700">
+              <th className="px-4 py-3 w-40 font-medium">
                 Program Outcome
               </th>
-              <th className="px-4 py-3 font-medium text-gray-700">
+              <th className="px-4 py-3 font-medium">
                 Description
               </th>
             </tr>
@@ -146,9 +146,8 @@ export default function ProgramOutcomesTableComponent({ programId }: Props) {
               </tr>
             ))}
 
-            {/* Input row for next PO */}
             <tr className="border-t border-[#E9E6E6]">
-              <td className="px-4 py-3 text-gray-400 italic">Next PO</td>
+              <td className="px-4 py-3 text-[#767676] italic">Next PO</td>
               <td className="px-4 py-3">
                 <input
                   id="po-new-description"

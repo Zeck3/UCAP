@@ -4,13 +4,13 @@ from ucap_backend.models import Section
 from .base import BaseCourseDetailsSerializer, BaseLoadedCourseSerializer, BaseSectionSerializer
 
 # ====================================================
-# VCAA and VPAA
+# VCAA
 # ====================================================
-class CampusLoadedCourseSerializer(BaseLoadedCourseSerializer):
+class VcaaLoadedCourseSerializer(BaseLoadedCourseSerializer):
     class Meta(BaseLoadedCourseSerializer.Meta):
         fields = BaseLoadedCourseSerializer.Meta.fields
 
-class CampusSectionSerializer(BaseSectionSerializer):
+class VcaaSectionSerializer(BaseSectionSerializer):
     class Meta(BaseSectionSerializer.Meta):
         model = Section
         fields = [
@@ -20,7 +20,7 @@ class CampusSectionSerializer(BaseSectionSerializer):
             "instructor_id",
         ]
 
-class CampusCourseDetailsSerializer(BaseCourseDetailsSerializer):
+class VcaaCourseDetailsSerializer(BaseCourseDetailsSerializer):
     class Meta(BaseCourseDetailsSerializer.Meta):
         model = Section
         fields = BaseCourseDetailsSerializer.Meta.fields

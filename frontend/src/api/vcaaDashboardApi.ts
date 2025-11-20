@@ -4,7 +4,7 @@ import type {
   BaseCoursePageResponse,
 } from "../types/baseTypes";
 
-export const fetchCampusLoadedCourses = async (
+export const fetchVcaaLoadedCourses = async (
   campusId: number
 ): Promise<BaseLoadedCourse[]> => {
   const res = await axiosClient.get<BaseLoadedCourse[]>(`/campus/${campusId}/`);
@@ -16,7 +16,7 @@ export const fetchCampusLoadedCourses = async (
   }));
 };
 
-export const fetchCampusCoursePage = async (
+export const fetchVcaaCoursePage = async (
   loadedCourseId: number
 ): Promise<BaseCoursePageResponse> => {
   const res = await axiosClient.get<BaseCoursePageResponse>(

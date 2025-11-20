@@ -6,7 +6,7 @@ from ucap_backend.views.dean import dean_course_page_view, dean_loaded_courses_v
 from ucap_backend.views.department_chair import department_course_detail_view, department_course_list_view, department_course_management_view, department_section_detail_view, department_section_management_view, program_outcome_detail_view, program_outcome_list_create_view
 from ucap_backend.views.instructor import AssessmentPageAPIView, AssessmentViewSet, ClassRecordViewSet, CourseComponentViewSet, CourseUnitViewSet, RawScoreUpdateView, StudentViewSet, SyllabusExtractView, course_outcome_detail_view, course_outcome_list_create_view, instructor_assigned_sections_view, instructor_loaded_courses_view, outcome_mapping_view, update_outcome_mapping
 from ucap_backend.views.user import csrf_token_view, heartbeat_view, login_view, logout_view, me_view, user_department_view
-from ucap_backend.views.vcaa_and_vpaa import campus_course_page_view, campus_loaded_courses_view
+from ucap_backend.views.vcaa import vcaa_course_page_view, vcaa_loaded_courses_view
 
 router = DefaultRouter()
 router.register(r"students", StudentViewSet, basename="student")
@@ -46,7 +46,7 @@ urlpatterns = [
     path("instructor/outcome_mapping_management/<int:loaded_course_id>/", outcome_mapping_view),
     path("instructor/outcome_mapping_management/update/<int:pk>/", update_outcome_mapping),
 
-    path("instructor/extract_syllabus/", SyllabusExtractView.as_view()),
+    path("instructor/<int:loaded_course_id>/extract-syllabus/", SyllabusExtractView.as_view(),),
     # ====================================================
     # Class Record
     # ====================================================
@@ -77,8 +77,8 @@ urlpatterns = [
     # ====================================================
     # VCAA and VPAA
     # ====================================================
-    path("campus/<int:department_id>/", campus_loaded_courses_view),
-    path("campus/loaded_course/<int:loaded_course_id>/", campus_course_page_view),
+    path("campus/<int:department_id>/", vcaa_loaded_courses_view),
+    path("campus/loaded_course/<int:loaded_course_id>/", vcaa_course_page_view),
     # ====================================================
     # Dropdown
     # ====================================================

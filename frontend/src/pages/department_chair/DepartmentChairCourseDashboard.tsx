@@ -67,6 +67,15 @@ export default function DepartmentChairCourseDashboard() {
   const programId = department?.program_id ?? 0;
 
   useEffect(() => {
+    if (!departmentId) return;
+
+    const paramId = Number(department_id ?? 0);
+    if (paramId && paramId !== departmentId) {
+      navigate(`/department/${departmentId}`, { replace: true });
+    }
+  }, [department_id, departmentId, navigate]);
+
+  useEffect(() => {
     if (ayLoaded) return;
 
     (async () => {
@@ -159,7 +168,7 @@ export default function DepartmentChairCourseDashboard() {
 
     return departmentLoadedCourses.filter((course) => {
       const academicYearAndSem =
-        `${course.academic_year_start}-${course.academic_year_end} / ${course.semester_type}`.toLowerCase();
+        `${course.academic_year_start}-${course.academic_year_end} | ${course.semester_type}`.toLowerCase();
 
       return (
         course.course_code.toLowerCase().includes(query) ||
@@ -242,7 +251,7 @@ export default function DepartmentChairCourseDashboard() {
             : `${successCount} courses loaded successfully`
         );
       }
-      
+
       if (successCount > 0 && duplicateCourseCodes.length === 0) {
         resetPanelState();
       }
@@ -305,7 +314,7 @@ export default function DepartmentChairCourseDashboard() {
       <ToolBarComponent
         titleOptions={[
           {
-            label: "Courses",
+            label: "Department Courses",
             value: "courses",
             enableSearch: true,
             enableLayout: true,
@@ -357,7 +366,7 @@ export default function DepartmentChairCourseDashboard() {
                 { key: "program_name", label: "Program" },
                 {
                   key: "academic_year_and_semester",
-                  label: "Academic Year / Semester",
+                  label: "Academic Year & Semester",
                 },
                 { key: "year_level_type", label: "Year Level" },
               ]}

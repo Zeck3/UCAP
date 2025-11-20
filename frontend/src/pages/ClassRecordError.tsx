@@ -22,7 +22,6 @@ export default function ClassRecordError({
 
   const content = (
     <div className="fixed inset-0 z-50 bg-white text-[#3E3E3E] flex flex-col">
-      {/* Header */}
       <div className="flex px-12 py-6.5">
         <div className="flex items-center w-44">
           <button onClick={goBack} className="cursor-pointer">
@@ -31,7 +30,6 @@ export default function ClassRecordError({
         </div>
       </div>
 
-      {/* Main content */}
       <div className="flex flex-1 justify-center items-center flex-col gap-8 text-center px-4">
         <img
           src={undrawPageBiten}
@@ -40,7 +38,7 @@ export default function ClassRecordError({
         />
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold">{title}</h1>
-          <p className="text-gray-600 max-w-sm">{description}</p>
+          <p className="text-[#767676] max-w-sm">{description}</p>
         </div>
         <button
           onClick={goBack}

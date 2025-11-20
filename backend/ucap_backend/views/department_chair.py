@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from ucap_backend.models import Course, LoadedCourse, Program, ProgramOutcome, Section
 from ucap_backend.serializers.department_chair import CreateDepartmentLoadedCourseSerializer, DepartmentChairCourseDetailsSerializer, DepartmentChairSectionSerializer, DepartmentCourseSerializer, DepartmentLoadedCourseSerializer, SectionCreateUpdateSerializer
 from ucap_backend.serializers.instructor import ProgramOutcomeSerializer
@@ -10,21 +11,31 @@ from ucap_backend.serializers.instructor import ProgramOutcomeSerializer
 # ====================================================
 # Department Chair
 # ====================================================
+def assert_department_access(request, department_id: int):
+    user_dept_id = getattr(request.user, "department_id", None)
+    if user_dept_id is None or int(user_dept_id) != int(department_id):
+        raise PermissionDenied("You are not assigned to this department.")
+    
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def department_course_list_view(request, department_id):
     try:
-        courses = Course.objects.filter(program__department__department_id=department_id)
+        assert_department_access(request, department_id)
+        courses = Course.objects.filter(
+            program__department__department_id=department_id
+        )
         serializer = DepartmentCourseSerializer(courses, many=True)
         return JsonResponse(serializer.data, safe=False, status=status.HTTP_200_OK)
-    except Exception as e:
-        return JsonResponse({"message": str(e)}, status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except PermissionDenied as e:
+        return JsonResponse({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
 
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def department_course_management_view(request, department_id):
     try:
+        assert_department_access(request, department_id)
+
         if request.method == "GET":
             courses = LoadedCourse.objects.filter(
                 course__program__department__department_id=department_id
@@ -64,23 +75,28 @@ def department_course_management_view(request, department_id):
     except Exception as e:
         return JsonResponse({"message": str(e)}, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def department_course_detail_view(request, loaded_course_id):
     try:
-        course = LoadedCourse.objects.get(loaded_course_id=loaded_course_id)
+        dept_id = request.user.department_id
+        course = LoadedCourse.objects.get(
+            loaded_course_id=loaded_course_id,
+            course__program__department__department_id=dept_id
+        )
         course.delete()
         return JsonResponse({"message": "Course deleted successfully"}, status=status.HTTP_200_OK)
+
     except LoadedCourse.DoesNotExist:
         return JsonResponse({"message": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return JsonResponse({"message": str(e)}, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def department_section_management_view(request, loaded_course_id):
     try:
+        dept_id = request.user.department_id
+
         loaded_course = (
             LoadedCourse.objects
             .select_related(
@@ -89,8 +105,19 @@ def department_section_management_view(request, loaded_course_id):
                 "course__year_level",
                 "academic_year",
             )
-            .get(pk=loaded_course_id)
+            .get(
+                pk=loaded_course_id,
+                course__program__department__department_id=dept_id
+            )
         )
+
+        user_dept_id = getattr(request.user, "department_id", None)
+        course_dept_id = loaded_course.course.program.department_id
+        if user_dept_id != course_dept_id:
+            return JsonResponse(
+                {"detail": "You are not allowed to access this loaded course."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         dummy_section = (
             Section(
@@ -138,22 +165,30 @@ def department_section_management_view(request, loaded_course_id):
 @permission_classes([IsAuthenticated])
 def department_section_detail_view(request, section_id):
     try:
-        section = Section.objects.get(pk=section_id)
+        dept_id = request.user.department_id
+
+        section = Section.objects.get(
+            pk=section_id,
+            loaded_course__course__program__department__department_id=dept_id
+        )
+
+        user_dept_id = getattr(request.user, "department_id", None)
+        course_dept_id = section.loaded_course.course.program.department_id
+        if user_dept_id != course_dept_id:
+            return JsonResponse(
+                {"detail": "You are not allowed to modify sections outside your department."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         if request.method in ["PUT", "PATCH"]:
             serializer = SectionCreateUpdateSerializer(instance=section, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return JsonResponse({"message": "Section updated successfully"}, status=status.HTTP_200_OK)
-            return JsonResponse({"message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
+            ...
         section.delete()
         return JsonResponse({"message": "Section deleted successfully"}, status=status.HTTP_200_OK)
 
     except Section.DoesNotExist:
         return JsonResponse({"message": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return JsonResponse({"message": str(e)}, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 # ====================================================
 # Program Outcomes

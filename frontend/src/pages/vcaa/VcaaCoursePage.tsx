@@ -12,11 +12,12 @@ import TableComponent from "../../components/TableComponent";
 import emptyImage from "../../assets/undraw_file-search.svg";
 import { useLayout } from "../../context/useLayout";
 
-import { fetchCampusCoursePage } from "../../api/campusDashboardApi";
+import { fetchVcaaCoursePage } from "../../api/vcaaDashboardApi";
+import type {} from "../../types/campusLoadedCourseTypes";
 import type {
-
-} from "../../types/campusLoadedCourseTypes";
-import type { BaseCoursePageResponse, BaseSection } from "../../types/baseTypes";
+  BaseCoursePageResponse,
+  BaseSection,
+} from "../../types/baseTypes";
 
 export default function CampusCoursePage() {
   const { department_id, loaded_course_id } = useParams();
@@ -35,7 +36,7 @@ export default function CampusCoursePage() {
 
       try {
         setLoading(true);
-        const data = await fetchCampusCoursePage(Number(loaded_course_id));
+        const data = await fetchVcaaCoursePage(Number(loaded_course_id));
         setCourseData(data);
       } catch (e) {
         console.error("Failed to fetch campus course page data", e);
@@ -51,14 +52,30 @@ export default function CampusCoursePage() {
     if (!courseData) return [];
 
     const q = searchQuery.trim().toLowerCase();
+    const courseCode = courseData?.course_details.course_code ?? "";
 
-    return courseData.sections
-      .filter(
-        (s) =>
-          s.year_and_section.toLowerCase().includes(q) ||
-          s.instructor_assigned.toLowerCase().includes(q)
-      )
-      .map((s) => ({ ...s, id: s.id }));
+    const augmented = courseData.sections.map((s) => ({
+      ...s,
+      id: s.id,
+      course_and_section: courseCode
+        ? `${courseCode} - ${s.year_and_section}`
+        : s.year_and_section,
+    }));
+
+    if (!q) return augmented;
+
+    return augmented.filter((section) =>
+      Object.values(section).some((val) => {
+        if (val == null) return false;
+
+        const t = typeof val;
+        if (t === "string" || t === "number" || t === "boolean") {
+          return String(val).toLowerCase().includes(q);
+        }
+
+        return false;
+      })
+    );
   }, [courseData, searchQuery]);
 
   const goToAssessmentPage = (section: BaseSection) => {
@@ -72,28 +89,28 @@ export default function CampusCoursePage() {
     });
   };
 
-  if (!courseData) {
-    return (
-      <AppLayout activeItem={`/campus/${department_id}`}>
-        <div className="p-10 text-gray-500">Loading...</div>
-      </AppLayout>
-    );
-  }
-
-  const details = courseData.course_details;
+  const details = courseData?.course_details;
 
   return (
     <AppLayout activeItem={`/campus/${department_id}`}>
       <InfoComponent
         loading={loading}
-        title={`${details.course_title}`}
-        subtitle={`${details.academic_year} ${details.semester_type} | ${details.year_level}`}
-        details={`Department of ${details.department_name} | ${details.college_name} | ${details.campus_name} Campus`}
+        title={details?.course_title ?? ""}
+        subtitle={
+          details
+            ? `${details.academic_year} ${details.semester_type} | ${details.year_level}`
+            : ""
+        }
+        details={
+          details
+            ? `Department of ${details.department_name} | ${details.college_name} | ${details.campus_name} Campus`
+            : ""
+        }
       />
       <ToolBarComponent
         titleOptions={[
           {
-            label: "Sections",
+            label: "Section Records",
             value: "sections",
             enableSearch: true,
             enableLayout: true,
@@ -103,7 +120,6 @@ export default function CampusCoursePage() {
         onSearch={(v) => setSearchQuery(v)}
       />
 
-      {/* MAIN DISPLAY */}
       {layout === "cards" ? (
         <CardsGridComponent
           items={filteredSections}
@@ -112,7 +128,7 @@ export default function CampusCoursePage() {
           emptyMessage="No Sections Available!"
           aspectRatio="20/9"
           loading={loading}
-          fieldTop={(s) => s.year_and_section}
+          fieldTop="course_and_section"
           title={(s) => s.instructor_assigned}
           subtitle={() => "Instructor Assigned"}
         />
@@ -124,7 +140,7 @@ export default function CampusCoursePage() {
           emptyMessage="No Sections Available!"
           loading={loading}
           columns={[
-            { key: "year_and_section", label: "Section" },
+            { key: "course_and_section", label: "Course & Section" },
             { key: "instructor_assigned", label: "Instructor Assigned" },
           ]}
         />

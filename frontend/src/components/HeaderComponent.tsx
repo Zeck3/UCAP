@@ -4,7 +4,7 @@ import BarsIcon from "../assets/bars-solid.svg?react";
 import ChevronDown from "../assets/chevron-down-solid.svg?react";
 import LogoutIcon from "../assets/arrow-right-from-bracket-solid.svg?react";
 import UcapLogo from "../assets/ucap-logo.svg?react";
-import ChevronRight from "../assets/chevron-right-solid.svg?react"
+import ChevronRight from "../assets/chevron-right-solid.svg?react";
 import type { CrumbState } from "../context/useBreadCrumbs";
 
 interface HeaderComponentProps {
@@ -76,10 +76,10 @@ export default function HeaderComponent({
 
       <div className="flex flex-1">
         {!hideBreadcrumbs && crumbs && (
-          <nav className="flex items-center">
+          <nav className="hidden md:flex items-center">
             {crumbs.map((crumb) => (
               <span key={crumb.path} className="flex items-center gap-8 pr-8">
-                <ChevronRight className="h-5 w-5"/>
+                <ChevronRight className="h-5 w-5" />
                 <Link
                   to={crumb.path}
                   state={crumb.state}

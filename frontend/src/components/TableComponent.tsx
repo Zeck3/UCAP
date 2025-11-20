@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import KebabIcon from "../assets/ellipsis-vertical-solid.svg?react";
 import EditIcon from "../assets/customize.svg?react";
 import DeleteIcon from "../assets/trash-solid.svg?react";
 import ChevronRight from "../assets/chevron-right-solid.svg?react";
 import ChevronLeft from "../assets/chevron-left-solid.svg?react";
+import ChevronDown from "../assets/chevron-down-solid.svg?react";
 
 interface Column<T> {
   key: keyof T;
@@ -22,8 +23,6 @@ interface TableProps<T extends { id: string | number }> {
   showActions?: boolean;
   loading?: boolean;
   skeletonRows?: number;
-  selectable?: boolean;
-  onSelectionChange?: (selectedIds: Array<T["id"]>) => void;
   disableEdit?: boolean;
 }
 
@@ -39,24 +38,57 @@ export default function TableComponent<T extends { id: string | number }>({
   showActions = false,
   loading = false,
   skeletonRows = 6,
-  selectable = false,
-  onSelectionChange,
   disableEdit = false,
 }: TableProps<T>) {
   const [openMenuId, setOpenMenuId] = useState<T["id"] | null>(null);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
+  const [sortKey, setSortKey] = useState<keyof T | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
-  //================================
-  // Add selectable props
-  //================================
-  const [selectedRows, setSelectedRows] = useState<Array<T["id"]>>([]);
+
+  const sortedData = (() => {
+    if (!sortKey || !sortOrder) return data;
+
+    return [...data].sort((a, b) => {
+      const v1 = a[sortKey];
+      const v2 = b[sortKey];
+
+      if (v1 == null) return 1;
+      if (v2 == null) return -1;
+
+      if (typeof v1 === "number" && typeof v2 === "number") {
+        return sortOrder === "asc" ? v1 - v2 : v2 - v1;
+      }
+
+      const s1 = String(v1).toLowerCase();
+      const s2 = String(v2).toLowerCase();
+
+      if (s1 < s2) return sortOrder === "asc" ? -1 : 1;
+      if (s1 > s2) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+  })();
 
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = data.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedData = sortedData.slice(startIndex, startIndex + itemsPerPage);
 
   const totalPages = Math.ceil(data.length / itemsPerPage);
+
+  const handleSort = (key: keyof T) => {
+    if (sortKey !== key) {
+      setSortKey(key);
+      setSortOrder("asc");
+      return;
+    }
+
+    if (sortOrder === "asc") {
+      setSortOrder("desc");
+    } else if (sortOrder === "desc") {
+      setSortKey(null);
+      setSortOrder(null);
+    }
+  };
 
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
@@ -68,41 +100,24 @@ export default function TableComponent<T extends { id: string | number }>({
   }, [totalPages, currentPage]);
 
   useEffect(() => {
-    onSelectionChange?.(selectedRows);
-  }, [selectedRows, onSelectionChange]);
-
-  const toggleSelectAll = () => {
-    if (selectedRows.length === paginatedData.length) {
-      setSelectedRows([]);
-    } else {
-      setSelectedRows(paginatedData.map((row) => row.id));
-    }
-  };
-  const toggleRow = (id: T["id"]) => {
-    setSelectedRows((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
-  //================================
-  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      // Any element inside the action menu or its button
+      const insideAction = target.closest('[data-action-menu="true"]');
+
+      if (!insideAction) {
         setOpenMenuId(null);
       }
     }
+
     if (openMenuId !== null) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () =>
+      return () => {
         document.removeEventListener("mousedown", handleClickOutside);
+      };
     }
-    return;
-  }, [openMenuId]);
-
-  useEffect(() => {
-    if (openMenuId === null) dropdownRef.current = null;
   }, [openMenuId]);
 
   if (loading) {
@@ -156,26 +171,32 @@ export default function TableComponent<T extends { id: string | number }>({
       <table className="min-w-full text-left text-sm">
         <thead className="text-sm font-normal text-[#767676]">
           <tr>
-            {/* ================================
-             Add selectable props
-            ================================ */}
-            {selectable && (
-              <th className="px-4 py-4">
-                <input
-                  type="checkbox"
-                  checked={
-                    selectedRows.length === paginatedData.length &&
-                    paginatedData.length > 0
-                  }
-                  onChange={toggleSelectAll}
-                />
-              </th>
-            )}
-            {columns.map((col) => (
-              <th key={String(col.key)} className="pr-6 py-4 font-normal">
-                {col.label}
-              </th>
-            ))}
+            {columns.map((col) => {
+              const isActive = sortKey === col.key;
+              return (
+                <th
+                  key={String(col.key)}
+                  className="pr-6 py-4 font-normal select-none cursor-pointer"
+                  onClick={() => handleSort(col.key)}
+                >
+                  <div className="flex items-center gap-2">
+                    {col.label}
+
+                    {isActive && sortOrder === "asc" && (
+                      <span className="text-xs">
+                        <ChevronDown className="-rotate-180 h-4 w-4" />
+                      </span>
+                    )}
+                    {isActive && sortOrder === "desc" && (
+                      <span className="text-xs">
+                        <ChevronDown className="h-4 w-4" />
+                      </span>
+                    )}
+                  </div>
+                </th>
+              );
+            })}
+
             {showActions && (
               <th className="py-4 font-normal flex justify-center">Action</th>
             )}
@@ -185,7 +206,6 @@ export default function TableComponent<T extends { id: string | number }>({
         <tbody>
           {paginatedData.map((row, idx) => {
             const isClickable = !!onRowClick && !disableRowPointer;
-            const isChecked = selectedRows.includes(row.id);
             return (
               <tr
                 key={row.id ?? idx}
@@ -196,18 +216,6 @@ export default function TableComponent<T extends { id: string | number }>({
                   if (isClickable) onRowClick?.(row);
                 }}
               >
-                {selectable && (
-                  <td className="px-4 py-4">
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        toggleRow(row.id);
-                      }}
-                    />
-                  </td>
-                )}
                 {columns.map((col) => (
                   <td key={String(col.key)} className="pr-6 py-4">
                     {String(row[col.key])}
@@ -218,13 +226,15 @@ export default function TableComponent<T extends { id: string | number }>({
                   <td className="relative text-center">
                     <div
                       className="inline-flex items-center justify-center relative"
-                      ref={dropdownRef}
+                      data-action-menu="true"
                     >
                       <button
                         className="w-8 h-8 flex items-center justify-center"
                         onClick={(event) => {
                           event.stopPropagation();
-                          setOpenMenuId(openMenuId === row.id ? null : row.id);
+                          setOpenMenuId((prev) =>
+                            prev === row.id ? null : row.id
+                          );
                         }}
                       >
                         <span className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white cursor-pointer">
@@ -234,8 +244,8 @@ export default function TableComponent<T extends { id: string | number }>({
 
                       {openMenuId === row.id && (
                         <div
-                          ref={dropdownRef}
                           className="absolute right-0 top-12 w-40 bg-white border border-[#E9E6E6] rounded-lg z-20"
+                          data-action-menu="true"
                         >
                           {!disableEdit && (
                             <button

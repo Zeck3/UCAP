@@ -36,7 +36,7 @@ export default function ProgramOutcomesDisplayTable({ programId }: Props) {
             <LoadingIcon className="h-8 w-8 animate-spin text-[#ffc000]" />
           </div>
         ) : outcomes.length === 0 ? (
-          <div className="text-center text-gray-600 py-12">
+          <div className="text-center py-12">
             No Program Outcomes available.
           </div>
         ) : (

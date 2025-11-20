@@ -52,6 +52,7 @@ export default function DeanCoursePage() {
     if (!courseData) return [];
 
     const q = searchQuery.trim().toLowerCase();
+    const courseCode = courseData?.course_details.course_code ?? "";
 
     return courseData.sections
       .filter(
@@ -59,7 +60,13 @@ export default function DeanCoursePage() {
           s.year_and_section.toLowerCase().includes(q) ||
           s.instructor_assigned.toLowerCase().includes(q)
       )
-      .map((s) => ({ ...s, id: s.id }));
+      .map((s) => ({
+        ...s,
+        id: s.id,
+        course_and_section: courseCode
+          ? `${courseCode} - ${s.year_and_section}`
+          : s.year_and_section,
+      }));
   }, [courseData, searchQuery]);
 
   const goToAssessmentPage = (section: BaseSection) => {
@@ -73,29 +80,28 @@ export default function DeanCoursePage() {
     });
   };
 
-  if (!courseData) {
-    return (
-      <AppLayout activeItem={`/college/${department_id}`}>
-        <div>Loading...</div>
-      </AppLayout>
-    );
-  }
-
-  const details = courseData.course_details;
+  const details = courseData?.course_details;
 
   return (
     <AppLayout activeItem={`/college/${department_id}`}>
       <InfoComponent
         loading={loading}
-        title={`${details.course_title}`}
-        subtitle={`${details.academic_year} ${details.semester_type} | ${details.year_level}`}
-        details={`Department of ${details.department_name} | ${details.college_name} | ${details.campus_name} Campus`}
+        title={details?.course_title ?? ""}
+        subtitle={
+          details
+            ? `${details.academic_year} ${details.semester_type} | ${details.year_level}`
+            : ""
+        }
+        details={
+          details
+            ? `Department of ${details.department_name} | ${details.college_name} | ${details.campus_name} Campus`
+            : ""
+        }
       />
-
       <ToolBarComponent
         titleOptions={[
           {
-            label: "Sections",
+            label: "Section Records",
             value: "sections",
             enableSearch: true,
             enableLayout: true,
@@ -113,7 +119,7 @@ export default function DeanCoursePage() {
           emptyMessage="No Sections Available!"
           aspectRatio="20/9"
           loading={loading}
-          fieldTop={(s) => s.year_and_section}
+          fieldTop="course_and_section"
           title={(s) => s.instructor_assigned}
           subtitle={() => "Instructor Assigned"}
         />
@@ -125,7 +131,7 @@ export default function DeanCoursePage() {
           emptyMessage="No Sections Available!"
           loading={loading}
           columns={[
-            { key: "year_and_section", label: "Section" },
+            { key: "course_and_section", label: "Course & Section" },
             { key: "instructor_assigned", label: "Instructor Assigned" },
           ]}
         />

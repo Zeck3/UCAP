@@ -1,6 +1,7 @@
 from collections import defaultdict
 import csv
 from io import TextIOWrapper
+import uuid
 from django.db.models import Prefetch
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
@@ -10,7 +11,7 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from ucap_backend.services.data_extraction import extract_co_po
+from ucap_backend.services.data_extraction import apply_extracted_override, extract_co_po
 from ucap_backend.models import Assessment, CourseComponent, CourseOutcome, CourseTerm, CourseUnit, LoadedCourse, OutcomeMapping, ProgramOutcome, RawScore, Section, Student, User
 from ucap_backend.serializers.instructor import AssessmentSerializer, ClassRecordSerializer, CourseComponentSerializer, CourseOutcomeSerializer, CourseUnitSerializer, InstructorCourseDetailsSerializer, InstructorLoadedCourseSerializer, InstructorSectionSerializer, OutcomeMappingSerializer, ProgramOutcomeSerializer, StudentSerializer
 
@@ -21,9 +22,15 @@ from ucap_backend.serializers.instructor import AssessmentSerializer, ClassRecor
 @permission_classes([IsAuthenticated])
 def instructor_loaded_courses_view(request, instructor_id):
     try:
+        if int(instructor_id) != int(request.user.pk):
+            return Response(
+                {"detail": "Forbidden."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         loaded_courses = (
             LoadedCourse.objects.filter(
-                section__instructor_assigned=instructor_id
+                section__instructor_assigned=request.user
             )
             .select_related(
                 "course",
@@ -34,24 +41,32 @@ def instructor_loaded_courses_view(request, instructor_id):
                 "course__program__department",
             )
             .distinct()
+            .order_by("course__course_code")
         )
 
         serializer = InstructorLoadedCourseSerializer(loaded_courses, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    except User.DoesNotExist:
-        return Response({"message": "Instructor not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(
+            {"message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def instructor_assigned_sections_view(request, instructor_id, loaded_course_id):
     try:
+        if int(instructor_id) != int(request.user.pk):
+            return Response(
+                {"detail": "Forbidden. You can only access your assigned courses."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         sections = (
             Section.objects.filter(
-                instructor_assigned=instructor_id,
-                loaded_course=loaded_course_id
+                instructor_assigned=request.user,
+                loaded_course_id=loaded_course_id,
             )
             .select_related(
                 "loaded_course",
@@ -67,24 +82,23 @@ def instructor_assigned_sections_view(request, instructor_id, loaded_course_id):
         )
 
         if not sections.exists():
-            return Response({"course_details": None, "sections": []}, status=status.HTTP_200_OK)
+            return Response(
+                {"detail": "You are not assigned to this course or any of its sections."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         first_section = sections.first()
-
         course_details = InstructorCourseDetailsSerializer(first_section).data
         sections_data = InstructorSectionSerializer(sections, many=True).data
 
         return Response(
-            {
-                "course_details": course_details,
-                "sections": sections_data,
-            },
+            {"course_details": course_details, "sections": sections_data},
             status=status.HTTP_200_OK
         )
 
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
 # ====================================================
 # Class Record
 # ====================================================
@@ -298,7 +312,10 @@ class StudentViewSet(viewsets.ModelViewSet):
 
         return students
 
-    def _import_append(self, section_id, existing_rows, new_students):
+    def _import_append(self, section_id, existing_rows_qs, new_students):
+        existing_rows = list(existing_rows_qs)
+        section = Section.objects.get(pk=section_id)
+
         updated = []
         skipped = []
 
@@ -308,75 +325,105 @@ class StudentViewSet(viewsets.ModelViewSet):
             if s.id_number or s.student_name
         }
 
+        blank_rows = [s for s in existing_rows if not s.id_number and not s.student_name]
+
+        assessments = Assessment.objects.filter(
+            course_component__course_unit__course_term__section_id=section_id
+        )
+
+        raw_scores_to_create = []
+
         for stu in new_students:
             key = (stu["id_number"], stu["student_name"])
             if key in db_seen:
                 skipped.append(stu)
                 continue
 
-            blank_row = next(
-                (x for x in existing_rows if not x.id_number and not x.student_name),
-                None
-            )
-            if not blank_row:
-                skipped.append(stu)
-                continue
+            if blank_rows:
+                row = blank_rows.pop(0)
+                row.id_number = stu["id_number"]
+                row.student_name = stu["student_name"]
+                row.save()
+            else:
+                if len(existing_rows) >= 40:
+                    skipped.append(stu)
+                    continue
 
-            blank_row.id_number = stu["id_number"]
-            blank_row.student_name = stu["student_name"]
-            blank_row.save()
+                row = Student.objects.create(
+                    section=section,
+                    id_number=stu["id_number"],
+                    student_name=stu["student_name"],
+                )
+                existing_rows.append(row)
+
+                for assessment in assessments:
+                    raw_scores_to_create.append(
+                        RawScore(student=row, assessment=assessment, raw_score=0)
+                    )
 
             updated.append(stu)
             db_seen.add(key)
 
-        return Response({
-            "mode": "append",
-            "added": updated,
-            "skipped": skipped,
-        })
+        if raw_scores_to_create:
+            RawScore.objects.bulk_create(raw_scores_to_create)
+
+        return Response(
+            {
+                "mode": "append",
+                "added": updated,
+                "skipped": skipped,
+                "detail": f"Appended {len(updated)} students (skipped {len(skipped)})",
+            }
+        )
 
     def _import_override(self, section_id, existing_rows, new_students):
         section = Section.objects.get(pk=section_id)
 
-        blank_rows = [s for s in existing_rows if not s.id_number and not s.student_name]
-        filled_rows = [s for s in existing_rows if s.id_number or s.student_name]
+        Student.objects.filter(section_id=section_id).delete()
 
-        Student.objects.filter(pk__in=[s.pk for s in filled_rows]).delete()
+        to_import = new_students[:40]
+        skipped = new_students[40:]
 
-        need = 40 - len(blank_rows)
-        create_rows = []
-        if need > 0:
-            create_rows = [
-                Student(section=section, id_number=None, student_name=None)
-                for _ in range(need)
-            ]
-            Student.objects.bulk_create(create_rows)
-            blank_rows.extend(create_rows)
-
-            assessments = Assessment.objects.filter(
-                course_component__course_unit__course_term__section=section
+        if not to_import:
+            return Response(
+                {
+                    "mode": "override",
+                    "added": [],
+                    "skipped": skipped,
+                    "detail": "No students imported (no valid rows within 40-row cap).",
+                }
             )
-            raw_scores = [
-                RawScore(student=student, assessment=assessment, raw_score=0)
-                for student in create_rows
-                for assessment in assessments
-            ]
-            RawScore.objects.bulk_create(raw_scores)
 
-        rows = blank_rows[:40]
-        updated = []
+        assessments = Assessment.objects.filter(
+            course_component__course_unit__course_term__section=section
+        )
 
-        for stu, row in zip(new_students, rows):
-            row.id_number = stu["id_number"]
-            row.student_name = stu["student_name"]
-            row.save()
-            updated.append(stu)
+        created_students = [
+            Student(
+                section=section,
+                id_number=stu["id_number"],
+                student_name=stu["student_name"],
+            )
+            for stu in to_import
+        ]
+        Student.objects.bulk_create(created_students)
 
-        return Response({
-            "mode": "override",
-            "added": updated,
-            "detail": f"Replaced student list with {len(updated)} entries",
-        })
+        raw_scores = [
+            RawScore(student=student, assessment=assessment, raw_score=0)
+            for student in created_students
+            for assessment in assessments
+        ]
+        RawScore.objects.bulk_create(raw_scores)
+
+        return Response(
+            {
+                "mode": "override",
+                "added": to_import,
+                "skipped": skipped,
+                "detail": f"Replaced student list with {len(to_import)} entries (skipped {len(skipped)})",
+            }
+        )
+
 
 class AssessmentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -850,18 +897,35 @@ def update_outcome_mapping(request, pk):
 # Course Syllabus Data Extraction
 # ====================================================
 class SyllabusExtractView(APIView):
-    def post(self, request):
+    def post(self, request, loaded_course_id: int):
+        try:
+            loaded_course = LoadedCourse.objects.select_related(
+                "course__program"
+            ).get(pk=loaded_course_id)
+        except LoadedCourse.DoesNotExist:
+            return Response(
+                {"error": "Loaded course not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         if "file" not in request.FILES:
-            return Response({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
 
         pdf_file = request.FILES["file"]
 
-        # Save temporarily
-        path = default_storage.save(f"tmp/{pdf_file.name}", pdf_file)
+        tmp_name = f"tmp/{uuid.uuid4().hex}_{pdf_file.name}"
+        path = default_storage.save(tmp_name, pdf_file)
         filepath = default_storage.path(path)
 
         try:
             result = extract_co_po(filepath)
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        finally:
+
+            try:
+                if default_storage.exists(path):
+                    default_storage.delete(path)
+            except Exception:
+                pass

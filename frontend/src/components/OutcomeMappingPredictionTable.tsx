@@ -25,7 +25,7 @@ export default function OutcomeMappingPredictionTable({ data }: Props) {
 
   if (!data) {
     return (
-      <div className="flex justify-center items-center py-12 text-gray-500">
+      <div className="flex justify-center items-center py-12 text-[#3E3E3E]">
         No mapping data available
       </div>
     );

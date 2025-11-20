@@ -1,69 +1,93 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import FileImportIcon from "../assets/file-import-solid.svg?react";
 import AnalyticsIcon from "../assets/chart-simple.svg?react";
 import { importStudentsCSV } from "../api/instructorStudentListUploadApi";
 import type { AxiosError } from "axios";
+import { toast } from "react-toastify";
+import FileInstructionComponent from "./FileInstructionComponent";
 
 type Props = {
   goToAssessmentPage: () => void;
   sectionId: number;
   refreshStudents: () => Promise<void>;
   canGenerateResultSheet: boolean;
+  hasExistingStudents: boolean;
 };
 
 const TOOLBAR_Z = "z-[1500]";
-const containerBase = `fixed bottom-4 left-1/2 -translate-x-1/2 ${TOOLBAR_Z} bg-white border border-[#E9E6E6] shadow-lg rounded-full px-4 py-2 flex items-center space-x-4 transition-all duration-300`;
-const reopenBtnBase = `fixed bottom-4 left-1/2 -translate-x-1/2 ${TOOLBAR_Z} p-2 rounded-full bg-white border border-[#E9E6E6] shadow-md hover:bg-gray-50 transition`;
+const containerBase = `fixed bottom-4 left-1/2 -translate-x-1/2 ${TOOLBAR_Z} bg-white border border-[#E9E6E6] shadow-sm rounded-full px-4 py-2 flex items-center space-x-4 transition-all duration-300`;
+const reopenBtnBase = `fixed bottom-4 left-1/2 -translate-x-1/2 ${TOOLBAR_Z} p-2 rounded-full bg-white border border-[#E9E6E6] shadow-sm hover:bg-gray-50 transition`;
 
 export default function FloatingToolbarComponent({
   goToAssessmentPage,
   sectionId,
   refreshStudents,
   canGenerateResultSheet,
+  hasExistingStudents,
 }: Props) {
   const [toolbarOpen, setToolbarOpen] = useState(true);
 
-  const [showImportModal, setShowImportModal] = useState(false);
+  const [showInstructionModal, setShowInstructionModal] = useState(false);
+  const [showModeModal, setShowModeModal] = useState(false);
 
-  const [pendingMode, setPendingMode] = useState<"append" | "override" | null>(
-    null
-  );
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const resetFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const runImport = async (
+    mode: "append" | "override",
+    fileOverride?: File | null
+  ) => {
+    const file = fileOverride ?? selectedFile;
+    if (!file) return;
+
+    // CLOSE MODALS IMMEDIATELY WHEN PROCESSING STARTS
+    setShowInstructionModal(false);
+    setShowModeModal(false);
+    setIsImporting(true);
+
+    try {
+      await importStudentsCSV(sectionId, file, mode);
+      toast.success("Student list imported successfully");
+      await refreshStudents();
+    } catch (err) {
+      const error = err as AxiosError<{ detail?: string }>;
+      const message =
+        error.response?.data?.detail ??
+        "Failed to import CSV. Please check the file format.";
+      toast.error(message);
+    } finally {
+      setIsImporting(false);
+      setSelectedFile(null);
+      resetFileInput();
+    }
+  };
+
+  const handleFileSelected = async (file: File | null) => {
+    if (!file) return;
+
+    setSelectedFile(file);
+
+    if (!hasExistingStudents) {
+      setShowInstructionModal(false);
+      await runImport("append", file);
+    } else {
+      setShowInstructionModal(false);
+      setShowModeModal(true);
+    }
+  };
 
   return (
     <>
-      <input
-        type="file"
-        accept=".csv"
-        id="student-csv-input"
-        className="hidden"
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          if (!file || !pendingMode) return;
-
-          try {
-            await importStudentsCSV(sectionId, file, pendingMode);
-            alert("Student List Imported Successfully.");
-            await refreshStudents();
-          } catch (err) {
-            const error = err as AxiosError<{ detail?: string }>;
-
-            console.error(error);
-
-            const message =
-              error.response?.data?.detail ??
-              "Failed to import CSV. Please check the file format.";
-
-            alert(message);
-          }
-
-          setPendingMode(null);
-          setShowImportModal(false);
-          e.target.value = "";
-        }}
-      />
-
       <div
-        className={`${containerBase} transition-all ${
+        className={`${containerBase} ${
           toolbarOpen
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-10 pointer-events-none"
@@ -72,9 +96,9 @@ export default function FloatingToolbarComponent({
         <button
           type="button"
           className="relative p-2 rounded-full hover:bg-gray-100 hover:cursor-pointer group"
-          title="Import Master List"
-          aria-label="Import Master List"
-          onClick={() => setShowImportModal(true)}
+          title="Import Student List"
+          aria-label="Import Student List"
+          onClick={() => setShowInstructionModal(true)}
         >
           <FileImportIcon className="w-5 h-5 text-[#767676]" />
           <span
@@ -82,7 +106,7 @@ export default function FloatingToolbarComponent({
               text-xs text-white bg-[#767676] px-2 py-1 rounded opacity-0
               group-hover:opacity-100 transition"
           >
-            Import Master List
+            Import Student List
           </span>
         </button>
 
@@ -154,45 +178,81 @@ export default function FloatingToolbarComponent({
           </svg>
         </button>
       )}
-
-      {showImportModal && (
-        <div className="fixed inset-0 bg-[#3e3e3e30] border-[#E9E6E6] flex items-center justify-center z-2000">
-          <div className="bg-white p-6 rounded-xl space-y-4 w-120">
+      <FileInstructionComponent
+        isOpen={showInstructionModal}
+        title="Import Student List (CSV)"
+        description="Select a CSV file that contains student ID and Name columns to import student list."
+        instructions={[
+          "Only .csv files are allowed.",
+          "Duplicates are automatically skipped.",
+          "If this section already has students, you will choose whether to append or override after selecting a file.",
+        ]}
+        accept=".csv"
+        primaryLabel="Choose CSV file"
+        cancelLabel="Cancel"
+        isProcessing={isImporting}
+        onClose={() => {
+          if (isImporting) return;
+          setShowInstructionModal(false);
+          setSelectedFile(null);
+          resetFileInput();
+        }}
+        onFileSelected={handleFileSelected}
+      />
+      {showModeModal && (
+        <div
+          className="fixed inset-0 bg-[#3e3e3e30] flex items-center justify-center z-5000"
+          onClick={() => {
+            if (isImporting) return;
+            setShowModeModal(false);
+            setSelectedFile(null);
+            resetFileInput();
+          }}
+        >
+          <div
+            className="bg-white p-6 rounded-xl space-y-4 mx-8 w-150 border border-[#E9E6E6] shadow-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex flex-col gap-1">
-              <h2 className="text-lg">Import Student List in CSV Format</h2>
-              <p className="text-sm">How do you want to apply this CSV?</p>
+              <h2 className="text-lg font-semibold">Existing students found</h2>
+              <p className="text-sm text-[#767676]">
+                This section already has student records. How do you want to
+                apply this CSV?
+              </p>
             </div>
 
             <div className="space-y-2">
               <button
-                className="w-full bg-ucap-yellow text-white py-2 rounded-lg cursor-pointer"
-                onClick={() => {
-                  setPendingMode("append");
-                  setShowImportModal(false);
-                  document.getElementById("student-csv-input")?.click();
-                }}
+                type="button"
+                className="w-full bg-ucap-yellow bg-ucap-yellow-hover border border-[#ffc000] text-white py-2 rounded-lg cursor-pointer disabled:opacity-60"
+                onClick={() => runImport("append")}
+                disabled={isImporting}
               >
-                Append to Existing Student List
+                Append to existing student list
               </button>
 
               <button
-                className="w-full border border-red-400 text-red-400 hover:text-red-500 py-2 rounded-lg cursor-pointer"
-                onClick={() => {
-                  setPendingMode("override");
-                  setShowImportModal(false);
-                  document.getElementById("student-csv-input")?.click();
-                }}
+                type="button"
+                className="w-full border border-red-400 text-red-400 hover:text-red-500 py-2 rounded-lg cursor-pointer disabled:opacity-60"
+                onClick={() => runImport("override")}
+                disabled={isImporting}
               >
-                Override Student List
+                Override student list
+              </button>
+
+              <button
+                type="button"
+                className="w-full border border-[#ffc000] py-2 rounded-lg cursor-pointer disabled:opacity-60"
+                onClick={() => {
+                  setShowModeModal(false);
+                  setSelectedFile(null);
+                  resetFileInput();
+                }}
+                disabled={isImporting}
+              >
+                Cancel
               </button>
             </div>
-
-            <button
-              className="w-full py-2 text-gray-600 rounded-lg cursor-pointer"
-              onClick={() => setShowImportModal(false)}
-            >
-              Cancel
-            </button>
           </div>
         </div>
       )}

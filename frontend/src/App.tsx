@@ -16,9 +16,9 @@ import DepartmentChairCoursePage from "./pages/department_chair/DepartmentChairC
 import DepartmentChairAssessmentPage from "./pages/department_chair/DepartmentChairAssessmentPage";
 import DeanCourseDashboard from "./pages/dean/DeanCourseDashboard";
 import DeanAssessmentPage from "./pages/dean/DeanAssessmentPage";
-import CampusAssessmentPage from "./pages/vpaaAndVpaa/CampusAssessmentPage";
-import CampusCoursePage from "./pages/vpaaAndVpaa/CampusCoursePage";
-import CampusCourseDashboard from "./pages/vpaaAndVpaa/CampusCourseDashboard";
+import CampusAssessmentPage from "./pages/vcaa/VcaaAssessmentPage";
+import CampusCoursePage from "./pages/vcaa/VcaaCoursePage";
+import CampusCourseDashboard from "./pages/vcaa/VcaaCourseDashboard";
 import DeanCoursePage from "./pages/dean/DeanCoursePage";
 import AssessmentPage from "./pages/instructor/AssessmentPage";
 import { toast, ToastContainer } from "react-toastify";

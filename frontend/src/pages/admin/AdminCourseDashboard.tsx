@@ -100,14 +100,20 @@ export default function AdminCourseDashboard() {
   }
 
   const filteredCourses = useMemo(() => {
-    const list = searchQuery.trim()
-      ? courses.filter((course) => {
-          const query = searchQuery.toLowerCase();
-          return (
-            course.course_code.toLowerCase().includes(query) ||
-            course.course_title.toLowerCase().includes(query)
-          );
-        })
+    const q = searchQuery.trim().toLowerCase();
+
+    const list = q
+      ? courses.filter((course) =>
+          Object.values(course).some((val) => {
+            if (val == null) return false;
+
+            const t = typeof val;
+            if (t === "string" || t === "number" || t === "boolean") {
+              return String(val).toLowerCase().includes(q);
+            }
+            return false;
+          })
+        )
       : courses;
 
     return [...list].sort((a, b) =>
@@ -352,6 +358,7 @@ export default function AdminCourseDashboard() {
           onClearError={handleClearError}
           readOnly={isEditing}
           loading={sidePanelLoading}
+          maxLength={255}
         />
         <UserInputComponent
           label="Lecture Unit"
@@ -362,6 +369,8 @@ export default function AdminCourseDashboard() {
           onChange={handleInputChange}
           onClearError={handleClearError}
           loading={sidePanelLoading}
+          maxLength={3}
+          numericOnly
         />
         <UserInputComponent
           label="Course Title"
@@ -372,6 +381,7 @@ export default function AdminCourseDashboard() {
           onChange={handleInputChange}
           onClearError={handleClearError}
           loading={sidePanelLoading}
+          maxLength={255}
         />
         <UserInputComponent
           label="Laboratory Unit"
@@ -382,6 +392,8 @@ export default function AdminCourseDashboard() {
           onChange={handleInputChange}
           onClearError={handleClearError}
           loading={sidePanelLoading}
+          maxLength={3}
+          numericOnly
         />
         <DropdownComponent
           label="Program"
@@ -406,6 +418,8 @@ export default function AdminCourseDashboard() {
           onChange={handleInputChange}
           onClearError={handleClearError}
           loading={sidePanelLoading}
+          maxLength={3}
+          numericOnly
         />
         <DropdownComponent
           label="Year Level"

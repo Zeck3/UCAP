@@ -56,17 +56,17 @@ export default function AssessmentInfoContextMenu({
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      
-      // Check if click is on the chevron button for this assessment
-      const toggleButton = target.closest('[data-assessment-info-toggle]');
+
+      const toggleButton = target.closest("[data-assessment-info-toggle]");
       if (toggleButton) {
-        const toggleAssessmentId = toggleButton.getAttribute('data-assessment-info-toggle');
+        const toggleAssessmentId = toggleButton.getAttribute(
+          "data-assessment-info-toggle"
+        );
         if (toggleAssessmentId === String(assessmentId)) {
-          // Don't close if clicking the same chevron button
           return;
         }
       }
-      
+
       if (menuRef.current && !menuRef.current.contains(target)) {
         onClose();
       }
@@ -108,12 +108,12 @@ export default function AssessmentInfoContextMenu({
   const menu = (
     <div
       ref={menuRef}
-      className="bg-white rounded-lg border border-[#E9E6E6] p-3 w-64 space-y-4"
+      className="bg-white rounded-lg border border-[#E9E6E6] p-3 w-64 space-y-4 shadow-sm"
       style={{ position: "fixed", top: y, left: x, zIndex: 99999 }}
     >
       {bloomsOptions.length > 0 && (
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label className="block text-sm mb-1">
             Bloom's Classification
           </label>
 
@@ -122,7 +122,7 @@ export default function AssessmentInfoContextMenu({
               const isSelected = selectedBlooms.includes(String(b.id));
               const color =
                 BLOOM_COLORS[b.name] ||
-                "bg-gray-100 text-gray-800 border-[#E9E6E6]";
+                "bg-gray-50 border-[#E9E6E6]";
 
               return (
                 <button
@@ -132,7 +132,7 @@ export default function AssessmentInfoContextMenu({
                     ${
                       isSelected
                         ? color
-                        : "bg-white text-gray-700 border-[#E9E6E6]"
+                        : "bg-white border-[#E9E6E6]"
                     }
                   `}
                 >
@@ -146,7 +146,7 @@ export default function AssessmentInfoContextMenu({
 
       {outcomesOptions.length > 0 && (
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label className="block text-sm mb-1">
             Course Outcomes
           </label>
 

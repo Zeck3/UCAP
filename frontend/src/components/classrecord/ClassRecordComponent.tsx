@@ -15,12 +15,14 @@ interface Props {
   onInitialized?: () => void;
   onProvideFetchStudents?: (fn: () => Promise<void>) => void;
   onCanGenerateResultSheetChange?: (can: boolean) => void;
+  onExistingStudentsChange?: (hasExisting: boolean) => void;
 }
 
 export default function ClassRecordComponent({
   onInitialized,
   onProvideFetchStudents,
   onCanGenerateResultSheetChange,
+  onExistingStudentsChange,
 }: Props) {
   const {
     fetchData,
@@ -69,9 +71,6 @@ export default function ClassRecordComponent({
     () => Math.max(...headerNodes.map(getMaxDepth)),
     [headerNodes]
   );
-
-  // ClassRecordComponent.tsx
-  // REPLACE your current "header offsets" useEffect with this:
 
   useEffect(() => {
     const table = tableRef.current;
@@ -146,6 +145,19 @@ export default function ClassRecordComponent({
   useEffect(() => {
     if (initialized) onInitialized?.();
   }, [initialized, onInitialized]);
+
+  useEffect(() => {
+    if (!onExistingStudentsChange) return;
+
+    const hasExisting = sortedStudentsData.some(({ student }) => {
+      const hasId =
+        student.id_number !== null && student.id_number !== undefined;
+      const hasName = (student.student_name ?? "").trim().length > 0;
+      return hasId || hasName;
+    });
+
+    onExistingStudentsChange(hasExisting);
+  }, [sortedStudentsData, onExistingStudentsChange]);
 
   if (!initialized) return <ClassRecordLoading />;
   if (loading) return <ClassRecordLoading />;

@@ -1,5 +1,3 @@
-// src/api/syllabusExtractApi.ts
-
 import axiosClient from "./axiosClient";
 
 export interface COPOResult {

@@ -52,7 +52,7 @@ export default function RemarksDropdown({ value, onChange }: Props) {
         <button
           key={opt}
           className={`w-full px-3 py-1.5 h-10.5 text-left ${
-            opt === value ? "bg-gray-100" : ""
+            opt === value ? "bg-gray-50" : ""
           }`}
           onClick={() => {
             onChange(opt);

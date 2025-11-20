@@ -7,11 +7,11 @@ type Props = {
 
 const TOOLBAR_Z = "z-35";
 const containerBase = `fixed bottom-4 left-1/2 -translate-x-1/2 ${TOOLBAR_Z} 
-  bg-white border border-[#E9E6E6] shadow-lg rounded-full px-4 py-2 
+  bg-white border border-[#E9E6E6] shadow-sm rounded-full px-4 py-2 
   flex items-center space-x-4 transition-all duration-300`;
 
 const reopenBtnBase = `fixed bottom-4 left-1/2 -translate-x-1/2 ${TOOLBAR_Z} 
-  p-2 rounded-full bg-white border border-[#E9E6E6] shadow-md 
+  p-2 rounded-full bg-white border border-[#E9E6E6] shadow-sm 
   hover:bg-gray-50 transition`;
 
 export default function ActionBarComponent({ goToAssessmentPage }: Props) {

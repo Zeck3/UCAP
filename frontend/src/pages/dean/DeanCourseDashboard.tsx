@@ -57,15 +57,20 @@ export default function DeanCourseDashboard() {
   }, [department_id]);
 
   const filteredLoadedCourses = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return courses;
 
-    if (!query) return courses;
+    return courses.filter((course) =>
+      Object.values(course).some((val) => {
+        if (val == null) return false;
 
-    return courses.filter(
-      (course) =>
-        course.course_code.toLowerCase().includes(query) ||
-        course.course_title.toLowerCase().includes(query) ||
-        course.program_name.toLowerCase().includes(query)
+        const t = typeof val;
+        if (t === "string" || t === "number" || t === "boolean") {
+          return String(val).toLowerCase().includes(q);
+        }
+
+        return false;
+      })
     );
   }, [searchQuery, courses]);
 
@@ -87,7 +92,7 @@ export default function DeanCourseDashboard() {
       <ToolBarComponent
         titleOptions={[
           {
-            label: "Courses",
+            label: "College Courses",
             value: "courses",
             enableSearch: true,
             enableLayout: true,
@@ -107,7 +112,7 @@ export default function DeanCourseDashboard() {
           fieldTop={(c) => c.course_code}
           title={(c) => c.course_title}
           subtitle={(c) =>
-            `${c.academic_year_and_semester} | ${c.program_name}`
+            `${c.academic_year_start}-${c.academic_year_end} | ${c.semester_type} | ${c.program_name}`
           }
         />
       ) : (
@@ -122,7 +127,7 @@ export default function DeanCourseDashboard() {
             { key: "program_name", label: "Program" },
             {
               key: "academic_year_and_semester",
-              label: "Academic Year / Semester",
+              label: "Academic Year & Semester",
             },
             { key: "year_level_type", label: "Year Level" },
           ]}

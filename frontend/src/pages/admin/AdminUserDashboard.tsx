@@ -137,11 +137,22 @@ export default function AdminUserDashboard() {
   };
 
   const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return users;
-    const q = searchQuery.toLowerCase();
-    return users.filter(
-      (u) => u.id.toString().includes(q) || u.name.toLowerCase().includes(q)
-    );
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return users;
+
+    return users.filter((u) => {
+      return Object.values(u).some((val) => {
+        if (val == null) return false;
+        if (
+          typeof val === "number" ||
+          typeof val === "string" ||
+          typeof val === "boolean"
+        ) {
+          return String(val).toLowerCase().includes(q);
+        }
+        return false;
+      });
+    });
   }, [searchQuery, users]);
 
   const validateForm = () => {
@@ -305,6 +316,7 @@ export default function AdminUserDashboard() {
           onChange={handleInputChange}
           onClearError={handleClearError}
           loading={sidePanelLoading}
+          maxLength={255}
         />
         <UserInputComponent
           label="User ID"
@@ -316,6 +328,8 @@ export default function AdminUserDashboard() {
           onClearError={handleClearError}
           readOnly={isEditing}
           loading={sidePanelLoading}
+          maxLength={10}
+          numericOnly
         />
         <UserInputComponent
           label="Middle Name"
@@ -324,6 +338,7 @@ export default function AdminUserDashboard() {
           onChange={handleInputChange}
           onClearError={handleClearError}
           loading={sidePanelLoading}
+          maxLength={255}
         />
         <UserInputComponent
           label="Email"
@@ -334,6 +349,7 @@ export default function AdminUserDashboard() {
           onChange={handleInputChange}
           onClearError={handleClearError}
           loading={sidePanelLoading}
+          maxLength={255}
         />
         <UserInputComponent
           label="Last Name"
@@ -344,6 +360,7 @@ export default function AdminUserDashboard() {
           onChange={handleInputChange}
           onClearError={handleClearError}
           loading={sidePanelLoading}
+          maxLength={255}
         />
         <DropdownComponent
           label="User Role"

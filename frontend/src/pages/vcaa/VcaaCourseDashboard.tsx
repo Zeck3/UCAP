@@ -9,11 +9,14 @@ import TableComponent from "../../components/TableComponent";
 import emptyImage from "../../assets/undraw_file-search.svg";
 import { useLayout } from "../../context/useLayout";
 
-import { fetchCampusLoadedCourses } from "../../api/campusDashboardApi";
+import { fetchVcaaLoadedCourses } from "../../api/vcaaDashboardApi";
 import type { BaseLoadedCourse } from "../../types/baseTypes";
+import InfoComponent from "../../components/InfoComponent";
+import { useDepartment } from "../../context/useDepartment";
 
 export default function CampusCourseDashboard() {
   const { department_id } = useParams();
+  const { department } = useDepartment();
   const navigate = useNavigate();
   const { layout } = useLayout();
 
@@ -27,7 +30,7 @@ export default function CampusCourseDashboard() {
 
       try {
         setLoading(true);
-        const data = await fetchCampusLoadedCourses(Number(department_id));
+        const data = await fetchVcaaLoadedCourses(Number(department_id));
 
         const formatted = data.map((c) => ({
           ...c,
@@ -50,19 +53,27 @@ export default function CampusCourseDashboard() {
   const filteredCourses = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
 
-    return courses
-      .filter(
-        (course) =>
-          course.course_code.toLowerCase().includes(q) ||
-          course.course_title.toLowerCase().includes(q) ||
-          course.program_name.toLowerCase().includes(q)
-      )
-      .map((course) => ({
-        ...course,
-        id: course.loaded_course_id,
-        academic_year_and_semester: `${course.academic_year_start}-${course.academic_year_end} / ${course.semester_type}`,
-        year_level: course.year_level_type,
-      }));
+    const augmented = courses.map((course) => ({
+      ...course,
+      id: course.loaded_course_id,
+      academic_year_and_semester: `${course.academic_year_start}-${course.academic_year_end} / ${course.semester_type}`,
+      year_level: course.year_level_type,
+    }));
+
+    if (!q) return augmented;
+
+    return augmented.filter((course) =>
+      Object.values(course).some((val) => {
+        if (val == null) return false;
+
+        const t = typeof val;
+        if (t === "string" || t === "number" || t === "boolean") {
+          return String(val).toLowerCase().includes(q);
+        }
+
+        return false;
+      })
+    );
   }, [searchQuery, courses]);
 
   const goToCampusCoursePage = (course: BaseLoadedCourse) => {
@@ -75,10 +86,14 @@ export default function CampusCourseDashboard() {
 
   return (
     <AppLayout activeItem={`/campus/${department_id}`}>
+      <InfoComponent
+        loading={loading}
+        title={`${department?.campus_name} Campus`}
+      />
       <ToolBarComponent
         titleOptions={[
           {
-            label: "All Courses",
+            label: "Campus Courses",
             value: "courses",
             enableSearch: true,
             enableLayout: true,
@@ -99,7 +114,7 @@ export default function CampusCourseDashboard() {
           fieldTop={(c) => c.course_code}
           title={(c) => c.course_title}
           subtitle={(c) =>
-            `${c.academic_year_and_semester} | ${c.program_name}`
+            `${c.academic_year_start}-${c.academic_year_end} | ${c.semester_type} | ${c.program_name}`
           }
         />
       ) : (
@@ -115,7 +130,7 @@ export default function CampusCourseDashboard() {
             { key: "program_name", label: "Program" },
             {
               key: "academic_year_and_semester",
-              label: "Academic Year / Semester",
+              label: "Academic Year & Semester",
             },
             { key: "year_level", label: "Year Level" },
           ]}

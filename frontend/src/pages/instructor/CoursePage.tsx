@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLayout } from "../../context/useLayout";
 import emptyImage from "../../assets/undraw_file-search.svg";
@@ -20,36 +20,56 @@ import CourseOutcomesTableComponent from "../../components/CourseOutcomesTableCo
 import OutcomeMappingTableComponent from "../../components/OutcomeMappingTableComponent";
 import GearsSolid from "../../assets/gears-solid-full.svg?react";
 import EvilDog from "../../assets/undraw_page-eaten.svg?react";
+import FileInstructionComponent from "../../components/FileInstructionComponent";
+import { toast } from "react-toastify";
+import { extractSyllabus } from "../../api/instructorDataExtractionApi";
+import type { AxiosError } from "axios";
 
 export default function CoursePage() {
   const [activeMenu, setActiveMenu] = useState("section");
   const [searchQuery, setSearchQuery] = useState("");
   const { loaded_course_id } = useParams();
   const [refreshMappingKey, setRefreshMappingKey] = useState(0);
+  const [refreshOutcomesKey, setRefreshOutcomesKey] = useState(0);
+  const [showSyllabusModal, setShowSyllabusModal] = useState(false);
+  const [isUploadingSyllabus, setIsUploadingSyllabus] = useState(false);
   const { department } = useDepartment();
   const programId = department?.program_id ?? 0;
   const { user } = useAuth();
   const { layout } = useLayout();
   const navigate = useNavigate();
-
   const [courseDetails, setCourseDetails] =
     useState<CourseDetailsWithSections | null>(null);
   const [loading, setLoading] = useState(true);
+  const [accessError, setAccessError] = useState<string | null>(null);
   const currentUserId = user?.user_id ?? null;
 
   useEffect(() => {
     const loadCourse = async () => {
-      if (!loaded_course_id || !currentUserId) return;
+      if (!loaded_course_id || !currentUserId) {
+        setLoading(false);
+        return;
+      }
 
       try {
         setLoading(true);
+        setAccessError(null);
+
         const data = await fetchCourseDetails(
           Number(currentUserId),
           Number(loaded_course_id)
         );
+
         setCourseDetails(data);
-      } catch (error) {
-        console.error("Failed to fetch course details", error);
+      } catch (err) {
+        const e = err as AxiosError<{ detail?: string; message?: string }>;
+        setCourseDetails(null);
+
+        setAccessError(
+          e.response?.data?.detail ||
+            e.response?.data?.message ||
+            "Course not found or you are not assigned to this course."
+        );
       } finally {
         setLoading(false);
       }
@@ -59,27 +79,81 @@ export default function CoursePage() {
   }, [loaded_course_id, currentUserId]);
 
   const filteredSections = useMemo(() => {
-    if (!courseDetails) return [];
+    const query = searchQuery.trim().toLowerCase();
 
-    const query = searchQuery.toLowerCase();
-    const courseCode = courseDetails.course_details.course_code;
+    const courseCode = courseDetails?.course_details?.course_code ?? "";
+    const sections = courseDetails?.sections ?? [];
 
-    return courseDetails.sections
-      .filter(
-        (section) =>
-          section.year_and_section.toLowerCase().includes(query) ||
-          (section.instructor_assigned ?? "").toLowerCase().includes(query)
-      )
-      .map((section) => ({
-        ...section,
-        id: section.section_id,
+    const augmented = sections.map((section) => ({
+      ...section,
+      id: section.section_id,
+      combined_course_section: courseCode
+        ? `${courseCode} - ${section.year_and_section}`
+        : section.year_and_section,
+    }));
 
-        combined_course_section: `${courseCode} - ${section.year_and_section}`,
-      }));
+    if (!query) return augmented;
+
+    return augmented.filter((section) =>
+      Object.values(section).some((val) => {
+        if (val == null) return false;
+        const t = typeof val;
+        if (t === "string" || t === "number" || t === "boolean") {
+          return String(val).toLowerCase().includes(query);
+        }
+        return false;
+      })
+    );
   }, [courseDetails, searchQuery]);
 
-  const goBack = () => {
-    navigate(-1);
+  const handleOpenSyllabusModal = () => {
+    if (!loaded_course_id) {
+      toast.error("Course not found.");
+      return;
+    }
+    setShowSyllabusModal(true);
+  };
+
+  const handleCloseSyllabusModal = () => {
+    if (isUploadingSyllabus) return;
+    setShowSyllabusModal(false);
+  };
+  const handleSyllabusFileSelected = async (file: File | null) => {
+    if (!file) return;
+    if (!loaded_course_id) {
+      toast.error("Course not found.");
+      return;
+    }
+
+    setShowSyllabusModal(false);
+    setIsUploadingSyllabus(true);
+
+    const toastId = toast.loading("Extracting syllabus… please wait.");
+
+    try {
+      await extractSyllabus(Number(loaded_course_id), file);
+
+      refreshAfterSyllabus();
+
+      toast.update(toastId, {
+        render: "Syllabus uploaded and CO-PO mapping extracted.",
+        type: "success",
+        isLoading: false,
+        autoClose: 2500,
+      });
+    } catch (err) {
+      const error = err as import("axios").AxiosError<{ detail?: string }>;
+      toast.update(toastId, {
+        render:
+          error.response?.data?.detail ??
+          "Failed to extract syllabus. Please check the PDF format.",
+        type: "error",
+        isLoading: false,
+        autoClose: 3500,
+      });
+    } finally {
+      setIsUploadingSyllabus(false);
+    }
   };
 
   const goToClassRecord = (item: AssignedSection) => {
@@ -93,44 +167,27 @@ export default function CoursePage() {
     });
   };
 
-  const handleCourseOutcomesChanged = () => {
+  const handleCourseOutcomesChanged = useCallback(() => {
     setRefreshMappingKey((prev) => prev + 1);
-  };
+  }, []);
+
+  const refreshAfterSyllabus = useCallback(() => {
+    setRefreshOutcomesKey((prev) => prev + 1);
+    setRefreshMappingKey((prev) => prev + 1);
+  }, []);
 
   if (!currentUserId) {
     return <div>Unauthorized: No instructor logged in.</div>;
   }
 
-  if (!loading && !courseDetails) {
+  if (!loading && accessError) {
     return (
       <AppLayout activeItem="/instructor">
         <div className="flex flex-col gap-4 justify-center items-center pt-8">
           <EvilDog />
-          <span className="text-[#C6C6C6]">
-            Course not found or you are not assigned to this loaded course.
-          </span>
+          <span className="text-[#C6C6C6] text-center">{accessError}</span>
           <button
-            onClick={goBack}
-            className="bg-ucap-yellow bg-ucap-yellow-hover text-white px-6 py-2.5 rounded-full cursor-pointer transition text-base flex items-center gap-2"
-          >
-            Go Back
-          </button>
-        </div>
-      </AppLayout>
-    );
-  }
-
-  if (!loading && courseDetails?.sections.length === 0) {
-    return (
-      <AppLayout activeItem="/instructor">
-        <div className="flex flex-col gap-4 justify-center items-center pt-16">
-          <EvilDog />
-          <span className="text-[#C6C6C6] text-center">
-            Course not found or you are not assigned to any section <br /> of
-            this course.
-          </span>
-          <button
-            onClick={goBack}
+            onClick={() => navigate(-1)}
             className="bg-ucap-yellow bg-ucap-yellow-hover text-white px-6 py-2.5 rounded-full cursor-pointer transition text-base flex items-center gap-2"
           >
             Go Back
@@ -176,10 +233,24 @@ export default function CoursePage() {
         onSearch={(val) => setSearchQuery(val)}
         onTitleSelect={(val) => setActiveMenu(val)}
         buttonLabel="Upload Course Syllabus"
-        onButtonClick={() => {
-          alert("Feature coming soon!");
-        }}
+        onButtonClick={handleOpenSyllabusModal}
         buttonIcon={<FileImport className="w-5 h-5" />}
+      />
+      <FileInstructionComponent
+        isOpen={showSyllabusModal}
+        title="Upload Course Syllabus (PDF)"
+        description="Select a syllabus PDF file for this course. The system will extract Course Outcomes (CO) and Outcome Mappings."
+        instructions={[
+          "Only .pdf files are allowed.",
+          "Ensure the syllabus clearly lists Course Outcomes and the CO-PO mapping.",
+          "Large PDFs may take a little time to process.",
+        ]}
+        accept=".pdf"
+        primaryLabel="Choose PDF file"
+        cancelLabel="Cancel"
+        isProcessing={isUploadingSyllabus}
+        onClose={handleCloseSyllabusModal}
+        onFileSelected={handleSyllabusFileSelected}
       />
       {activeMenu === "section" && (
         <>
@@ -218,7 +289,7 @@ export default function CoursePage() {
           <div className="flex flex-col gap-8">
             <div className="gap-2">
               <h2 className="text-xl">Program Outcomes</h2>
-              <span className="text-gray-500">
+              <span className="text-[#767676]">
                 Upon completion of the {department?.program_name}, graduates are
                 able to:
               </span>
@@ -229,7 +300,7 @@ export default function CoursePage() {
           <div className="flex flex-col gap-8">
             <div className="gap-2">
               <h2 className="text-xl">Course Outcomes</h2>
-              <span className="text-gray-500">
+              <span>
                 Upon completion of the{" "}
                 {courseDetails?.course_details.course_code} course, students are
                 able to:
@@ -237,6 +308,7 @@ export default function CoursePage() {
             </div>
             <CourseOutcomesTableComponent
               loadedCourseId={Number(loaded_course_id)}
+              key={refreshOutcomesKey}
               onCourseOutcomesChanged={handleCourseOutcomesChanged}
             />
           </div>

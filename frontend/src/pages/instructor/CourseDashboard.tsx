@@ -39,15 +39,7 @@ export default function CourseDashboard() {
   const filteredCourses = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
-    const filtered = query
-      ? courses.filter(
-          (course) =>
-            course.course_code.toLowerCase().includes(query) ||
-            course.course_title.toLowerCase().includes(query)
-        )
-      : courses;
-
-    return filtered.map((course) => {
+    const augmented = courses.map((course) => {
       const academicYear = `${course.academic_year_start}-${course.academic_year_end}`;
 
       return {
@@ -57,6 +49,21 @@ export default function CourseDashboard() {
         year_sem: `${academicYear} / ${course.semester_type}`,
       };
     });
+
+    if (!query) return augmented;
+
+    return augmented.filter((course) =>
+      Object.values(course).some((val) => {
+        if (val == null) return false;
+
+        const t = typeof val;
+        if (t === "string" || t === "number" || t === "boolean") {
+          return String(val).toLowerCase().includes(query);
+        }
+
+        return false;
+      })
+    );
   }, [searchQuery, courses]);
 
   const goToCoursePage = (course: BaseLoadedCourse) => {
@@ -105,7 +112,7 @@ export default function CourseDashboard() {
           columns={[
             { key: "course_code", label: "Code" },
             { key: "course_title", label: "Course Title" },
-            { key: "year_sem", label: "Academic Year / Semester" },
+            { key: "year_sem", label: "Academic Year & Semester" },
             { key: "program_name", label: "Department" },
             { key: "year_level_type", label: "Year Level" },
           ]}

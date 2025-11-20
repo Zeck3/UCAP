@@ -19,7 +19,7 @@ export default function ErrorPage({
   };
 
   return (
-    <div className="flex flex-col pt-8">
+    <div className="flex flex-col pt-16">
       <div className="w-full flex flex-1">
         <div className="flex w-full justify-center items-center flex-col gap-8 text-center px-4">
           <img
@@ -28,8 +28,8 @@ export default function ErrorPage({
             className="h-50 w-50 max-w-xs"
           />
           <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-semibold">{title}</h1>
-            <p className="max-w-sm">{description}</p>
+            <h1 className="text-xl max-w-md font-semibold">{title}</h1>
+            <p className="max-w-md">{description}</p>
           </div>
           <button
             onClick={goBack}

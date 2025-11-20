@@ -1,11 +1,10 @@
+from django.db import transaction
+from ucap_backend.models import CourseOutcome, OutcomeMapping, ProgramOutcome
 import re
 import json
 import camelot
-import fitz  # PyMuPDF
+import fitz
 
-# -----------------------------------------------------------
-# 1) Extract CO → PO Mapping from Tables (Camelot)
-# -----------------------------------------------------------
 def extract_po_mapping(filepath):
     try:
         tables = camelot.read_pdf(filepath, pages="all", flavor="lattice")
@@ -83,7 +82,7 @@ def extract_po_mapping(filepath):
                         continue
                     val = row_cells[idx].strip().upper()
                     if len(val) == 1 and val in {"I", "D", "E"}:
-                        po_key = f"PO-{po_letter}"
+                        po_key = f"PO-{po_letter.lower()}"
                         po_levels[po_key] = val
 
             if not po_levels and canonical_po_letters:
@@ -93,11 +92,8 @@ def extract_po_mapping(filepath):
                     for j in range(count):
                         po_letter = canonical_po_letters[j]
                         level = tokens[j].upper()
-                        po_key = f"PO-{po_letter}"
+                        po_key = f"PO-{po_letter.lower()}"
                         po_levels[po_key] = level
-
-            if not po_levels and last_po_levels:
-                po_levels = dict(last_po_levels)
 
             if not po_levels:
                 continue
@@ -123,10 +119,6 @@ def extract_po_mapping(filepath):
 
     return results
 
-
-# -----------------------------------------------------------
-# 2) Extract CO Full Descriptions from Course Outcomes Section (PyMuPDF)
-# -----------------------------------------------------------
 def extract_co_descriptions(filepath):
     doc = fitz.open(filepath)
     co_text_parts = []
@@ -212,10 +204,6 @@ def extract_co_descriptions(filepath):
 
     return co_descriptions
 
-
-# -----------------------------------------------------------
-# 3) Merge mapping + descriptions
-# -----------------------------------------------------------
 def merge_co_data(mapping_list, desc_map):
     enriched = []
 
@@ -258,19 +246,11 @@ def merge_co_data(mapping_list, desc_map):
 
     return formatted
 
-
-# -----------------------------------------------------------
-# 4) Main Driver Function
-# -----------------------------------------------------------
 def extract_co_po(filepath):
     mapping = extract_po_mapping(filepath)
     descriptions = extract_co_descriptions(filepath)
     return merge_co_data(mapping, descriptions)
 
-
-# -----------------------------------------------------------
-# 5) Run & Save
-# -----------------------------------------------------------
 def main(filepath, output="co_po_mapping.json"):
     print(f"Processing: {filepath}")
     result = extract_co_po(filepath)
@@ -281,3 +261,89 @@ def main(filepath, output="co_po_mapping.json"):
 
 if __name__ == "__main__":
     main("IT212 - Fundl of DBMS Syllabus-APPROVED.pdf")
+
+def _norm(s: str) -> str:
+    return (s or "").strip().upper().replace(" ", "")
+
+@transaction.atomic
+def apply_extracted_override(loaded_course, extracted_items):
+    """
+    extracted_items:
+    [
+      {
+        "course_outcome_code": "CO1",
+        "course_outcome_description": "...",
+        "outcome_mapping": {"PO-A": "I", "PO-B": "E"}
+      },
+      ...
+    ]
+    """
+    program = loaded_course.course.program
+    program_outcomes = ProgramOutcome.objects.filter(program=program)
+
+    po_lookup = {_norm(po.program_outcome_code): po for po in program_outcomes}
+
+    summary = {
+        "created_course_outcomes": 0,
+        "updated_course_outcomes": 0,
+        "skipped_course_outcomes": 0,
+        "created_mappings": 0,
+        "updated_mappings": 0,
+        "skipped_pos_missing_in_program": [],  # POs found in PDF but not in DB
+    }
+
+    for item in extracted_items:
+        co_code = _norm(item.get("course_outcome_code"))
+        co_desc = (item.get("course_outcome_description") or "").strip()
+        po_levels = item.get("outcome_mapping") or {}
+
+        if not co_code:
+            continue
+
+        co_obj, created = CourseOutcome.objects.get_or_create(
+            loaded_course=loaded_course,
+            course_outcome_code=co_code,
+            defaults={"course_outcome_description": co_desc},
+        )
+
+        if created:
+            summary["created_course_outcomes"] += 1
+        else:
+            if co_desc:  # only overwrite if PDF gave a description
+                co_obj.course_outcome_description = co_desc
+                co_obj.save(update_fields=["course_outcome_description"])
+                summary["updated_course_outcomes"] += 1
+            else:
+                summary["skipped_course_outcomes"] += 1
+
+        # Override PO mappings for this CO
+        for raw_po_code, level in po_levels.items():
+            po_code_norm = _norm(raw_po_code)   # e.g., "PO-A"
+            level_norm = _norm(level)           # "I"/"D"/"E"
+
+            if level_norm not in {"I", "D", "E"}:
+                continue
+
+            po_obj = po_lookup.get(po_code_norm)
+            if not po_obj:
+                summary["skipped_pos_missing_in_program"].append(raw_po_code)
+                continue
+
+            mapping_obj, map_created = OutcomeMapping.objects.get_or_create(
+                program_outcome=po_obj,
+                course_outcome=co_obj,
+                defaults={"outcome_mapping": level_norm},
+            )
+
+            if map_created:
+                summary["created_mappings"] += 1
+            else:
+                # overwrite always
+                mapping_obj.outcome_mapping = level_norm
+                mapping_obj.save(update_fields=["outcome_mapping"])
+                summary["updated_mappings"] += 1
+
+    summary["skipped_pos_missing_in_program"] = sorted(
+        list(set(summary["skipped_pos_missing_in_program"]))
+    )
+    return summary

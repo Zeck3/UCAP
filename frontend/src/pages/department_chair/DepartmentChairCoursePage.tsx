@@ -11,7 +11,7 @@ import { useAuth } from "../../context/useAuth";
 import SidePanelComponent from "../../components/SidePanelComponent";
 import DropdownComponent from "../../components/DropDownComponent";
 import UserInputComponent from "../../components/UserInputComponent";
-
+import EvilDog from "../../assets/undraw_page-eaten.svg?react";
 import { getInstructors } from "../../api/dropdownApi";
 import type { Instructor } from "../../types/dropdownTypes";
 import {
@@ -38,6 +38,7 @@ export default function DepartmentChairCoursePage() {
   const [selectedInstructorId, setSelectedInstructorId] = useState<string>("");
   const [instructors, setInstructors] = useState<Instructor[]>([]);
 
+  const [inaccessible, setInaccessible] = useState(false);
   const [courseDetails, setCourseDetails] = useState<BaseCourseDetails | null>(
     null
   );
@@ -57,20 +58,32 @@ export default function DepartmentChairCoursePage() {
   );
   const [sidePanelLoading, setSidePanelLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setInaccessible(false);
 
     (async () => {
       try {
-        const { course_details, sections } = await getSections(
-          Number(loaded_course_id)
-        );
+        if (!loaded_course_id) {
+          if (active) setInaccessible(true);
+          return;
+        }
+
+        const res = await getSections(Number(loaded_course_id));
         if (!active) return;
 
-        setCourseDetails(course_details);
+        if (!res?.course_details) {
+          setInaccessible(true);
+          setCourseDetails(null);
+          setSections([]);
+          return;
+        }
 
-        const mapped: BaseSection[] = sections.map((s) => ({
+        setCourseDetails(res.course_details);
+
+        const mapped: BaseSection[] = res.sections.map((s) => ({
           id: s.section_id,
           section_id: s.section_id,
           year_and_section: s.year_and_section,
@@ -79,7 +92,12 @@ export default function DepartmentChairCoursePage() {
         }));
 
         setSections(mapAndSortSections(mapped));
-      } catch (err) {
+      } catch (err: any) {
+        if (active) {
+          setInaccessible(true);
+          setCourseDetails(null);
+          setSections([]);
+        }
         console.error("Failed to fetch sections or course details:", err);
       } finally {
         if (active) setLoading(false);
@@ -124,12 +142,13 @@ export default function DepartmentChairCoursePage() {
     if (!sections) return [];
 
     const query = searchQuery.toLowerCase();
+    const courseCode = courseDetails?.course_code ?? "";
 
     return sections
       .filter(
         (s) =>
           s.year_and_section.toLowerCase().includes(query) ||
-          s.instructor_assigned.toLowerCase().includes(query)
+          (s.instructor_assigned ?? "").toLowerCase().includes(query)
       )
       .map((s) => ({
         id: s.section_id,
@@ -137,8 +156,11 @@ export default function DepartmentChairCoursePage() {
         year_and_section: s.year_and_section,
         instructor_assigned: s.instructor_assigned,
         instructor_id: s.instructor_id ?? null,
+        course_and_section: courseCode
+          ? `${courseCode} - ${s.year_and_section}`
+          : s.year_and_section,
       }));
-  }, [sections, searchQuery]);
+  }, [sections, searchQuery, courseDetails?.course_code]);
 
   const instructorOptions = instructors.map((inst) => ({
     label:
@@ -254,6 +276,26 @@ export default function DepartmentChairCoursePage() {
     return <div>Loading course details...</div>;
   }
 
+  if (!loading && inaccessible) {
+    return (
+      <AppLayout activeItem={`/department/${departmentId ?? department_id}`}>
+        <div className="flex flex-col gap-4 justify-center items-center pt-16">
+          <EvilDog />
+          <span className="text-[#C6C6C6] text-center">
+            Course not found or you are not allowed to access this loaded
+            course.
+          </span>
+          <button
+            onClick={() => navigate(`/department/${departmentId}`)}
+            className="bg-ucap-yellow bg-ucap-yellow-hover text-white px-6 py-2.5 rounded-full cursor-pointer transition text-base"
+          >
+            Go Back
+          </button>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout activeItem={`/department/${department_id}`}>
       <InfoComponent
@@ -293,7 +335,7 @@ export default function DepartmentChairCoursePage() {
           emptyImageSrc={emptyImage}
           emptyMessage="No Sections Available!"
           aspectRatio="20/9"
-          fieldTop={(section) => section.year_and_section}
+          fieldTop="course_and_section"
           title={(section) => section.instructor_assigned}
           subtitle={() => "Instructor Assigned"}
           onDelete={(section) => handleDelete(Number(section))}
@@ -310,7 +352,7 @@ export default function DepartmentChairCoursePage() {
           emptyImageSrc={emptyImage}
           emptyMessage="No Sections Available!"
           columns={[
-            { key: "year_and_section", label: "Section" },
+            { key: "course_and_section", label: "Course & Section" },
             { key: "instructor_assigned", label: "Instructor Assigned" },
           ]}
           onEdit={(id) => {
@@ -340,6 +382,7 @@ export default function DepartmentChairCoursePage() {
           onChange={handlesInputChange}
           loading={sidePanelLoading}
           onClearError={handleClearError}
+          maxLength={255}
         />
         <DropdownComponent
           label="Instructor Assigned"

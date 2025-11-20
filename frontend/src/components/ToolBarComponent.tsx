@@ -38,6 +38,10 @@ export default function ToolBarComponent({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // NEW: mobile search state
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
+
   const activeOption = titleOptions.find((opt) => opt.value === activeTitle);
 
   useEffect(() => {
@@ -52,7 +56,14 @@ export default function ToolBarComponent({
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [dropdownRef]);
+  }, []);
+
+  // Focus mobile search input when opened
+  useEffect(() => {
+    if (mobileSearchOpen && mobileSearchInputRef.current) {
+      mobileSearchInputRef.current.focus();
+    }
+  }, [mobileSearchOpen]);
 
   const options = [
     { value: "cards", label: "Cards", icon: <CardsIcon className="h-4 w-4" /> },
@@ -61,9 +72,16 @@ export default function ToolBarComponent({
 
   const selectedOption = options.find((o) => o.value === layout);
 
+  const handleCloseMobileSearch = () => {
+    setMobileSearchOpen(false);
+    // Optional: clear search when closing mobile search
+    onSearch?.("");
+  };
+
   return (
     <div className="flex flex-col gap-4 sticky top-0 z-30 bg-white">
       <div className="flex flex-row items-center mt-6">
+        {/* Left side: titles */}
         <div className="flex items-center gap-4 flex-1">
           <div className="flex items-center gap-8">
             {titleOptions.map((opt) => {
@@ -101,13 +119,15 @@ export default function ToolBarComponent({
           </div>
         </div>
 
+        {/* Right side: search / layout / button */}
         <div className="h-11 flex flex-row gap-5 items-center">
+          {/* Desktop / large search input (md and up) */}
           {activeOption?.enableSearch && (
-            <div className="relative flex-1">
+            <div className="relative flex-1 hidden md:block">
               <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-auto" />
               <input
                 type="text"
-                id="search"
+                id="search-desktop"
                 name="search"
                 placeholder="Search"
                 onChange={(e) => onSearch?.(e.target.value)}
@@ -116,8 +136,60 @@ export default function ToolBarComponent({
             </div>
           )}
 
+          {/* Mobile / small: search icon + expanded search mode */}
+          {activeOption?.enableSearch && (
+            <div className="flex md:hidden items-center gap-3">
+              {/* When mobile search is not open: show icon (and optionally layout/button) */}
+              {!mobileSearchOpen && (
+                <>
+                  {/* Search icon only on small screens */}
+                  <button
+                    type="button"
+                    className="flex items-center justify-center p-2 rounded-full hover:bg-gray-100 cursor-pointer"
+                    onClick={() => setMobileSearchOpen(true)}
+                    aria-label="Open search"
+                  >
+                    <SearchIcon className="h-5 w-5" />
+                  </button>
+                </>
+              )}
+
+              {/* When mobile search is open: show full-width search, hide other controls */}
+              {mobileSearchOpen && (
+                <div className="flex items-center gap-2 w-full">
+                  <div className="relative flex-1">
+                    <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-auto" />
+                    <input
+                      ref={mobileSearchInputRef}
+                      type="text"
+                      id="search-mobile"
+                      name="search-mobile"
+                      placeholder="Search"
+                      onChange={(e) => onSearch?.(e.target.value)}
+                      className="pl-12 pr-4 py-2 text-base border border-[#E9E6E6] rounded-full w-full"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="text-sm text-[#767676]"
+                    onClick={handleCloseMobileSearch}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Layout toggle: visible normally; hidden on mobile while search overlay is open */}
           {activeOption?.enableLayout && (
-            <div className="relative w-32" ref={dropdownRef}>
+            <div
+              className={`
+                relative w-32
+                ${mobileSearchOpen ? "hidden md:block" : ""}
+              `}
+              ref={dropdownRef}
+            >
               <button
                 className="flex items-center justify-between w-full px-3 py-2 border border-[#E9E6E6] rounded-lg bg-white"
                 onClick={() => setIsOpen((prev) => !prev)}
@@ -155,10 +227,14 @@ export default function ToolBarComponent({
             </div>
           )}
 
+          {/* Button: visible normally; hidden on mobile while search overlay is open */}
           {activeOption?.enableButton && (
             <button
               onClick={onButtonClick}
-              className="bg-ucap-yellow bg-ucap-yellow-hover text-white px-4 py-2 border border-[#FCB315] rounded-full cursor-pointer transition text-base flex items-center gap-2"
+              className={`
+                bg-ucap-yellow bg-ucap-yellow-hover text-white px-4 py-2 border border-[#FCB315] rounded-full cursor-pointer transition text-base flex items-center gap-2
+                ${mobileSearchOpen ? "hidden md:flex" : ""}
+              `}
             >
               {buttonIcon && <span className="h-5">{buttonIcon}</span>}
               <span>{buttonLabel}</span>
@@ -166,6 +242,7 @@ export default function ToolBarComponent({
           )}
         </div>
       </div>
+
       <hr className="text-[#E9E6E6] rounded" />
     </div>
   );

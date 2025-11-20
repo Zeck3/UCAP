@@ -57,7 +57,7 @@ export default function SettingsPopup({
 
   return createPortal(
     <div
-      className="fixed w-52 bg-white border border-[#E9E6E6] rounded-lg shadow-md"
+      className="fixed w-52 bg-white border border-[#E9E6E6] rounded-lg shadow-sm"
       style={{ top: y, left: x, zIndex: 4000 }}
     >
       {onAdd && (
@@ -65,7 +65,7 @@ export default function SettingsPopup({
           type="button"
           onClick={handleAdd}
           onMouseDown={(e) => e.stopPropagation()}
-          className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-sm w-full"
+          className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-50 text-sm w-full"
         >
           <AddIcon className="h-5 w-5 ml-4 mr-2 text-[#767676]" />
           <span>{addLabel}</span>
@@ -76,7 +76,7 @@ export default function SettingsPopup({
           type="button"
           onClick={handleDelete}
           onMouseDown={(e) => e.stopPropagation()}
-          className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-100 text-sm text-red-400 w-full"
+          className="flex items-center gap-2 py-2 cursor-pointer rounded-lg transition hover:bg-gray-50 text-sm text-red-400 w-full"
         >
           <DeleteIcon className="h-5 w-5 ml-4 mr-2" />
           <span>{deleteLabel}</span>

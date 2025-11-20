@@ -1,7 +1,7 @@
 import KebabIcon from "../assets/ellipsis-vertical-solid.svg?react";
 import EditIcon from "../assets/customize.svg?react";
 import DeleteIcon from "../assets/trash-solid.svg?react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import ChevronRight from "../assets/chevron-right-solid.svg?react";
 import ChevronLeft from "../assets/chevron-left-solid.svg?react";
 
@@ -41,8 +41,6 @@ export default function CardsGridComponent<T extends { id: string | number }>({
   disableEdit = false,
 }: CardsGridProps<T>) {
   const [openMenuId, setOpenMenuId] = useState<string | number | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -60,16 +58,21 @@ export default function CardsGridComponent<T extends { id: string | number }>({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      const insideAction = target.closest('[data-action-menu="true"]');
+      if (!insideAction) {
         setOpenMenuId(null);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+
+    if (openMenuId !== null) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [openMenuId]);
 
   if (loading) {
     const skeletons = Array.from({ length: skeletonCard }, (_, i) => i);
@@ -159,12 +162,15 @@ export default function CardsGridComponent<T extends { id: string | number }>({
               </div>
 
               {enableOption && (
-                <div className="absolute top-2 right-2" ref={dropdownRef}>
+                <div className="absolute top-2 right-2" data-action-menu="true">
                   <button
                     className="w-8 h-8 flex items-center justify-center rounded-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setOpenMenuId(openMenuId === item.id ? null : item.id);
+                      // toggle: clicking same button closes the menu
+                      setOpenMenuId((prev) =>
+                        prev === item.id ? null : item.id
+                      );
                     }}
                   >
                     <span className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:bg-gray-100 hover:text-[#767676] cursor-pointer">
@@ -174,8 +180,8 @@ export default function CardsGridComponent<T extends { id: string | number }>({
 
                   {openMenuId === item.id && (
                     <div
-                      ref={dropdownRef}
                       className="absolute right-0 top-10 w-40 bg-white border border-[#E9E6E6] rounded-lg z-20"
+                      data-action-menu="true"
                     >
                       {!disableEdit && (
                         <button

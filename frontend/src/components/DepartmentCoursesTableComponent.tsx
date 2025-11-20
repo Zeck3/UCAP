@@ -27,6 +27,8 @@ export default function DepartmentCoursesTableComponent({
     }
   }, [error, onClearError]);
 
+  const hasError = Boolean(error);
+
   const groupedData = useMemo(() => {
     if (!courses || courses.length === 0) return {};
 
@@ -134,9 +136,11 @@ export default function DepartmentCoursesTableComponent({
         Program Curriculum Courses<span className="text-red-500 ml-1">*</span>
       </span>
       <div
-        className={`overflow-x-auto w-full border border-[#E9E6E6] rounded-md ${
-          loading ? "opacity-50 cursor-not-allowed select-none" : ""
-        }`}
+        className={`
+          overflow-x-auto w-full rounded-md border transition-colors
+          ${hasError ? "border-red-500" : "border-[#E9E6E6]"}
+          ${loading ? "opacity-50 cursor-not-allowed select-none" : ""}
+        `}
       >
         <table className="min-w-full text-sm text-left border-collapse">
           <thead>
