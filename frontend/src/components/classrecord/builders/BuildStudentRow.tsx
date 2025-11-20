@@ -396,6 +396,7 @@ export default memo(BuildStudentRow, (prev, next) => {
     prev.student.student_id === next.student.student_id &&
     prev.student.student_name === next.student.student_name &&
     prev.student.id_number === next.student.id_number &&
+    prev.index === next.index &&
     shallowEqualNumberRecord(prev.studentScore, next.studentScore) &&
     shallowEqualNumberRecord(prev.maxScores, next.maxScores) &&
     prev.studentNameWidth === next.studentNameWidth &&

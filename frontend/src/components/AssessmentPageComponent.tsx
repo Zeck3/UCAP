@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import type { JSX } from "react";
 import type { AssessmentPageData } from "../types/assessmentPageTypes";
 import { getAssessmentPageData } from "../api/assessmentPageApi";
@@ -6,6 +6,72 @@ import ActionBarComponent from "./ActionBarComponent";
 import SidePanelComponent from "./SidePanelComponent";
 import ErrorPage from "../pages/ErrorPage";
 import PageLoading from "../pages/PageLoading";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
+const OVERVIEW_CHART_MARGIN = { top: 10, right: 0, left: 10, bottom: 0 } as const;
+const X_TICK_PROPS = { fontSize: 12 } as const;
+const TOOLTIP_STYLE = { color: "#505050" } as const;
+
+type OverviewChartDatum = {
+  outcome: string;
+  achievedCount: number;
+  notAchievedCount: number;
+};
+
+const OverviewChart = memo(function OverviewChart({
+  data,
+  studentCount,
+}: {
+  data: OverviewChartDatum[];
+  studentCount: number;
+}): JSX.Element {
+  return (
+    <div className="mt-8">
+      <h4 className="text-md mb-3">Overview</h4>
+      <div className="[&_*]:outline-none">
+        <ResponsiveContainer width="100%" height={425}>
+          <BarChart data={data} margin={OVERVIEW_CHART_MARGIN}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="outcome"
+              height={60}
+              interval={0}
+              tick={X_TICK_PROPS}
+              tickFormatter={(value: string) => {
+                const maxLength = 20;
+                if (value.length > maxLength) {
+                  return value.substring(0, maxLength) + "...";
+                }
+                return value;
+              }}
+            />
+            <YAxis
+              label={{
+                value: "Number of Students",
+                angle: -90,
+                position: "insideLeft",
+                style: { textAnchor: "middle" },
+              }}
+              allowDecimals={false}
+              domain={[0, studentCount]}
+            />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_STYLE} />
+            <Bar dataKey="achievedCount" fill="#B6E2A1" name="Achieved" />
+            <Bar dataKey="notAchievedCount" fill="#F7A4A4" name="Not Achieved" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+});
 
 const bloomOrder = [
   "Remember",
@@ -198,7 +264,8 @@ export default function AssessmentPageComponent({
         const filteredStudents = response.students.filter((student) => {
           const hasValidId = student.id && /^\d{10}$/.test(student.id);
           const hasValidName = student.name?.trim().length > 0;
-          return hasValidId && hasValidName;
+          const hasNoRemarks = !student.remarks || student.remarks.trim() === "";
+          return hasValidId && hasValidName && hasNoRemarks;
         });
 
         setData({ ...response, students: filteredStudents });
@@ -352,6 +419,8 @@ export default function AssessmentPageComponent({
         outcome: co.name,
         achieved: `${achieved} (${pctAch}%)`,
         notAchieved: `${notAchieved} (${pctNot}%)`,
+        achievedCount: achieved,
+        notAchievedCount: notAchieved,
       };
     });
   }, [layout, coTotalsMemo, studentCount, data]);
@@ -695,12 +764,12 @@ export default function AssessmentPageComponent({
                         />,
                         ...(sIdx === 0
                           ? [
-                              <td
-                                key={`student-pass80-${pIdx}-${cIdx}`}
-                                className="border border-[#E9E6E6] px-2 py-2 text-center"
-                                rowSpan={studentCount}
-                              />,
-                            ]
+                            <td
+                              key={`student-pass80-${pIdx}-${cIdx}`}
+                              className="border border-[#E9E6E6] px-2 py-2 text-center"
+                              rowSpan={studentCount}
+                            />,
+                          ]
                           : [])
                       );
                     }
@@ -718,7 +787,7 @@ export default function AssessmentPageComponent({
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         panelFunction="Analytics"
-        onSubmit={() => {}}
+        onSubmit={() => { }}
         buttonFunction=""
         disableInputs={false}
         disableActions={true}
@@ -749,6 +818,64 @@ export default function AssessmentPageComponent({
                     <td className="px-2 py-2">{row.notAchieved}</td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+
+          <OverviewChart data={coAnalytics} studentCount={studentCount} />
+
+          <h3 className="text-md mb-3">Remarks</h3>
+          <div className="overflow-x-auto border border-[#E9E6E6] rounded-lg">
+            <table className="table-auto w-full border-collapse ">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className=" px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">
+                    Outcome
+                  </th>
+                  <th className=" px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">
+                    Result
+                  </th>
+                  <th className=" px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">
+                    Suggestions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {coAnalytics.map((row, idx) => {
+                  const pass70Threshold = coTotalsMemo[idx].pass70;
+                  const pass70Count = (data?.students ?? []).filter((s) => {
+                    const scores = s.scores[row.outcome] ?? [];
+                    const total = scores.reduce((sum, sc) => sum + (sc?.raw ?? 0), 0);
+                    return total >= pass70Threshold;
+                  }).length;
+                  const pass80Count = coTotalsMemo[idx].pass80Count;
+                  const isAchieved = pass70Count >= pass80Count;
+
+                  const kpiPercentage = pass80Count > 0 ? (pass70Count / pass80Count) * 100 : 0;
+
+                  let suggestion = "None.";
+                  if (!isAchieved) {
+                    if (kpiPercentage >= 70 && kpiPercentage <= 79) {
+                      suggestion = "Assessments may need to be adjusted.";
+                    } else if (kpiPercentage < 70) {
+                      suggestion = "Needs intervention.";
+                    }
+                  }
+
+                  return (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="px-2 py-2">{row.outcome}</td>
+                      <td className="px-2 py-2">
+                        {isAchieved ? (
+                          <span className="font-medium">Achieved</span>
+                        ) : (
+                          <span className="text-red-500 font-medium">Not Achieved</span>
+                        )}
+                      </td>
+                      <td className="px-2 py-2">{suggestion}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

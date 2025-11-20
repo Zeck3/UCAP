@@ -176,6 +176,7 @@ function BuildHeaderRow({
           onClick={
             node.nodeType === "assessment" ? handleNodeClick(node) : undefined
           }
+          tabIndex={node.nodeType === "assessment" ? 0 : undefined}
           style={{
             height: level === 3 ? leafRowHeight : "auto",
             maxHeight: level === 3 ? leafRowHeight : "none",

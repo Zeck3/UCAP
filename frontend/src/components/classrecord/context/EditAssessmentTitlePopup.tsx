@@ -15,12 +15,22 @@ interface EditAssessmentTitlePopupProps {
   handleEditCancel: () => void;
 }
 
+let portalContainer: HTMLDivElement | null = null;
+
+function getPortalContainer() {
+  if (!portalContainer) {
+    portalContainer = document.createElement("div");
+    document.body.appendChild(portalContainer);
+  }
+  return portalContainer;
+}
+
 export default function EditAssessmentTitlePopup({
   editingAssessment,
   handleEditSave,
   handleEditCancel,
 }: EditAssessmentTitlePopupProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(getPortalContainer());
   const popupContentRef = useRef<HTMLDivElement | null>(null);
 
   const [inputValue, setInputValue] = useState(editingAssessment?.value || "");
@@ -28,18 +38,6 @@ export default function EditAssessmentTitlePopup({
   const activeKeyRef = useRef<string | null>(null);
  
   const hasSavedRef = useRef(false);
-
-  useEffect(() => {
-    const portalNode = document.createElement("div");
-    document.body.appendChild(portalNode);
-    containerRef.current = portalNode;
-
-    return () => {
-      if (portalNode.parentNode) {
-        portalNode.parentNode.removeChild(portalNode);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (editingAssessment) {
@@ -61,6 +59,43 @@ export default function EditAssessmentTitlePopup({
     handleEditSave(key, inputValue);
   }, [inputValue, handleEditSave]);
 
+  const handleBlur = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      const relatedTarget = e.relatedTarget as HTMLElement | null;
+      if (relatedTarget?.classList.contains('assessment-col')) {
+        return;
+      }
+      handleLocalSave();
+    },
+    [handleLocalSave]
+  );
+
+  useEffect(() => {
+    if (!editingAssessment) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      
+      if (popupContentRef.current?.contains(target)) {
+        return;
+      }
+
+      if (target.classList.contains('assessment-col') || target.closest('.assessment-col')) {
+        return;
+      }
+
+      handleLocalSave();
+    };
+
+    setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [editingAssessment, handleLocalSave]);
+
   if (!editingAssessment || !containerRef.current) return null;
 
   return createPortal(
@@ -80,7 +115,7 @@ export default function EditAssessmentTitlePopup({
         type="text"
         value={inputValue}
         autoFocus
-        onBlur={handleLocalSave}
+        onBlur={handleBlur}
         className="border-none outline-none p-2 px-4 rounded w-full"
         onChange={(e) => setInputValue(e.target.value)}
         onMouseDown={(e) => {

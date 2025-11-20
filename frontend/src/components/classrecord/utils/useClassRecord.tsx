@@ -74,7 +74,6 @@ export function useClassRecord() {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [canOpenPopup, setCanOpenPopup] = useState<boolean>(true);
   const [editingAssessment, setEditingAssessment] = useState<{
     nodeKey: string;
     value: string;
@@ -164,15 +163,22 @@ export function useClassRecord() {
         (c) => c.nodeType !== "assessment"
       );
 
-      const totalScoreNodeIndex = otherNodes.findIndex(
+      const updatedOtherNodes = otherNodes.map((c) => {
+        if (c.calculationType === "sum" || c.calculationType === "percentage") {
+          return { ...c, groupKeys: assessmentKeys };
+        }
+        return c;
+      });
+
+      const totalScoreNodeIndex = updatedOtherNodes.findIndex(
         (c) => c.title === "Total Score"
       );
-      let totalScoreNode: HeaderNode | undefined = undefined;
 
+      let totalScoreNode: HeaderNode | undefined = undefined;
       if (assessmentKeys.length > 1) {
         totalScoreNode =
           totalScoreNodeIndex !== -1
-            ? otherNodes[totalScoreNodeIndex]
+            ? updatedOtherNodes[totalScoreNodeIndex]
             : {
                 title: "Total Score",
                 key: `total-${node.title}`,
@@ -181,13 +187,6 @@ export function useClassRecord() {
                 groupKeys: assessmentKeys,
               };
       }
-
-      const updatedOtherNodes = otherNodes.map((c) => {
-        if (c.calculationType === "sum" || c.calculationType === "percentage") {
-          return { ...c, groupKeys: assessmentKeys };
-        }
-        return c;
-      });
 
       const finalChildren = [
         ...assessmentNodes,
@@ -530,7 +529,7 @@ export function useClassRecord() {
         needsButton: true,
         maxScore: newAssessment.assessment_highest_score ?? 0,
         termType: parentTermType,
-        componentId, // keep this if you need it later
+        componentId,
       };
 
       setClassRecord((prev) => {
@@ -701,9 +700,6 @@ export function useClassRecord() {
 
   const handleEditAssessmentTitle = useCallback(
     (node: HeaderNode, event: React.MouseEvent<HTMLElement>) => {
-      if (!canOpenPopup) return;
-      setCanOpenPopup(false);
-
       const target = event.currentTarget as HTMLElement;
       const rect = target.getBoundingClientRect();
 
@@ -718,23 +714,12 @@ export function useClassRecord() {
 
       setEditingAssessment((prev) => {
         if (prev && prev.nodeKey === node.key) {
-          setCanOpenPopup(true);
           return prev;
         }
-
-        if (prev && prev.nodeKey !== node.key) {
-          requestAnimationFrame(() => {
-            setEditingAssessment(editAssessmentState);
-          });
-          return null;
-        }
-
         return editAssessmentState;
       });
-
-      setTimeout(() => setCanOpenPopup(true), 100);
     },
-    [canOpenPopup]
+    []
   );
 
   const handleUpdateAssessmentTitle = useCallback(
@@ -814,7 +799,6 @@ export function useClassRecord() {
                           assessmentInfoContextMenu.assessmentId === assessmentId;
 
       if (shouldClose) {
-        // Close the menu
         setAssessmentInfoContextMenu({
           visible: false,
           x: 0,
@@ -822,7 +806,6 @@ export function useClassRecord() {
           assessmentId: undefined,
         });
       } else {
-        // Open the menu and update blooms/outcomes
         setAssessmentInfoContextMenu({
           visible: true,
           x: rect.left - 1,
