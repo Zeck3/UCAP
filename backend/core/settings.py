@@ -33,6 +33,8 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]
 CSRF_TRUSTED_ORIGINS = ["http://localhost:5173"]
+CORS_ALLOWED_ORIGINS = ["http://localhost:4173"]
+CSRF_TRUSTED_ORIGINS = ["http://localhost:4173"]
 CORS_ALLOW_CREDENTIALS = True
 
 AUTH_USER_MODEL = "ucap_backend.User"
