@@ -10,6 +10,7 @@ DEBUG = os.environ.get("DEBUG", "False") == "True"
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
+    "ucap-production.up.railway.app",
 ]
 
 INSTALLED_APPS = [
@@ -42,13 +43,15 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:4173",
-    "https://ucap-frontend-production.up.railway.app"
+    "https://ucap-frontend-production.up.railway.app",
+    "https://ucap-production.up.railway.app",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:4173",
-    "https://ucap-frontend-production.up.railway.app"
+    "https://ucap-frontend-production.up.railway.app",
+    "https://ucap-production.up.railway.app",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
