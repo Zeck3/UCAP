@@ -43,13 +43,13 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:4173",
-    "https://ucap-frontend-production.up.railway.app/"
+    "https://ucap-frontend-production.up.railway.app"
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:4173",
-    "https://ucap-frontend-production.up.railway.app/"
+    "https://ucap-frontend-production.up.railway.app"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
