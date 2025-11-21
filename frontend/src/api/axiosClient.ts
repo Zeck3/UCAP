@@ -3,16 +3,7 @@ import axios, { AxiosError } from "axios";
 const axiosClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
-});
-
-axiosClient.interceptors.request.use((config) => {
-  const m = (config.method ?? "get").toLowerCase();
-  if (["post", "put", "patch", "delete"].includes(m)) {
-    config.headers["Content-Type"] = "application/json";
-  } else {
-    delete config.headers["Content-Type"];
-  }
-  return config;
+  headers: { "Content-Type": "application/json" },
 });
 
 axiosClient.defaults.withCredentials = true;
