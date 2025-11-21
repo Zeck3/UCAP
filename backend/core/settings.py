@@ -1,4 +1,7 @@
+from pathlib import Path
 import os
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "dummy"
 DEBUG = True
@@ -8,7 +11,7 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.staticfiles",
-    'django.contrib.sessions', 
+    "django.contrib.sessions",
     "corsheaders",
     "ucap_backend",
     "rest_framework",
@@ -55,3 +58,4 @@ DATABASES = {
 }
 
 STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
