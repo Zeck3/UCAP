@@ -4,13 +4,13 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "dummy")
-
+BACKEND_DOMAIN = os.environ.get("BACKEND_DOMAIN", "ucap-production.up.railway.app")
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
-    "ucap-production.up.railway.app",
+    BACKEND_DOMAIN,
 ]
 
 INSTALLED_APPS = [
