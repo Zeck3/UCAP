@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from ucap_backend.models import Department
 from ucap_backend.serializers.user import CurrentUserSerializer, UserDepartmentSerializer
+from django.middleware.csrf import get_token
 
 # ====================================================
 # Login Authentication
@@ -15,6 +16,7 @@ from ucap_backend.serializers.user import CurrentUserSerializer, UserDepartmentS
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def csrf_token_view(request):
+    get_token(request)
     return JsonResponse({"detail": "CSRF cookie set"})
 
 @api_view(["POST"])
