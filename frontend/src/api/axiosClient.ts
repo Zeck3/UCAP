@@ -10,9 +10,6 @@ axiosClient.defaults.withCredentials = true;
 axiosClient.defaults.withXSRFToken = true;
 axiosClient.defaults.xsrfCookieName = "csrftoken";
 axiosClient.defaults.xsrfHeaderName = "X-CSRFToken";
-SESSION_COOKIE_SAMESITE = None
-CSRF_COOKIE_SAMESITE = None
-
 
 axiosClient.interceptors.response.use(
   (response) => response,
