@@ -11,6 +11,8 @@ ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
     BACKEND_DOMAIN,
+    ".up.railway.app",
+    ".railway.app",
 ]
 
 INSTALLED_APPS = [
