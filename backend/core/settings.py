@@ -5,7 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY", "dummy")
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = ["ucap-backend-production.up.railway.app"]
+ALLOWED_HOSTS = ["ucap-frontend-production.up.railway.app", "ucap-backend-production.up.railway.app"]
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -44,11 +44,8 @@ AUTH_USER_MODEL = "ucap_backend.User"
 ROOT_URLCONF = "core.urls"
 WSGI_APPLICATION = "core.wsgi.application"
 
-SESSION_COOKIE_DOMAIN = ".up.railway.app"
-CSRF_COOKIE_DOMAIN = ".up.railway.app"
-
-SESSION_COOKIE_SAMESITE = "None"
-CSRF_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True

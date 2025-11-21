@@ -3,14 +3,22 @@ import axios, { AxiosError } from "axios";
 const axiosClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
-  headers: { "Content-Type": "application/json" },
+});
+
+axiosClient.interceptors.request.use((config) => {
+  const m = (config.method ?? "get").toLowerCase();
+  if (["post", "put", "patch", "delete"].includes(m)) {
+    config.headers["Content-Type"] = "application/json";
+  } else {
+    delete config.headers["Content-Type"];
+  }
+  return config;
 });
 
 axiosClient.defaults.withCredentials = true;
 axiosClient.defaults.withXSRFToken = true;
 axiosClient.defaults.xsrfCookieName = "csrftoken";
 axiosClient.defaults.xsrfHeaderName = "X-CSRFToken";
-
 
 axiosClient.interceptors.response.use(
   (response) => response,
