@@ -7,13 +7,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "dummy")
 BACKEND_DOMAIN = os.environ.get("BACKEND_DOMAIN", "ucap-production.up.railway.app")
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    BACKEND_DOMAIN,
-    ".up.railway.app",
-    ".railway.app",
-]
+ALLOWED_HOSTS = [BACKEND_DOMAIN]
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -42,19 +36,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:4173",
-    "https://ucap-frontend-production.up.railway.app",
-    "https://ucap-production.up.railway.app",
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:4173",
-    "https://ucap-frontend-production.up.railway.app",
-    "https://ucap-production.up.railway.app",
-]
+CORS_ALLOWED_ORIGINS = ["https://ucap-frontend-production.up.railway.app"]
+CSRF_TRUSTED_ORIGINS = ["https://ucap-frontend-production.up.railway.app"]
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -63,15 +46,8 @@ AUTH_USER_MODEL = "ucap_backend.User"
 ROOT_URLCONF = "core.urls"
 WSGI_APPLICATION = "core.wsgi.application"
 
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-USE_X_FORWARDED_HOST = True
-
 SESSION_COOKIE_AGE = 900
 SESSION_SAVE_EVERY_REQUEST = True
-
-if not DEBUG:
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
 
 DATABASES = {
     "default": {
