@@ -10,7 +10,6 @@ DEBUG = os.environ.get("DEBUG", "False") == "True"
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
-    "ucap-production.up.railway.app",
 ]
 
 INSTALLED_APPS = [
