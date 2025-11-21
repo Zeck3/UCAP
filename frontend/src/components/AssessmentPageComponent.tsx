@@ -793,37 +793,9 @@ export default function AssessmentPageComponent({
         disableActions={true}
         singleColumn={true}
       >
-        <div className="w-full">
-          <h3 className="text-md mb-3">Course Outcome Attainment</h3>
-          <div className="overflow-x-auto border border-[#E9E6E6] rounded-lg">
-            <table className="table-auto w-full border-collapse ">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className=" px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">
-                    Outcome
-                  </th>
-                  <th className=" px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">
-                    No. of Students Achieved
-                  </th>
-                  <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">
-                    No. of Students Not Achieved
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {coAnalytics.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50">
-                    <td className="px-2 py-2">{row.outcome}</td>
-                    <td className="px-2 py-2">{row.achieved}</td>
-                    <td className="px-2 py-2">{row.notAchieved}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mt-8">
-            <h3 className="text-md mb-3">Remarks</h3>
+        <div className="w-full h-full flex flex-col">
+          <div className="flex-grow">
+            <h3 className="text-md mb-3">Course Outcome Attainment</h3>
             <div className="overflow-x-auto border border-[#E9E6E6] rounded-lg">
               <table className="table-auto w-full border-collapse ">
                 <thead>
@@ -832,40 +804,33 @@ export default function AssessmentPageComponent({
                       Outcome
                     </th>
                     <th className=" px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">
-                      Result
+                      No. of Students Achieved
+                    </th>
+                    <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">
+                      No. of Students Not Achieved
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {coAnalytics.map((row, idx) => {
-                    const pass70Threshold = coTotalsMemo[idx].pass70;
-                    const pass70Count = (data?.students ?? []).filter((s) => {
-                      const scores = s.scores[row.outcome] ?? [];
-                      const total = scores.reduce((sum, sc) => sum + (sc?.raw ?? 0), 0);
-                      return total >= pass70Threshold;
-                    }).length;
-                    const pass80Count = coTotalsMemo[idx].pass80Count;
-                    const isAchieved = pass70Count >= pass80Count;
-
-                    return (
-                      <tr key={idx} className="hover:bg-gray-50">
-                        <td className="px-2 py-2">{row.outcome}</td>
-                        <td className="px-2 py-2">
-                          {isAchieved ? (
-                            <span className="font-medium">Achieved</span>
-                          ) : (
-                            <span className="text-red-500 font-medium">Not Achieved</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {coAnalytics.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="px-2 py-2">{row.outcome}</td>
+                      <td className="px-2 py-2">{row.achieved}</td>
+                      <td className="px-2 py-2">{row.notAchieved}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
+
+            <OverviewChart data={coAnalytics} studentCount={studentCount} />
           </div>
 
-          <OverviewChart data={coAnalytics} studentCount={studentCount} />
+          <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-gray-700 leading-relaxed">
+              <strong>Note:</strong> This information provides an overview of student attainment of the course outcomes. If a significant number of students fail to achieve the course outcomes (COs), interventions may be required, such as revisions to the course syllabus content, enhancements to assessment methods, or other appropriate measures.
+            </p>
+          </div>
         </div>
       </SidePanelComponent>
     </>
