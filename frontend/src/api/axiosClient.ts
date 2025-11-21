@@ -5,7 +5,6 @@ const axiosClient = axios.create({
   withCredentials: true
 });
 
-axiosClient.defaults.withCredentials = true;
 axiosClient.defaults.withXSRFToken = true;
 axiosClient.defaults.xsrfCookieName = "csrftoken";
 axiosClient.defaults.xsrfHeaderName = "X-CSRFToken";
