@@ -7,16 +7,11 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "dummy")
 
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-RAILWAY_BACKEND_DOMAIN = os.environ.get("BACKEND_DOMAIN", "")
-RAILWAY_FRONTEND_DOMAIN = os.environ.get("FRONTEND_DOMAIN", "")
-
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
+    "ucap-production.up.railway.app",
 ]
-
-if RAILWAY_BACKEND_DOMAIN:
-    ALLOWED_HOSTS.append(RAILWAY_BACKEND_DOMAIN)
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -48,16 +43,14 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:4173",
+    "https://ucap-frontend-production.up.railway.app/"
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:4173",
+    "https://ucap-frontend-production.up.railway.app/"
 ]
-
-if RAILWAY_FRONTEND_DOMAIN:
-    CORS_ALLOWED_ORIGINS.append(f"https://{RAILWAY_FRONTEND_DOMAIN}")
-    CSRF_TRUSTED_ORIGINS.append(f"https://{RAILWAY_FRONTEND_DOMAIN}")
 
 CORS_ALLOW_CREDENTIALS = True
 
