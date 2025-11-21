@@ -3,9 +3,20 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "dummy"
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
+SECRET_KEY = os.environ.get("SECRET_KEY", "dummy")
+
+DEBUG = os.environ.get("DEBUG", "False") == "True"
+
+RAILWAY_BACKEND_DOMAIN = os.environ.get("BACKEND_DOMAIN", "")
+RAILWAY_FRONTEND_DOMAIN = os.environ.get("FRONTEND_DOMAIN", "")
+
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+]
+
+if RAILWAY_BACKEND_DOMAIN:
+    ALLOWED_HOSTS.append(RAILWAY_BACKEND_DOMAIN)
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -34,8 +45,20 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
 ]
 
-CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]
-CSRF_TRUSTED_ORIGINS = ["http://localhost:5173"]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:4173",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:4173",
+]
+
+if RAILWAY_FRONTEND_DOMAIN:
+    CORS_ALLOWED_ORIGINS.append(f"https://{RAILWAY_FRONTEND_DOMAIN}")
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RAILWAY_FRONTEND_DOMAIN}")
+
 CORS_ALLOW_CREDENTIALS = True
 
 AUTH_USER_MODEL = "ucap_backend.User"
@@ -46,14 +69,18 @@ WSGI_APPLICATION = "core.wsgi.application"
 SESSION_COOKIE_AGE = 900
 SESSION_SAVE_EVERY_REQUEST = True
 
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME"),
-        "USER": os.environ.get("DB_USER"),
-        "PASSWORD": os.environ.get("DB_PASSWORD"),
-        "HOST": os.environ.get("DB_HOST"),
-        "PORT": os.environ.get("DB_PORT"),
+        "NAME": os.environ.get("PGDATABASE"),
+        "USER": os.environ.get("PGUSER"),
+        "PASSWORD": os.environ.get("PGPASSWORD"),
+        "HOST": os.environ.get("PGHOST"),
+        "PORT": os.environ.get("PGPORT"),
     }
 }
 
