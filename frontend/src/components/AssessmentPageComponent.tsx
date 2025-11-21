@@ -822,63 +822,50 @@ export default function AssessmentPageComponent({
             </table>
           </div>
 
-          <OverviewChart data={coAnalytics} studentCount={studentCount} />
+          <div className="mt-8">
+            <h3 className="text-md mb-3">Remarks</h3>
+            <div className="overflow-x-auto border border-[#E9E6E6] rounded-lg">
+              <table className="table-auto w-full border-collapse ">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className=" px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">
+                      Outcome
+                    </th>
+                    <th className=" px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">
+                      Result
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {coAnalytics.map((row, idx) => {
+                    const pass70Threshold = coTotalsMemo[idx].pass70;
+                    const pass70Count = (data?.students ?? []).filter((s) => {
+                      const scores = s.scores[row.outcome] ?? [];
+                      const total = scores.reduce((sum, sc) => sum + (sc?.raw ?? 0), 0);
+                      return total >= pass70Threshold;
+                    }).length;
+                    const pass80Count = coTotalsMemo[idx].pass80Count;
+                    const isAchieved = pass70Count >= pass80Count;
 
-          <h3 className="text-md mb-3">Remarks</h3>
-          <div className="overflow-x-auto border border-[#E9E6E6] rounded-lg">
-            <table className="table-auto w-full border-collapse ">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className=" px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">
-                    Outcome
-                  </th>
-                  <th className=" px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">
-                    Result
-                  </th>
-                  <th className=" px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">
-                    Suggestions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {coAnalytics.map((row, idx) => {
-                  const pass70Threshold = coTotalsMemo[idx].pass70;
-                  const pass70Count = (data?.students ?? []).filter((s) => {
-                    const scores = s.scores[row.outcome] ?? [];
-                    const total = scores.reduce((sum, sc) => sum + (sc?.raw ?? 0), 0);
-                    return total >= pass70Threshold;
-                  }).length;
-                  const pass80Count = coTotalsMemo[idx].pass80Count;
-                  const isAchieved = pass70Count >= pass80Count;
-
-                  const kpiPercentage = pass80Count > 0 ? (pass70Count / pass80Count) * 100 : 0;
-
-                  let suggestion = "None.";
-                  if (!isAchieved) {
-                    if (kpiPercentage >= 70 && kpiPercentage <= 79) {
-                      suggestion = "Assessments may need to be adjusted.";
-                    } else if (kpiPercentage < 70) {
-                      suggestion = "Needs intervention.";
-                    }
-                  }
-
-                  return (
-                    <tr key={idx} className="hover:bg-gray-50">
-                      <td className="px-2 py-2">{row.outcome}</td>
-                      <td className="px-2 py-2">
-                        {isAchieved ? (
-                          <span className="font-medium">Achieved</span>
-                        ) : (
-                          <span className="text-red-500 font-medium">Not Achieved</span>
-                        )}
-                      </td>
-                      <td className="px-2 py-2">{suggestion}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    return (
+                      <tr key={idx} className="hover:bg-gray-50">
+                        <td className="px-2 py-2">{row.outcome}</td>
+                        <td className="px-2 py-2">
+                          {isAchieved ? (
+                            <span className="font-medium">Achieved</span>
+                          ) : (
+                            <span className="text-red-500 font-medium">Not Achieved</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          <OverviewChart data={coAnalytics} studentCount={studentCount} />
         </div>
       </SidePanelComponent>
     </>
