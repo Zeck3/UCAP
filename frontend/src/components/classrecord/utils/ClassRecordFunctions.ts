@@ -171,13 +171,13 @@ export function getTextClass(value: number, type?: string): string {
 }
 
 export function getDesc(g: number): string {
-  if (g > 3.0) return "N/A";
+  if (g > 3.0) return "Failed";
   if (g <= 1.25) return "Excellent";
   if (g <= 1.75) return "Very Good";
   if (g <= 2.25) return "Good";
   if (g <= 2.75) return "Average";
   if (g === 3.0) return "Passing";
-  return "N/A";
+  return "Failed";
 }
 
 export function updateHeaderNodeTitle(

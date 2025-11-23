@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import ClassRecordLoading from "../../pages/ClassRecordLoading";
 import ClassRecordError from "../../pages/ClassRecordError";
@@ -16,6 +16,13 @@ interface Props {
   onProvideFetchStudents?: (fn: () => Promise<void>) => void;
   onCanGenerateResultSheetChange?: (can: boolean) => void;
   onExistingStudentsChange?: (hasExisting: boolean) => void;
+  onProvideExportData?: (fn: () => {
+    headerNodes: any[];
+    students: any[];
+    studentScores: Record<number, Record<string, number>>;
+    maxScores: Record<string, number>;
+    computedValues: Record<number, Record<string, number>>;
+  }) => void;
 }
 
 export default function ClassRecordComponent({
@@ -23,12 +30,15 @@ export default function ClassRecordComponent({
   onProvideFetchStudents,
   onCanGenerateResultSheetChange,
   onExistingStudentsChange,
+  onProvideExportData,
 }: Props) {
   const {
     fetchData,
     headerNodes,
     maxScores,
     setMaxScores,
+    studentScores,
+    computedStudentValues,
     sortedStudentsData,
     computedMaxValues,
     bloomsOptions,
@@ -135,6 +145,20 @@ export default function ClassRecordComponent({
   useEffect(() => {
     onProvideFetchStudents?.(fetchData);
   }, [fetchData, onProvideFetchStudents]);
+
+  const getExportData = useCallback(() => ({
+    headerNodes,
+    students: sortedStudentsData.map(s => s.student),
+    studentScores,
+    maxScores,
+    computedValues: computedStudentValues,
+  }), [headerNodes, sortedStudentsData, studentScores, maxScores, computedStudentValues]);
+
+  useEffect(() => {
+    if (onProvideExportData) {
+      onProvideExportData(getExportData);
+    }
+  }, [getExportData, onProvideExportData]);
 
   useEffect(() => {
     if (onCanGenerateResultSheetChange) {
