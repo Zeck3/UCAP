@@ -39,7 +39,10 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = ["https://ucap-fs.up.railway.app"]
-CSRF_TRUSTED_ORIGINS = ["https://ucap-fs.up.railway.app"]
+CSRF_TRUSTED_ORIGINS = [
+    "https://ucap-fs.up.railway.app",
+    "https://ucap-bs.up.railway.app",
+]
 
 CORS_ALLOW_CREDENTIALS = True
 
