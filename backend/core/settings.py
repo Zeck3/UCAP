@@ -35,6 +35,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+    "core.middleware.cookie_partitioning.CookiePartitioningMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
 ]
 
