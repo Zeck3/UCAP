@@ -9,7 +9,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://ucap-bs.up.railway.app",
+        target: "https://ucap-fs.up.railway.app",
         changeOrigin: true,
         secure: true,
       },
