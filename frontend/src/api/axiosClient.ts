@@ -9,11 +9,6 @@ const axiosClient = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-/**
- * Reads a cookie value by name from document.cookie.
- * @param {string} name - The name of the cookie (e.g., 'csrftoken').
- * @returns {string | null} The decoded cookie value or null.
- */
 function getCookie(name = "csrftoken"): string | null {
     if (document.cookie && document.cookie !== '') {
         const cookies = document.cookie.split(';');
