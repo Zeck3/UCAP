@@ -6,7 +6,6 @@ const axiosClient = axios.create({
   withXSRFToken: true,
   xsrfCookieName: "csrftoken",
   xsrfHeaderName: "X-CSRFToken",
-  headers: { "Content-Type": "application/json" },
 });
 
 // axiosClient.interceptors.response.use(
