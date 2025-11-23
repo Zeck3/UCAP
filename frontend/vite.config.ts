@@ -7,13 +7,12 @@ import svgr from "vite-plugin-svgr";
 export default defineConfig({
   plugins: [react(), tailwindcss(), svgr()],
   server: {
-    host: true,
-    port: 5173,
-    hmr: {
-      clientPort: 5173,
-    },
-    watch: {
-      usePolling: true,
+    proxy: {
+      "/api": {
+        target: "https://ucap-bs.up.railway.app",
+        changeOrigin: true,
+        secure: true,
+      },
     },
   },
 });
