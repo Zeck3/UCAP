@@ -42,19 +42,6 @@ CORS_ALLOWED_ORIGINS = ["https://ucap-fs.up.railway.app"]
 CSRF_TRUSTED_ORIGINS = ["https://ucap-fs.up.railway.app"]
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = [
-    "content-type",
-    "x-csrftoken",
-]
-
-CORS_ALLOW_METHODS = [
-    "GET",
-    "POST",
-    "PUT",
-    "PATCH",
-    "DELETE",
-    "OPTIONS",
-]
 
 AUTH_USER_MODEL = "ucap_backend.User"
 
@@ -71,11 +58,11 @@ CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_PARTITIONED = True
 
-SESSION_COOKIE_AGE = 900
-SESSION_SAVE_EVERY_REQUEST = True
-
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+SESSION_COOKIE_AGE = 900
+SESSION_SAVE_EVERY_REQUEST = True
 
 DATABASES = {
     "default": {
