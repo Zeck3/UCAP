@@ -31,12 +31,15 @@ REST_FRAMEWORK = {
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.vary.VaryMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
 ]
+
+CORS_ALLOW_ALL_HEADERS = True
+CORS_VARY_HEADER = True
 
 CORS_ALLOWED_ORIGINS = ["https://ucap-fs.up.railway.app"]
 CSRF_TRUSTED_ORIGINS = ["https://ucap-fs.up.railway.app"]
