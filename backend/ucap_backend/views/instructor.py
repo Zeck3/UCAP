@@ -607,6 +607,9 @@ class AssessmentPageAPIView(APIView):
                 f"{section.instructor_assigned.first_name} {section.instructor_assigned.last_name}".strip()
                 if section.instructor_assigned else ""
             ),
+            "department": getattr(dept, "department_name", ""),
+            "subject": getattr(course, "course_title", ""),
+            "year_section": getattr(section, "year_and_section", ""),
         }
 
         assessments_qs = (

@@ -32,6 +32,9 @@ function buildClassInfo(info: Record<string, unknown>): ClassInfo {
     course: String(info.course_title ?? ""),
     aySemester: String(info.academic_year_and_semester_type ?? ""),
     faculty: String(info.instructor_assigned ?? ""),
+    department: String(info.department ?? ""),
+    subject: String(info.subject ?? ""),
+    yearSection: String(info.year_section ?? ""),
   };
 }
 

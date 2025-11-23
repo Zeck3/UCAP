@@ -173,7 +173,7 @@ function generateComputedFormula(row: number, key: string, leafMap: Map<string, 
 function applyConditionalFormatting(worksheet: ExcelJS.Worksheet, leaves: HeaderNode[], headerRowCount: number, studentCount: number): void {
   const dataStartRow = headerRowCount + 3;
   leaves.forEach((leaf, i) => {
-    const col = i + 3;
+    const col = i + 4;
     const colLetter = getExcelColumnLetter(col);
     const key = leaf.key || "";
     const range = `${colLetter}${dataStartRow}:${colLetter}${dataStartRow + studentCount - 1}`;
@@ -206,6 +206,7 @@ export async function exportClassRecordToExcel(
   for (let r = 0; r < headerRowCount; r++) {
     nodeMatrix[r][0] = classInfoNode;
     nodeMatrix[r][1] = classInfoNode;
+    nodeMatrix[r][2] = classInfoNode;
   }
 
   const leafNodes = collectLeafNodes(renderNodes);
@@ -214,7 +215,7 @@ export async function exportClassRecordToExcel(
 
   createHeaderRows(worksheet, headerRowCount);
   mergeClassInfoCell(worksheet, classInfoNode, headerRowCount);
-  buildHeaders(renderNodes, worksheet, nodeMatrix, maxDepth, 0, 3, headerRowCount);
+  buildHeaders(renderNodes, worksheet, nodeMatrix, maxDepth, 0, 4, headerRowCount);
 
   addSeparatorRow(worksheet);
 
@@ -259,7 +260,7 @@ function createHeaderRows(worksheet: ExcelJS.Worksheet, count: number): void {
 }
 
 function mergeClassInfoCell(worksheet: ExcelJS.Worksheet, classInfoNode: HeaderNode | undefined, headerRowCount: number): void {
-  worksheet.mergeCells(1, 1, headerRowCount, 2);
+  worksheet.mergeCells(1, 1, headerRowCount, 3);
   worksheet.getCell(1, 1).value = classInfoNode?.title || "";
 }
 
@@ -378,12 +379,12 @@ function buildParentMap(nodes: HeaderNode[], parent: HeaderNode | null = null, m
 
 function buildLeafMap(leaves: HeaderNode[]): Map<string, number> {
   const map = new Map<string, number>();
-  leaves.forEach((leaf, index) => { if (leaf.key) map.set(leaf.key, index + 3); });
+  leaves.forEach((leaf, index) => { if (leaf.key) map.set(leaf.key, index + 4); });
   return map;
 }
 
 function buildMaxScoreRow(leaves: HeaderNode[], maxScores: Record<string, number>, leafMap: Map<string, number>, maxScoreRow: number): unknown[] {
-  return ["Student ID", "Student Name", ...leaves.map((leaf) => getMaxDisplayValue(leaf, maxScores, leafMap, maxScoreRow))];
+  return ["No.", "Student ID", "Student Name", ...leaves.map((leaf) => getMaxDisplayValue(leaf, maxScores, leafMap, maxScoreRow))];
 }
 
 function getMaxDisplayValue(leaf: HeaderNode, maxScores: Record<string, number>, leafMap: Map<string, number>, maxScoreRow: number): unknown {
@@ -418,7 +419,8 @@ function buildStudentRow(
 ): unknown[] {
   const scores = scoresMap[student.student_id] || {};
   const computed = computedMap[student.student_id] || {};
-  const row: unknown[] = [student.id_number || "", student.student_name || ""];
+  const studentNumber = rowIndex - maxScoreRow;
+  const row: unknown[] = [studentNumber, student.id_number || "", student.student_name || ""];
   const isEmptyStudent = !student.id_number && !student.student_name;
 
   if (isEmptyStudent) {
@@ -506,11 +508,12 @@ function buildStudentRow(
 }
 
 function setColumnWidths(worksheet: ExcelJS.Worksheet, leaves: HeaderNode[], parentMap: Map<HeaderNode, HeaderNode | null>): void {
-  worksheet.getColumn(1).width = 12;
-  worksheet.getColumn(2).width = 25;
+  worksheet.getColumn(1).width = 6;
+  worksheet.getColumn(2).width = 12;
+  worksheet.getColumn(3).width = 25;
   leaves.forEach((leaf, i) => {
     const parent = parentMap.get(leaf);
-    worksheet.getColumn(i + 3).width = parent?.title === "Computed Final Grade" ? 12 : parent && parent.children.length > 0 ? 8 : 12;
+    worksheet.getColumn(i + 4).width = parent?.title === "Computed Final Grade" ? 12 : parent && parent.children.length > 0 ? 8 : 12;
   });
 }
 
@@ -523,7 +526,7 @@ function styleSheet(
   classInfoNode: HeaderNode | undefined,
   headerRowCount: number
 ): void {
-  const totalCols = leaves.length + 2;
+  const totalCols = leaves.length + 3;
   const separatorRowIndex = headerRowCount + 1;
   const maxScoreRowIndex = headerRowCount + 2;
 
@@ -592,7 +595,7 @@ function applyHeaderStyle(
   let horizontal: "left" | "center" = "center";
   let vAlign: "top" | "middle" | "bottom" = "middle";
 
-  if (c <= 2) {
+  if (c <= 3) {
     fill = mapHeaderClassToColor(getHeaderClass(classInfoNode!));
     horizontal = "left";
     if (classInfoNode?.nodeType === "computed") {
@@ -644,8 +647,8 @@ function applyMaxScoreStyle(
     fontColor = COLORS.WHITE;
   } else if (whiteCols.has(c)) {
     fill = createFill(COLORS.WHITE);
-  } else if (c >= 3) {
-    const leaf = leaves[c - 3];
+  } else if (c >= 4) {
+    const leaf = leaves[c - 4];
     if (
       leaf &&
       (leaf.calculationType === "roundedGrade" || leaf.calculationType === "gradePoint")
@@ -681,15 +684,15 @@ function applyDataRowStyle(
   let horizontal: "left" | "center" = "center";
   let bold = false;
 
-  if (c < 3) {
-    horizontal = c === 1 ? "center" : "left";
+  if (c < 4) {
+    horizontal = c === 1 || c === 2 ? "center" : "left";
   } else if (darkCols.has(c)) {
     fill = createFill(COLORS.BLUE);
     fontColor = COLORS.WHITE;
   } else if (whiteCols.has(c)) {
     fill = createFill(COLORS.WHITE);
   } else {
-    const leaf = leaves[c - 3];
+    const leaf = leaves[c - 4];
     if (leaf) {
       const bg = getCalculatedBg(leaf.calculationType);
       fill = bg ? mapBgClassToColor(bg) : createFill(COLORS.WHITE);

@@ -134,8 +134,8 @@ export default function FloatingToolbarComponent({
         <button
           type="button"
           className="relative p-2 rounded-full hover:bg-gray-100 hover:cursor-pointer group"
-          title="Export Data"
-          aria-label="Export Data"
+          title="Export Class Record"
+          aria-label="Export Class Record"
           onClick={handleExport}
         >
           <DownloadIcon className="w-5 h-5 text-[#767676]" />
@@ -144,7 +144,7 @@ export default function FloatingToolbarComponent({
               text-xs text-white bg-[#767676] px-2 py-1 rounded whitespace-nowrap opacity-0
               group-hover:opacity-100 transition"
           >
-            Export Data
+            Export Class Record
           </span>
         </button>
 

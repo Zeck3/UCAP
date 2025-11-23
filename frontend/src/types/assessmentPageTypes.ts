@@ -5,6 +5,9 @@ export interface ClassInfo {
   course: string;
   aySemester: string;
   faculty: string;
+  department: string;
+  subject: string;
+  yearSection: string;
 }
 
 export interface Classwork {
