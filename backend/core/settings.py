@@ -47,6 +47,9 @@ AUTH_USER_MODEL = "ucap_backend.User"
 ROOT_URLCONF = "core.urls"
 WSGI_APPLICATION = "core.wsgi.application"
 
+SESSION_COOKIE_DOMAIN = ".up.railway.app"
+CSRF_COOKIE_DOMAIN = ".up.railway.app"
+
 SESSION_COOKIE_SAMESITE = "None"
 CSRF_COOKIE_SAMESITE = "None"
 
