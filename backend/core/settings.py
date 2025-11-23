@@ -38,12 +38,15 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
 ]
 
+CSRF_COOKIE_NAME = "csrftoken"
+
 CORS_ALLOW_ALL_HEADERS = True
 CORS_VARY_HEADER = True
 
 CORS_ALLOWED_ORIGINS = ["https://ucap-fs.up.railway.app"]
 CSRF_TRUSTED_ORIGINS = ["https://ucap-fs.up.railway.app"]
 
+CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken"]
 CORS_ALLOW_CREDENTIALS = True
 
 AUTH_USER_MODEL = "ucap_backend.User"
