@@ -76,6 +76,9 @@ CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_AGE = 900
 SESSION_SAVE_EVERY_REQUEST = True
 
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
