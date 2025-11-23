@@ -6,8 +6,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "dummy")
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = [
-    "ucap-fs.up.railway.app",
-    "ucap-bs.up.railway.app"
+    "ucap-bs.up.railway.app",
 ]
 
 INSTALLED_APPS = [
@@ -40,10 +39,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = ["https://ucap-fs.up.railway.app"]
-CSRF_TRUSTED_ORIGINS = [
-    "https://ucap-fs.up.railway.app",
-    "https://ucap-bs.up.railway.app",
-]
+CSRF_TRUSTED_ORIGINS = ["https://ucap-fs.up.railway.app"]
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
