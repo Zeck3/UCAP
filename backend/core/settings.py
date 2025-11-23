@@ -41,12 +41,17 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = ["https://ucap-fs.up.railway.app"]
 CSRF_TRUSTED_ORIGINS = ["https://ucap-fs.up.railway.app"]
 
+CSRF_HEADER_NAME = "HTTP_X_CSRFTOKEN"
+
 CORS_ALLOW_CREDENTIALS = True
 
 AUTH_USER_MODEL = "ucap_backend.User"
 
 ROOT_URLCONF = "core.urls"
 WSGI_APPLICATION = "core.wsgi.application"
+
+SESSION_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SAMESITE = "None"
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
