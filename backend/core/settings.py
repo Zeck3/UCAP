@@ -31,28 +31,24 @@ REST_FRAMEWORK = {
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
-    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
 ]
 
-CSRF_COOKIE_NAME = "csrftoken"
-
-CORS_ALLOW_ALL_HEADERS = True
-CORS_VARY_HEADER = True
-
 CORS_ALLOWED_ORIGINS = ["https://ucap-fs.up.railway.app"]
 CSRF_TRUSTED_ORIGINS = ["https://ucap-fs.up.railway.app"]
 
-CORS_EXPOSE_HEADERS = ["Content-Type", "X-CSRFToken"]
 CORS_ALLOW_CREDENTIALS = True
 
 AUTH_USER_MODEL = "ucap_backend.User"
 
 ROOT_URLCONF = "core.urls"
 WSGI_APPLICATION = "core.wsgi.application"
+
+SESSION_COOKIE_AGE = 900
+SESSION_SAVE_EVERY_REQUEST = True
 
 SESSION_COOKIE_SAMESITE = "None"
 CSRF_COOKIE_SAMESITE = "None"
@@ -66,8 +62,6 @@ CSRF_COOKIE_HTTPONLY = False
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 
-SESSION_COOKIE_AGE = 900
-SESSION_SAVE_EVERY_REQUEST = True
 
 DATABASES = {
     "default": {
