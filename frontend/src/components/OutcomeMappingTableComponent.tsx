@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getOutcomeMappings,
   updateOutcomeMapping,
-} from "../api/OutcomeMappingApi";
+} from "../api/outcomeMappingApi";
 import LoadingIcon from "../assets/circle-regular.svg?react";
 import type { OutcomeMappingResponse } from "../types/outcomeMappingTypes";
 import RotateRight from "../assets/rotate-right-solid-full.svg?react";

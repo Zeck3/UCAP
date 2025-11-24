@@ -3,6 +3,8 @@ import ClassRecordComponent from "../../components/classrecord/ClassRecordCompon
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useState } from "react";
 import FloatingToolbar from "../../components/FloatingToolbarComponent";
+import type { HeaderNode } from "../../components/classrecord/types/headerConfigTypes";
+import type { Student } from "../../types/classRecordTypes";
 
 export default function ClassRecordPage() {
   const navigate = useNavigate();
@@ -21,8 +23,8 @@ export default function ClassRecordPage() {
     null
   );
   const [exportDataFn, setExportDataFn] = useState<(() => {
-    headerNodes: any[];
-    students: any[];
+    headerNodes: HeaderNode[];
+    students: Student[];
     studentScores: Record<number, Record<string, number>>;
     maxScores: Record<string, number>;
     computedValues: Record<number, Record<string, number>>;
