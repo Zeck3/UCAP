@@ -1,8 +1,10 @@
 import { useState } from "react";
 import AnalyticsIcon from "../assets/chart-simple.svg?react";
+import DownloadIcon from "../assets/download-solid.svg?react";
 
 type Props = {
   goToAssessmentPage: () => void;
+  onExportResultSheet: () => void;
 };
 
 const TOOLBAR_Z = "z-35";
@@ -14,7 +16,7 @@ const reopenBtnBase = `fixed bottom-4 left-1/2 -translate-x-1/2 ${TOOLBAR_Z}
   p-2 rounded-full bg-white border border-[#E9E6E6] shadow-sm 
   hover:bg-gray-50 transition`;
 
-export default function ActionBarComponent({ goToAssessmentPage }: Props) {
+export default function ActionBarComponent({ goToAssessmentPage, onExportResultSheet }: Props) {
   const [toolbarOpen, setToolbarOpen] = useState(true);
 
   return (
@@ -28,11 +30,28 @@ export default function ActionBarComponent({ goToAssessmentPage }: Props) {
       >
         <button
           type="button"
+          onClick={onExportResultSheet}
+          className="relative p-2 rounded-full hover:bg-gray-100 hover:cursor-pointer group"
+          title="Export Result Sheet"
+          aria-label="Export Result Sheet"
+        >
+          <DownloadIcon className="w-5 h-5 text-[#767676]" />
+          <span
+            className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2
+              text-xs text-white bg-[#767676] px-2 py-1 rounded whitespace-nowrap opacity-0
+              group-hover:opacity-100 transition"
+          >
+            Export Result Sheet
+          </span>
+        </button>
+
+        <button
+          type="button"
           onClick={goToAssessmentPage}
           className="relative px-4 py-2 rounded-full flex items-center gap-2 
           bg-ucap-yellow hover:bg-ucap-yellow-hover hover:cursor-pointer transition group"
-          title="Generate COA Result Sheet"
-          aria-label="Generate COA Result Sheet"
+          title="View Analytics"
+          aria-label="View Analytics"
         >
           <AnalyticsIcon className="w-5 h-5 text-white" />
           <span className="text-xs text-white">View Analytics</span>

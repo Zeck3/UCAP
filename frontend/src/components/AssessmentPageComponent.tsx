@@ -6,6 +6,8 @@ import ActionBarComponent from "./ActionBarComponent";
 import SidePanelComponent from "./SidePanelComponent";
 import ErrorPage from "../pages/ErrorPage";
 import PageLoading from "../pages/PageLoading";
+import { exportAssessmentResultSheet } from "./utils/ExportAssessmentResultSheet";
+import { toast } from "react-toastify";
 import {
   BarChart,
   Bar,
@@ -285,6 +287,21 @@ export default function AssessmentPageComponent({
 
   const studentCount = data?.students.length ?? 0;
   const totalColumns = 4 + totalClassworkColumns(data?.pos ?? []);
+
+  const handleExportResultSheet = async () => {
+    if (!data) {
+      toast.error("No data available to export");
+      return;
+    }
+
+    try {
+      await exportAssessmentResultSheet({ data });
+      toast.success("Result sheet exported successfully");
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Failed to export result sheet");
+    }
+  };
 
   const layout = useMemo(() => {
     const pos = data?.pos ?? [];
@@ -782,7 +799,10 @@ export default function AssessmentPageComponent({
           ))}
         </tbody>
       </table>
-      <ActionBarComponent goToAssessmentPage={() => setIsOpen(true)} />
+      <ActionBarComponent 
+        goToAssessmentPage={() => setIsOpen(true)} 
+        onExportResultSheet={handleExportResultSheet}
+      />
       <SidePanelComponent
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}

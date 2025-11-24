@@ -177,7 +177,7 @@ function BuildStudentRow({
             GRADE_SCALE[0]
           );
           cont = getDesc(rounded);
-          textClass = "text-coa-blue";
+          textClass = rounded > 3.0 ? "text-coa-red" : "text-coa-blue";
         }
       }
 

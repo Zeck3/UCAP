@@ -1,7 +1,9 @@
 import { useState, useRef } from "react";
 import FileImportIcon from "../assets/file-import-solid.svg?react";
+import DownloadIcon from "../assets/download-solid.svg?react";
 import AnalyticsIcon from "../assets/chart-simple.svg?react";
 import { importStudentsCSV } from "../api/instructorStudentListUploadApi";
+import { exportClassRecordToExcel } from "./classrecord/utils/ExportClassRecord";
 import type { AxiosError } from "axios";
 import { toast } from "react-toastify";
 import FileInstructionComponent from "./FileInstructionComponent";
@@ -10,6 +12,13 @@ type Props = {
   goToAssessmentPage: () => void;
   sectionId: number;
   refreshStudents: () => Promise<void>;
+  getExportData: () => {
+    headerNodes: any[];
+    students: any[];
+    studentScores: Record<number, Record<string, number>>;
+    maxScores: Record<string, number>;
+    computedValues: Record<number, Record<string, number>>;
+  };
   canGenerateResultSheet: boolean;
   hasExistingStudents: boolean;
 };
@@ -22,6 +31,7 @@ export default function FloatingToolbarComponent({
   goToAssessmentPage,
   sectionId,
   refreshStudents,
+  getExportData,
   canGenerateResultSheet,
   hasExistingStudents,
 }: Props) {
@@ -70,6 +80,17 @@ export default function FloatingToolbarComponent({
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const data = getExportData();
+      await exportClassRecordToExcel(data);
+      toast.success("Class record exported successfully");
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Failed to export class record");
+    }
+  };
+
   const handleFileSelected = async (file: File | null) => {
     if (!file) return;
 
@@ -107,6 +128,23 @@ export default function FloatingToolbarComponent({
               group-hover:opacity-100 transition"
           >
             Import Student List
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className="relative p-2 rounded-full hover:bg-gray-100 hover:cursor-pointer group"
+          title="Export Class Record"
+          aria-label="Export Class Record"
+          onClick={handleExport}
+        >
+          <DownloadIcon className="w-5 h-5 text-[#767676]" />
+          <span
+            className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2
+              text-xs text-white bg-[#767676] px-2 py-1 rounded whitespace-nowrap opacity-0
+              group-hover:opacity-100 transition"
+          >
+            Export Class Record
           </span>
         </button>
 

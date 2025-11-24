@@ -931,6 +931,7 @@ export function useClassRecord() {
     maxScores,
     setMaxScores,
     studentScores,
+    computedStudentValues,
     sortedStudentsData,
     computedMaxValues,
     bloomsOptions,
