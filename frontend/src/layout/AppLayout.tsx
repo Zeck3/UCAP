@@ -5,7 +5,8 @@ import SidebarNavButton from "../components/SideBarNavButton";
 import { useBreadcrumbs } from "../context/useBreadCrumbs";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import ProfilePopupComponent from "../components/ProfilePopupComponent";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -19,6 +20,7 @@ export default function AppLayout({
   disablePadding = false,
 }: AppLayoutProps) {
   const { isSidebarOpen, toggleSidebar } = useLayout();
+  const [profileOpen, setProfileOpen] = useState(false);
   const { user, logout } = useAuth();
   const roleNav = useRoleSideNav();
   const crumbs = useBreadcrumbs();
@@ -38,7 +40,8 @@ export default function AppLayout({
   const goToMain = () => navigate(currentPath);
 
   const sidebarButtons = useMemo(() => {
-    const navItems = user ? roleNav[user.role_id] || [] : [];
+    const roleId = user?.role_id;
+    const navItems = roleId != null ? roleNav[roleId] || [] : [];
 
     return navItems.map((item) => (
       <SidebarNavButton
@@ -51,6 +54,7 @@ export default function AppLayout({
       />
     ));
   }, [user, roleNav, isSidebarOpen, currentPath]);
+
   return (
     <div className="h-screen flex">
       <HeaderComponent
@@ -62,7 +66,13 @@ export default function AppLayout({
         onLogout={handleLogout}
         onButtonClick={toggleSidebar}
         onLogoClick={goToMain}
+        onProfileClick={() => setProfileOpen(true)}
         crumbs={crumbs}
+      />
+      <ProfilePopupComponent
+        isOpen={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        user={user}
       />
       <div className="flex flex-row w-full pt-16">
         <aside
@@ -77,7 +87,11 @@ export default function AppLayout({
 
         <main
           className={`flex-1 transition-all duration-300 overflow-y-auto ${
-            disablePadding ? "" : isSidebarOpen ? "pr-44 pl-8 max-2xl:pl-8 max-2xl:pr-8 " : "pr-44 pl-44 max-2xl:pl-8 max-2xl:pr-8 "
+            disablePadding
+              ? ""
+              : isSidebarOpen
+              ? "pr-44 pl-8 max-2xl:pl-8 max-2xl:pr-8 "
+              : "pr-44 pl-44 max-2xl:pl-8 max-2xl:pr-8 "
           }`}
         >
           {children}

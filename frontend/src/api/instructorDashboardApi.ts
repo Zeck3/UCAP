@@ -1,8 +1,5 @@
 import axiosClient from "./axiosClient";
-import type {
-  CourseDetailsWithSections,
-} from "../types/instructorDashboardTypes";
-import type { BaseLoadedCourse } from "../types/baseTypes";
+import type { BaseLoadedCourse, BaseCoursePageResponse } from "../types/baseTypes";
 
 export const InstructorCourses = async (
   instructorId: number
@@ -14,7 +11,7 @@ export const InstructorCourses = async (
 export const fetchCourseDetails = async (
   instructorId: number,
   loaded_course_id: number
-): Promise<CourseDetailsWithSections> => {
+): Promise<BaseCoursePageResponse> => {
   const response = await axiosClient.get(
     `/instructor/${instructorId}/${loaded_course_id}`
   );

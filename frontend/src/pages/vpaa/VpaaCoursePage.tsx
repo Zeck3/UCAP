@@ -1,4 +1,4 @@
-// src/pages/dean/DeanCoursePage.tsx
+// src/pages/vcaa/CampusCoursePage.tsx
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -12,13 +12,14 @@ import TableComponent from "../../components/TableComponent";
 import emptyImage from "../../assets/undraw_file-search.svg";
 import { useLayout } from "../../context/useLayout";
 
-import { fetchDeanCoursePage } from "../../api/deanDashboardApi";
+import { fetchVcaaCoursePage } from "../../api/vcaaDashboardApi";
+import type {} from "../../types/campusLoadedCourseTypes";
 import type {
   BaseCoursePageResponse,
   BaseSection,
 } from "../../types/baseTypes";
 
-export default function DeanCoursePage() {
+export default function VpaaCoursePage() {
   const { department_id, loaded_course_id } = useParams();
   const navigate = useNavigate();
   const { layout } = useLayout();
@@ -35,10 +36,10 @@ export default function DeanCoursePage() {
 
       try {
         setLoading(true);
-        const data = await fetchDeanCoursePage(Number(loaded_course_id));
+        const data = await fetchVcaaCoursePage(Number(loaded_course_id));
         setCourseData(data);
       } catch (e) {
-        console.error("Failed to fetch dean course page data", e);
+        console.error("Failed to fetch campus course page data", e);
       } finally {
         setLoading(false);
       }
@@ -53,25 +54,34 @@ export default function DeanCoursePage() {
     const q = searchQuery.trim().toLowerCase();
     const courseCode = courseData?.course_details.course_code ?? "";
 
-    return courseData.sections
-      .filter(
-        (s) =>
-          s.year_and_section.toLowerCase().includes(q) ||
-          s.instructor_assigned.toLowerCase().includes(q)
-      )
-      .map((s) => ({
-        ...s,
-        id: s.id,
-        course_and_section: courseCode
-          ? `${courseCode} - ${s.year_and_section}`
-          : s.year_and_section,
-      }));
+    const augmented = courseData.sections.map((s) => ({
+      ...s,
+      id: s.id,
+      course_and_section: courseCode
+        ? `${courseCode} - ${s.year_and_section}`
+        : s.year_and_section,
+    }));
+
+    if (!q) return augmented;
+
+    return augmented.filter((section) =>
+      Object.values(section).some((val) => {
+        if (val == null) return false;
+
+        const t = typeof val;
+        if (t === "string" || t === "number" || t === "boolean") {
+          return String(val).toLowerCase().includes(q);
+        }
+
+        return false;
+      })
+    );
   }, [courseData, searchQuery]);
 
   const goToAssessmentPage = (section: BaseSection) => {
-    if (!loaded_course_id || !department_id) return;
+    if (!department_id || !loaded_course_id) return;
 
-    navigate(`/college/${department_id}/${loaded_course_id}/${section.id}`, {
+    navigate(`/campus/${department_id}/${loaded_course_id}/${section.id}`, {
       state: {
         course_code: courseData?.course_details.course_code ?? "",
         year_and_section: section.year_and_section,
@@ -82,7 +92,7 @@ export default function DeanCoursePage() {
   const details = courseData?.course_details;
 
   return (
-    <AppLayout activeItem={`/college/${department_id}`}>
+    <AppLayout activeItem={`/campus/${department_id}`}>
       <InfoComponent
         loading={loading}
         title={details?.course_title ?? ""}

@@ -3,6 +3,7 @@ export interface BaseLoadedCourse {
   loaded_course_id: number;
   course_code: string;
   course_title: string;
+  program_id: number;
   program_name: string;
   academic_year_start: number;
   academic_year_end: number;
@@ -18,6 +19,8 @@ export interface BaseCourseDetails {
   academic_year: string;
   semester_type: string;
   year_level: string;
+  program_id: number;
+  program_name: string;
   department_name: string;
   college_name: string;
   campus_name: string;

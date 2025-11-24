@@ -24,7 +24,6 @@ export interface CourseInfo {
   semester_type: string;
   lecture_unit: number;
   laboratory_unit: number;
-  credit_unit: number;
 }
 
 export interface CourseFormData {
@@ -35,7 +34,6 @@ export interface CourseFormData {
   semester: string;
   lecture_unit: string;
   laboratory_unit: string;
-  credit_unit: string;
 }
 
 export interface CoursePayload {
@@ -46,5 +44,4 @@ export interface CoursePayload {
   semester: number;
   lecture_unit: number;
   laboratory_unit: number;
-  credit_unit: number;
 }

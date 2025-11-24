@@ -5,14 +5,21 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from ucap_backend.models import Course, LoadedCourse, Program, ProgramOutcome, Section
-from ucap_backend.serializers.department_chair import CreateDepartmentLoadedCourseSerializer, DepartmentChairCourseDetailsSerializer, DepartmentChairSectionSerializer, DepartmentCourseSerializer, DepartmentLoadedCourseSerializer, SectionCreateUpdateSerializer
+from ucap_backend.serializers.department_chair import CourseSerializer, CreateCourseSerializer, CreateDepartmentLoadedCourseSerializer, DepartmentChairCourseDetailsSerializer, DepartmentChairSectionSerializer, DepartmentCourseSerializer, DepartmentLoadedCourseSerializer, SectionCreateUpdateSerializer, UpdateCourseSerializer
 from ucap_backend.serializers.instructor import ProgramOutcomeSerializer
 
 # ====================================================
 # Department Chair
 # ====================================================
+def get_user_department_id(user):
+    chair_id = getattr(user, "chair_department_id", None)
+    if chair_id:
+        return chair_id
+
+    return None
+
 def assert_department_access(request, department_id: int):
-    user_dept_id = getattr(request.user, "department_id", None)
+    user_dept_id = get_user_department_id(request.user)
     if user_dept_id is None or int(user_dept_id) != int(department_id):
         raise PermissionDenied("You are not assigned to this department.")
     
@@ -73,13 +80,15 @@ def department_course_management_view(request, department_id):
         )
 
     except Exception as e:
-        return JsonResponse({"message": str(e)}, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JsonResponse({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def department_course_detail_view(request, loaded_course_id):
     try:
-        dept_id = request.user.department_id
+        dept_id = get_user_department_id(request.user)
+        if dept_id is None:
+            raise PermissionDenied("You are not assigned to this department.")
         course = LoadedCourse.objects.get(
             loaded_course_id=loaded_course_id,
             course__program__department__department_id=dept_id
@@ -95,7 +104,9 @@ def department_course_detail_view(request, loaded_course_id):
 @permission_classes([IsAuthenticated])
 def department_section_management_view(request, loaded_course_id):
     try:
-        dept_id = request.user.department_id
+        dept_id = get_user_department_id(request.user)
+        if dept_id is None:
+            raise PermissionDenied("You are not assigned to this department.")
 
         loaded_course = (
             LoadedCourse.objects
@@ -111,20 +122,10 @@ def department_section_management_view(request, loaded_course_id):
             )
         )
 
-        user_dept_id = getattr(request.user, "department_id", None)
-        course_dept_id = loaded_course.course.program.department_id
-        if user_dept_id != course_dept_id:
-            return JsonResponse(
-                {"detail": "You are not allowed to access this loaded course."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        dummy_section = (
-            Section(
-                loaded_course=loaded_course,
-                instructor_assigned=None,
-                year_and_section=""
-            )
+        dummy_section = Section(
+            loaded_course=loaded_course,
+            instructor_assigned=None,
+            year_and_section=""
         )
         course_details = DepartmentChairCourseDetailsSerializer(dummy_section).data
 
@@ -151,44 +152,77 @@ def department_section_management_view(request, loaded_course_id):
         serializer = SectionCreateUpdateSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return JsonResponse({"message": "Section created successfully"}, status=status.HTTP_201_CREATED)
+            return JsonResponse(
+                {"message": "Section created successfully"},
+                status=status.HTTP_201_CREATED
+            )
 
-        return JsonResponse({"message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse(
+            {"message": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
     except LoadedCourse.DoesNotExist:
-        return JsonResponse({"message": "Loaded course not found"}, status=status.HTTP_404_NOT_FOUND)
-
+        return JsonResponse(
+            {"message": "Loaded course not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except PermissionDenied as e:
+        return JsonResponse({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
     except Exception as e:
-        return JsonResponse({"message": str(e)}, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JsonResponse(
+            {"message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 @api_view(["PUT", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
 def department_section_detail_view(request, section_id):
     try:
-        dept_id = request.user.department_id
+        dept_id = get_user_department_id(request.user)
+        if dept_id is None:
+            raise PermissionDenied("You are not assigned to this department.")
 
         section = Section.objects.get(
             pk=section_id,
             loaded_course__course__program__department__department_id=dept_id
         )
 
-        user_dept_id = getattr(request.user, "department_id", None)
-        course_dept_id = section.loaded_course.course.program.department_id
-        if user_dept_id != course_dept_id:
+        if request.method in ["PUT", "PATCH"]:
+            serializer = SectionCreateUpdateSerializer(
+                instance=section,
+                data=request.data,
+                partial=(request.method == "PATCH")
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return JsonResponse(
+                    {"message": "Section updated successfully"},
+                    status=status.HTTP_200_OK
+                )
             return JsonResponse(
-                {"detail": "You are not allowed to modify sections outside your department."},
-                status=status.HTTP_403_FORBIDDEN
+                {"message": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-        if request.method in ["PUT", "PATCH"]:
-            serializer = SectionCreateUpdateSerializer(instance=section, data=request.data, partial=True)
-            ...
         section.delete()
-        return JsonResponse({"message": "Section deleted successfully"}, status=status.HTTP_200_OK)
+        return JsonResponse(
+            {"message": "Section deleted successfully"},
+            status=status.HTTP_200_OK
+        )
 
     except Section.DoesNotExist:
-        return JsonResponse({"message": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
-
+        return JsonResponse(
+            {"message": "Section not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except PermissionDenied as e:
+        return JsonResponse({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
+    except Exception as e:
+        return JsonResponse(
+            {"message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 # ====================================================
 # Program Outcomes
@@ -238,7 +272,9 @@ def program_outcome_list_create_view(request, program_id):
         traceback.print_exc()
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
+# ====================================================
+# Course Management
+# ====================================================
 @api_view(["PUT", "DELETE"])
 @permission_classes([IsAuthenticated])
 def program_outcome_detail_view(request, outcome_id):
@@ -263,5 +299,67 @@ def program_outcome_detail_view(request, outcome_id):
 
     except ProgramOutcome.DoesNotExist:
         return Response({"message": "Program Outcome not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def dc_course_management_view(request, department_id: int):
+    try:
+        assert_department_access(request, department_id)
+
+        if request.method == "GET":
+            courses = Course.objects.filter(program__department__department_id=department_id)
+            serializer = CourseSerializer(courses, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        serializer = CreateCourseSerializer(
+            data=request.data,
+            context={"department_id": department_id}
+        )
+        if serializer.is_valid():
+            course = serializer.save()
+            return Response(CourseSerializer(course).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    except PermissionDenied as e:
+        return Response({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
+    except Exception as e:
+        return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["GET", "PUT", "PATCH", "DELETE"])
+@permission_classes([IsAuthenticated])
+def dc_course_detail_view(request, department_id: int, course_code: str):
+    try:
+        assert_department_access(request, department_id)
+
+        course = Course.objects.get(
+            course_code=course_code,
+            program__department__department_id=department_id
+        )
+
+        if request.method == "GET":
+            return Response(CourseSerializer(course).data)
+
+        if request.method in ["PUT", "PATCH"]:
+            serializer = UpdateCourseSerializer(
+                course,
+                data=request.data,
+                partial=(request.method == "PATCH"),
+                context={"department_id": department_id}
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(CourseSerializer(course).data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        course.delete()
+        return Response({"message": "Course deleted successfully"}, status=status.HTTP_200_OK)
+
+    except Course.DoesNotExist:
+        return Response({"message": "Course not found"}, status=status.HTTP_404_NOT_FOUND)
+    except PermissionDenied as e:
+        return Response({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

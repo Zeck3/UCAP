@@ -14,7 +14,7 @@ import type { BaseLoadedCourse } from "../../types/baseTypes";
 import InfoComponent from "../../components/InfoComponent";
 import { useInitialInfo } from "../../context/useInitialInfo";
 
-export default function VcaaCourseDashboard() {
+export default function VpaaCourseDashboard() {
   const { department_id } = useParams();
   const navigate = useNavigate();
   const { layout } = useLayout();

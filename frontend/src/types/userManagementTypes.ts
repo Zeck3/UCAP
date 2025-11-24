@@ -9,21 +9,13 @@ export interface UserMutationResult {
   errors?: BackendFieldErrors;
 }
 
-export type CurrentUser = {
-  user_id: number | null;
-  role_id: number;
-  department_id: number | null;
-  first_name: string;
-  last_name: string;
-  email: string | null;
-};
-
 export interface FacultyInfoDisplay {
   id: number | string;
   name: string;
   email: string;
   role: string;
-  department: string;
+  departments: string;
+  designation: string;
 }
 
 export interface FacultyInfo {
@@ -33,11 +25,24 @@ export interface FacultyInfo {
   last_name?: string;
   suffix?: string;
   email: string;
+
+  user_role?: number | null;
   user_role_id?: number;
   user_role_type?: string;
-  department_id?: number;
-  department_name?: string;
+  user_role_scope?: string;
+
+  department_ids?: number[];
+  department_names?: string[];
+
+  chair_department?: number | null;
+  dean_college?: number | null;
+  vcaa_campus?: number | null;
+
+  chair_department_name?: string | null;
+  dean_college_name?: string | null;
+  vcaa_campus_name?: string | null;
 }
+
 
 export interface FacultyFormData {
   user_id: string;
@@ -47,7 +52,10 @@ export interface FacultyFormData {
   suffix: string;
   email: string;
   user_role: string;
-  department: string;
+  departments: string[];
+  chair_department?: string;
+  dean_college?: string;
+  vcaa_campus?: string;
 }
 
 export interface FacultyPayload {
@@ -57,6 +65,9 @@ export interface FacultyPayload {
   last_name: string;
   suffix?: string | null;
   email: string;
-  user_role?: number | null;
-  department?: number | null;
+  user_role: number | null;
+  departments: number[];
+  chair_department?: number | null;
+  dean_college?: number | null;
+  vcaa_campus?: number | null;
 }

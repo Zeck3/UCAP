@@ -34,7 +34,6 @@ export default function DepartmentChairCoursePage() {
   const { layout } = useLayout();
   const navigate = useNavigate();
 
-  const [instructorsLoaded, setInstructorsLoaded] = useState(false);
   const [selectedInstructorId, setSelectedInstructorId] = useState<string>("");
   const [instructors, setInstructors] = useState<Instructor[]>([]);
 
@@ -47,9 +46,6 @@ export default function DepartmentChairCoursePage() {
 
   const [loading, setLoading] = useState(true);
 
-  const currentUserId = user?.user_id ?? null;
-  const departmentId = user?.department_id ?? null;
-
   const [sectionName, setSectionName] = useState<{ [key: string]: string }>({});
 
   const [isEditing, setIsEditing] = useState(false);
@@ -58,6 +54,9 @@ export default function DepartmentChairCoursePage() {
   );
   const [sidePanelLoading, setSidePanelLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const currentUserId = user?.user_id;
+  const departmentId = department_id ? Number(department_id) : null;
 
   useEffect(() => {
     let active = true;
@@ -92,13 +91,13 @@ export default function DepartmentChairCoursePage() {
         }));
 
         setSections(mapAndSortSections(mapped));
-      } catch (err: any) {
+      } catch {
         if (active) {
           setInaccessible(true);
           setCourseDetails(null);
           setSections([]);
         }
-        console.error("Failed to fetch sections or course details:", err);
+        console.error("Failed to fetch sections or course details.");
       } finally {
         if (active) setLoading(false);
       }
@@ -110,18 +109,24 @@ export default function DepartmentChairCoursePage() {
   }, [loaded_course_id]);
 
   useEffect(() => {
-    if (instructorsLoaded) return;
+    if (departmentId == null) return;
+
+    let active = true;
 
     (async () => {
       try {
         const data = await getInstructors(departmentId);
+        if (!active) return;
         setInstructors(data);
-        setInstructorsLoaded(true);
       } catch (err) {
         console.error("Failed to load instructors:", err);
       }
     })();
-  }, [instructorsLoaded, departmentId]);
+
+    return () => {
+      active = false;
+    };
+  }, [departmentId]);
 
   const mapAndSortSections = (sections: BaseSection[]): BaseSection[] => {
     return [...sections].sort((a, b) =>

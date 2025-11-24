@@ -6,11 +6,7 @@ import {
   getCourse,
   getCourses,
 } from "../../api/courseManagementApi";
-import {
-  getPrograms,
-  getSemesters,
-  getYearLevels,
-} from "../../api/dropdownApi";
+import { getSemesters, getYearLevels } from "../../api/dropdownApi";
 import { useLayout } from "../../context/useLayout";
 import ToolBarComponent from "../../components/ToolBarComponent";
 import PlusIcon from "../../assets/plus-solid.svg?react";
@@ -30,6 +26,9 @@ import type {
   CoursePayload,
 } from "../../types/courseManagementTypes";
 import { toast } from "react-toastify";
+import { getPrograms } from "../../api/hierarchyManagementApi";
+import { useInitialInfo } from "../../context/useInitialInfo";
+import { getLeadershipDepartmentId } from "../../types/userTypes";
 
 const initialFormData: CourseFormData = {
   course_code: "",
@@ -39,10 +38,9 @@ const initialFormData: CourseFormData = {
   semester: "",
   lecture_unit: "",
   laboratory_unit: "",
-  credit_unit: "",
 };
 
-export default function AdminCourseDashboard() {
+export default function DepartmentChairCourseManagement() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [courses, setCourses] = useState<CourseInfoDisplay[]>([]);
@@ -55,9 +53,12 @@ export default function AdminCourseDashboard() {
   const [editingCourse, setEditingCourse] = useState<CourseInfo | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [dropdownLoaded, setDropdownLoaded] = useState(false);
+  const { initialInfo, initialInfoLoading, primaryDepartment } =
+    useInitialInfo();
   const [formData, setFormData] = useState<CourseFormData>({
     ...initialFormData,
   });
+
   const [errors, setErrors] = useState<
     Partial<Record<keyof CourseFormData, string>>
   >({});
@@ -73,15 +74,33 @@ export default function AdminCourseDashboard() {
     }));
   };
 
+  const departmentId = useMemo(() => {
+    return (
+      getLeadershipDepartmentId(initialInfo) ??
+      primaryDepartment?.department_id ??
+      null
+    );
+  }, [initialInfo, primaryDepartment]);
+
+  const deptPrograms = useMemo(() => {
+    if (departmentId == null) return [];
+    return programs.filter((p) => p.department_id === departmentId);
+  }, [programs, departmentId]);
+
   useEffect(() => {
+    if (initialInfoLoading || departmentId == null) return;
+
+    const deptId = departmentId;
+
     async function fetchCourses() {
       setLoading(true);
-      const coursesData = await getCourses();
+      const coursesData = await getCourses(deptId);
       setCourses(coursesData);
       setLoading(false);
     }
+
     fetchCourses();
-  }, []);
+  }, [initialInfoLoading, departmentId]);
 
   async function ensureDropdownData() {
     if (dropdownLoaded) return;
@@ -128,8 +147,10 @@ export default function AdminCourseDashboard() {
     try {
       setSidePanelLoading(true);
 
+      if (departmentId == null) return;
+
       const [course] = await Promise.all([
-        getCourse(courseCode),
+        getCourse(departmentId, courseCode),
         ensureDropdownData(),
       ]);
 
@@ -146,7 +167,6 @@ export default function AdminCourseDashboard() {
         semester: String(course.semester_id),
         lecture_unit: String(course.lecture_unit),
         laboratory_unit: String(course.laboratory_unit),
-        credit_unit: String(course.credit_unit),
       });
 
       setIsPanelOpen(true);
@@ -189,11 +209,6 @@ export default function AdminCourseDashboard() {
     } else if (isNaN(Number(formData.laboratory_unit))) {
       newErrors.laboratory_unit = "Laboratory unit must be a number";
     }
-    if (!formData.credit_unit?.trim()) {
-      newErrors.credit_unit = "Credit unit is required";
-    } else if (isNaN(Number(formData.credit_unit))) {
-      newErrors.credit_unit = "Credit unit must be a number";
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -211,8 +226,16 @@ export default function AdminCourseDashboard() {
     const payload = formDataToPayload(formData);
 
     try {
+      if (departmentId == null) {
+        toast.error("Department info not loaded yet.");
+        setSidePanelLoading(false);
+        return;
+      }
+      const deptId = departmentId;
+
       if (editingCourse) {
         const updatedCourse = await editCourse(
+          deptId,
           editingCourse.course_code,
           payload
         );
@@ -225,8 +248,7 @@ export default function AdminCourseDashboard() {
 
         toast.success("Course updated successfully");
       } else {
-        const newCourse = await addCourse(payload);
-
+        const newCourse = await addCourse(deptId, payload);
         setCourses((prev) => [...prev, newCourse]);
 
         toast.success("Course added successfully");
@@ -252,7 +274,8 @@ export default function AdminCourseDashboard() {
   };
 
   const handleDelete = async (id: string) => {
-    const success = await deleteCourse(id);
+    if (departmentId == null) return;
+    const success = await deleteCourse(departmentId, id);
 
     if (success) {
       setCourses((prev) => prev.filter((c) => c.id !== id));
@@ -263,11 +286,11 @@ export default function AdminCourseDashboard() {
   };
 
   return (
-    <AppLayout activeItem="/admin/course_management">
+    <AppLayout activeItem={`/department/course_management/${departmentId}`}>
       <ToolBarComponent
         titleOptions={[
           {
-            label: "All Courses",
+            label: "Department Courses",
             value: "",
             enableSearch: true,
             enableLayout: true,
@@ -347,109 +370,101 @@ export default function AdminCourseDashboard() {
         onSubmit={handleSubmit}
         buttonFunction={editingCourse ? "Update Course" : "Add Course"}
         loading={sidePanelLoading}
+        singleColumn
       >
-        <UserInputComponent
-          label="Course Code"
-          name="course_code"
-          required
-          error={errors.course_code}
-          value={formData.course_code}
-          onChange={handleInputChange}
-          onClearError={handleClearError}
-          readOnly={isEditing}
-          loading={sidePanelLoading}
-          maxLength={255}
-        />
-        <UserInputComponent
-          label="Lecture Unit"
-          name="lecture_unit"
-          required
-          error={errors.lecture_unit}
-          value={formData.lecture_unit}
-          onChange={handleInputChange}
-          onClearError={handleClearError}
-          loading={sidePanelLoading}
-          maxLength={3}
-          numericOnly
-        />
-        <UserInputComponent
-          label="Course Title"
-          name="course_title"
-          required
-          error={errors.course_title}
-          value={formData.course_title}
-          onChange={handleInputChange}
-          onClearError={handleClearError}
-          loading={sidePanelLoading}
-          maxLength={255}
-        />
-        <UserInputComponent
-          label="Laboratory Unit"
-          name="laboratory_unit"
-          required
-          error={errors.laboratory_unit}
-          value={formData.laboratory_unit}
-          onChange={handleInputChange}
-          onClearError={handleClearError}
-          loading={sidePanelLoading}
-          maxLength={3}
-          numericOnly
-        />
-        <DropdownComponent
-          label="Program"
-          name="program"
-          required
-          error={errors.program}
-          options={programs.map((d) => ({
-            value: String(d.program_id),
-            label: d.program_name,
-          }))}
-          value={formData.program}
-          onChange={handleInputChange}
-          onClearError={handleClearError}
-          loading={sidePanelLoading}
-        />
-        <UserInputComponent
-          label="Credit Unit"
-          name="credit_unit"
-          required
-          error={errors.credit_unit}
-          value={formData.credit_unit}
-          onChange={handleInputChange}
-          onClearError={handleClearError}
-          loading={sidePanelLoading}
-          maxLength={3}
-          numericOnly
-        />
-        <DropdownComponent
-          label="Year Level"
-          name="year_level"
-          required
-          error={errors.year_level}
-          options={yearLevels.map((d) => ({
-            value: String(d.year_level_id),
-            label: d.year_level_type,
-          }))}
-          value={formData.year_level}
-          onChange={handleInputChange}
-          onClearError={handleClearError}
-          loading={sidePanelLoading}
-        />
-        <div>{}</div>
-        <DropdownComponent
-          label="Semester"
-          name="semester"
-          required
-          error={errors.semester}
-          options={semesters.map((d) => ({
-            value: String(d.semester_id),
-            label: d.semester_type,
-          }))}
-          value={formData.semester}
-          onChange={handleInputChange}
-          onClearError={handleClearError}
-          loading={sidePanelLoading}
-        />
+        <div className="flex flex-col">
+          <span className="text-[#767676]">Course Information</span>
+          <br />
+          <UserInputComponent
+            label="Course Code"
+            name="course_code"
+            required
+            error={errors.course_code}
+            value={formData.course_code}
+            onChange={handleInputChange}
+            onClearError={handleClearError}
+            readOnly={isEditing}
+            loading={sidePanelLoading}
+            maxLength={255}
+          />
+          <UserInputComponent
+            label="Course Title"
+            name="course_title"
+            required
+            error={errors.course_title}
+            value={formData.course_title}
+            onChange={handleInputChange}
+            onClearError={handleClearError}
+            loading={sidePanelLoading}
+            maxLength={255}
+          />
+          <UserInputComponent
+            label="Lecture Unit"
+            name="lecture_unit"
+            required
+            error={errors.lecture_unit}
+            value={formData.lecture_unit}
+            onChange={handleInputChange}
+            onClearError={handleClearError}
+            loading={sidePanelLoading}
+            maxLength={3}
+            numericOnly
+          />
+          <UserInputComponent
+            label="Laboratory Unit"
+            name="laboratory_unit"
+            required
+            error={errors.laboratory_unit}
+            value={formData.laboratory_unit}
+            onChange={handleInputChange}
+            onClearError={handleClearError}
+            loading={sidePanelLoading}
+            maxLength={3}
+            numericOnly
+          />
+          <DropdownComponent
+            label="Program"
+            name="program"
+            required
+            error={errors.program}
+            options={deptPrograms.map((d) => ({
+              value: String(d.program_id),
+              label: d.program_name,
+            }))}
+            value={formData.program}
+            onChange={handleInputChange}
+            onClearError={handleClearError}
+            loading={sidePanelLoading}
+          />
+          <DropdownComponent
+            label="Year Level"
+            name="year_level"
+            required
+            error={errors.year_level}
+            options={yearLevels.map((d) => ({
+              value: String(d.year_level_id),
+              label: d.year_level_type,
+            }))}
+            value={formData.year_level}
+            onChange={handleInputChange}
+            onClearError={handleClearError}
+            loading={sidePanelLoading}
+          />
+          <DropdownComponent
+            label="Semester"
+            name="semester"
+            required
+            error={errors.semester}
+            options={semesters.map((d) => ({
+              value: String(d.semester_id),
+              label: d.semester_type,
+            }))}
+            value={formData.semester}
+            onChange={handleInputChange}
+            onClearError={handleClearError}
+            loading={sidePanelLoading}
+          />
+        </div>
       </SidePanelComponent>
     </AppLayout>
   );
@@ -464,6 +479,5 @@ function formDataToPayload(formData: CourseFormData): CoursePayload {
     semester: Number(formData.semester),
     lecture_unit: Number(formData.lecture_unit),
     laboratory_unit: Number(formData.laboratory_unit),
-    credit_unit: Number(formData.credit_unit),
   };
 }

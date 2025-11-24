@@ -3,6 +3,16 @@ export interface UserRole {
   user_role_type: string;
 }
 
+export interface Campus {
+  campus_id: number;
+  campus_name: string;
+}
+
+export interface College {
+  college_id: number;
+  college_name: string;
+}
+
 export interface Department {
   department_id: number;
   department_name: string;
@@ -11,6 +21,10 @@ export interface Department {
 export interface Program {
   program_id: number;
   program_name: string;
+
+
+  department_id: number;
+  department_name: string;
 }
 
 export interface YearLevel {
@@ -32,10 +46,10 @@ export interface Credit {
 
 export interface Instructor {
   user_id: number;
-  first_name: string;
-  last_name: string;
-  role_id: number;
-  department_id: number;
+  first_name: string | null;
+  last_name: string | null;
+  user_role: string;
+  department_ids: number[];
 }
 
 export interface AcademicYear {

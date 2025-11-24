@@ -5,6 +5,7 @@ import ChevronDown from "../assets/chevron-down-solid.svg?react";
 import LogoutIcon from "../assets/arrow-right-from-bracket-solid.svg?react";
 import UcapLogo from "../assets/ucap-logo.svg?react";
 import ChevronRight from "../assets/chevron-right-solid.svg?react";
+import UserIcon from "../assets/user-solid-full.svg?react";
 import type { CrumbState } from "../context/useBreadCrumbs";
 
 interface HeaderComponentProps {
@@ -12,6 +13,7 @@ interface HeaderComponentProps {
   onLogout: () => void;
   onButtonClick: () => void;
   onLogoClick: () => void;
+  onProfileClick: () => void;
   hideBreadcrumbs?: boolean;
   crumbs?: {
     label: string;
@@ -27,6 +29,7 @@ export default function HeaderComponent({
   onLogoClick,
   hideBreadcrumbs = false,
   crumbs,
+  onProfileClick
 }: HeaderComponentProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -48,6 +51,11 @@ export default function HeaderComponent({
     onLogout();
     setIsOpen(false);
   }, [onLogout]);
+
+  const handleProfileClick = useCallback(() => {
+    onProfileClick();
+    setIsOpen(false);
+  }, [onProfileClick]);
 
   useEffect(() => {
     document.addEventListener("mousedown", handleClickOutside);
@@ -111,6 +119,14 @@ export default function HeaderComponent({
 
         {isOpen && (
           <div className="absolute right-4 top-12 w-40 bg-white border border-[#E9E6E6] rounded-lg z-4000">
+            <button
+              type="button"
+              className="flex items-center gap-2 py-2 w-full cursor-pointer rounded-lg transition hover:bg-gray-100"
+              onClick={handleProfileClick}
+            >
+              <UserIcon className="h-5 w-5 ml-4 text-[#767676]" />
+              <span>Profile</span>
+            </button>
             <button
               type="button"
               className="flex items-center gap-2 py-2 w-full cursor-pointer rounded-lg transition hover:bg-gray-100"

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AuthContext } from "./AuthContext";
-import type { CurrentUser } from "../types/userManagementTypes";
+import type { CurrentUser } from "../types/userTypes";
 import { loginRequest, logoutRequest, fetchCurrentUser } from "../api/authApi";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({

@@ -19,7 +19,7 @@ import type {
   BaseSection,
 } from "../../types/baseTypes";
 
-export default function CampusCoursePage() {
+export default function VcaaCoursePage() {
   const { department_id, loaded_course_id } = useParams();
   const navigate = useNavigate();
   const { layout } = useLayout();

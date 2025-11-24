@@ -8,16 +8,9 @@ class UserManager(BaseUserManager):
     def create_user(self, user_id, password=None, **extra_fields):
         if not user_id:
             raise ValueError("The User ID must be set")
-
         if not password:
             password = str(user_id)
-
         user = self.model(user_id=user_id, **extra_fields)
-
-        if user.user_role and user.user_role.user_role_type == "Administrator":
-            user.is_staff = True
-            user.is_superuser = True
-
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -25,17 +18,20 @@ class UserManager(BaseUserManager):
     def create_superuser(self, user_id, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-
         if not password:
             password = str(user_id)
-
         return self.create_user(user_id, password, **extra_fields)
-
 
 class User(AbstractBaseUser, PermissionsMixin):
     user_id = models.IntegerField(primary_key=True)
-    department = models.ForeignKey("Department", on_delete=models.SET_NULL, null=True)
-    user_role = models.ForeignKey("UserRole", on_delete=models.SET_NULL, null=True)
+
+    departments = models.ManyToManyField("Department", blank=True, related_name="users")
+    user_role = models.ForeignKey("UserRole", on_delete=models.SET_NULL, null=True, related_name="users")
+
+    chair_department = models.ForeignKey("Department", null=True, blank=True, on_delete=models.SET_NULL, related_name="chaired_by")
+    dean_college = models.ForeignKey("College", null=True, blank=True, on_delete=models.SET_NULL, related_name="dean")
+    vcaa_campus = models.ForeignKey("Campus", null=True, blank=True, on_delete=models.SET_NULL, related_name="vcaa")
+
     first_name = models.CharField(max_length=255, blank=True, null=True)
     middle_name = models.CharField(max_length=255, blank=True, null=True)
     last_name = models.CharField(max_length=255)
@@ -49,12 +45,16 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = "user_id"
 
-    def __str__(self):
-        return str(self.user_id)
-
 class UserRole(models.Model):
-    user_role_id = models.AutoField(serialize=True, primary_key=True)
+    user_role_id = models.AutoField(primary_key=True)
     user_role_type = models.CharField(max_length=255)
+    ROLE_SCOPE_CHOICES = [
+        ("department", "Department Level"),
+        ("college", "College Level"),
+        ("campus", "Campus Level"),
+        ("university", "University Level"),
+    ]
+    scope = models.CharField(max_length=255, choices=ROLE_SCOPE_CHOICES)
 
 # ====================================================
 # University Hierarchy 
@@ -140,22 +140,22 @@ class Student(models.Model):
 # ====================================================
 # Class Record Template
 # ====================================================
-class CourseTermTemplate(models.Model):
-    course_term_id = models.AutoField(primary_key=True)
-    loaded_course = models.ForeignKey("LoadedCourse", on_delete=models.CASCADE)
-    course_term_type = models.CharField(max_length=225)
+# class CourseTermTemplate(models.Model):
+#     course_term_id = models.AutoField(primary_key=True)
+#     loaded_course = models.ForeignKey("LoadedCourse", on_delete=models.CASCADE)
+#     course_term_type = models.CharField(max_length=225)
 
-class CourseUnitTemplate(models.Model):
-    course_unit_id = models.AutoField(primary_key=True)
-    course_term = models.ForeignKey("CourseTerm", on_delete=models.CASCADE)
-    course_unit_type = models.CharField(max_length=225)
-    course_unit_percentage = models.IntegerField()
+# class CourseUnitTemplate(models.Model):
+#     course_unit_id = models.AutoField(primary_key=True)
+#     course_term = models.ForeignKey("CourseTerm", on_delete=models.CASCADE)
+#     course_unit_type = models.CharField(max_length=225)
+#     course_unit_percentage = models.IntegerField()
 
-class CourseComponentTemplate(models.Model):
-    course_component_id = models.AutoField(primary_key=True)
-    course_unit = models.ForeignKey("CourseUnit", on_delete=models.CASCADE)
-    course_component_type = models.CharField(max_length=225)
-    course_component_percentage = models.IntegerField()
+# class CourseComponentTemplate(models.Model):
+#     course_component_id = models.AutoField(primary_key=True)
+#     course_unit = models.ForeignKey("CourseUnit", on_delete=models.CASCADE)
+#     course_component_type = models.CharField(max_length=225)
+#     course_component_percentage = models.IntegerField()
 
 # ====================================================
 # Class Record

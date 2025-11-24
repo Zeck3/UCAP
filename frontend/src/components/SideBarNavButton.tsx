@@ -32,7 +32,7 @@ export default function SidebarNavButton({
       className="group relative flex flex-row py-4 cursor-pointer transition-colors duration-300"
     >
 
-      <div className="flex flex-row w-16 items-center">
+      <div className="flex flex-row w-14 items-center">
         <div
           className={`rounded-r-lg w-2 h-full transition-colors duration-300 ${
             active ? "bg-ucap-yellow" : "bg-transparent"

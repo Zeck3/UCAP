@@ -11,11 +11,10 @@ import { useAuth } from "../../context/useAuth";
 import FileImport from "../../assets/file-import-solid.svg?react";
 import { fetchCourseDetails } from "../../api/instructorDashboardApi";
 import type {
-  AssignedSection,
-  CourseDetailsWithSections,
-} from "../../types/instructorDashboardTypes";
+  BaseSection,
+  BaseCoursePageResponse,
+} from "../../types/baseTypes";
 import ProgramOutcomesDisplayTable from "../../components/ProgramOutcomesDisplayTableComponent";
-import { useDepartment } from "../../context/useDepartment";
 import CourseOutcomesTableComponent from "../../components/CourseOutcomesTableComponent";
 import OutcomeMappingTableComponent from "../../components/OutcomeMappingTableComponent";
 import GearsSolid from "../../assets/gears-solid-full.svg?react";
@@ -25,6 +24,11 @@ import { toast } from "react-toastify";
 import { extractSyllabus } from "../../api/instructorDataExtractionApi";
 import type { AxiosError } from "axios";
 
+type AugmentedSection = BaseSection & {
+  id: number;
+  combined_course_section: string;
+};
+
 export default function CoursePage() {
   const [activeMenu, setActiveMenu] = useState("section");
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,16 +37,17 @@ export default function CoursePage() {
   const [refreshOutcomesKey, setRefreshOutcomesKey] = useState(0);
   const [showSyllabusModal, setShowSyllabusModal] = useState(false);
   const [isUploadingSyllabus, setIsUploadingSyllabus] = useState(false);
-  const { department } = useDepartment();
-  const programId = department?.program_id ?? 0;
   const { user } = useAuth();
   const { layout } = useLayout();
   const navigate = useNavigate();
   const [courseDetails, setCourseDetails] =
-    useState<CourseDetailsWithSections | null>(null);
+    useState<BaseCoursePageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [accessError, setAccessError] = useState<string | null>(null);
+
   const currentUserId = user?.user_id ?? null;
+  const programName = courseDetails?.course_details.program_name ?? "";
+  const programId = courseDetails?.course_details.program_id ?? null;
 
   useEffect(() => {
     const loadCourse = async () => {
@@ -84,7 +89,7 @@ export default function CoursePage() {
     const courseCode = courseDetails?.course_details?.course_code ?? "";
     const sections = courseDetails?.sections ?? [];
 
-    const augmented = sections.map((section) => ({
+    const augmented: AugmentedSection[] = sections.map((section) => ({
       ...section,
       id: section.section_id,
       combined_course_section: courseCode
@@ -156,7 +161,7 @@ export default function CoursePage() {
     }
   };
 
-  const goToClassRecord = (item: AssignedSection) => {
+  const goToClassRecord = (item: AugmentedSection) => {
     if (!loaded_course_id) return;
 
     navigate(`/instructor/${loaded_course_id}/${item.section_id}`, {
@@ -290,11 +295,11 @@ export default function CoursePage() {
             <div className="gap-2">
               <h2 className="text-xl">Program Outcomes</h2>
               <span className="text-[#767676]">
-                Upon completion of the {department?.program_name}, graduates are
+                Upon completion of the {programName}, graduates are
                 able to:
               </span>
             </div>
-            <ProgramOutcomesDisplayTable programId={programId} />
+            <ProgramOutcomesDisplayTable programId={Number(programId)} />
           </div>
 
           <div className="flex flex-col gap-8">

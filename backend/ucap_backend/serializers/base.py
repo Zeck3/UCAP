@@ -7,11 +7,12 @@ from ucap_backend.models import *
 class BaseLoadedCourseSerializer(serializers.ModelSerializer):
     course_code = serializers.CharField(source="course.course_code", read_only=True)
     course_title = serializers.CharField(source="course.course_title", read_only=True)
-    program_name = serializers.CharField(source="course.program.program_name", read_only=True)
     academic_year_start = serializers.IntegerField(source="academic_year.academic_year_start", read_only=True)
     academic_year_end = serializers.IntegerField(source="academic_year.academic_year_end", read_only=True)
     semester_type = serializers.CharField(source="course.semester.semester_type", read_only=True)
     year_level_type = serializers.CharField(source="course.year_level.year_level_type", read_only=True)
+    program_id = serializers.IntegerField(source="course.program.program_id", read_only=True)
+    program_name = serializers.CharField(source="course.program.program_name", read_only=True)
 
     class Meta:
         model = LoadedCourse
@@ -19,6 +20,7 @@ class BaseLoadedCourseSerializer(serializers.ModelSerializer):
             "loaded_course_id",
             "course_code",
             "course_title",
+            "program_id",
             "program_name",
             "academic_year_start",
             "academic_year_end",
@@ -56,6 +58,12 @@ class BaseCourseDetailsSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source="loaded_course.course.program.department.department_name", read_only=True)
     college_name = serializers.CharField(source="loaded_course.course.program.department.college.college_name", read_only=True)
     campus_name = serializers.CharField(source="loaded_course.course.program.department.campus.campus_name", read_only=True)
+    program_id = serializers.IntegerField(
+        source="loaded_course.course.program.program_id", read_only=True
+    )
+    program_name = serializers.CharField(
+        source="loaded_course.course.program.program_name", read_only=True
+    )
 
     def get_academic_year(self, obj):
         ay = obj.loaded_course.academic_year
@@ -69,6 +77,8 @@ class BaseCourseDetailsSerializer(serializers.ModelSerializer):
             "academic_year",
             "semester_type",
             "year_level",
+            "program_id",
+            "program_name",
             "department_name",
             "college_name",
             "campus_name",
@@ -81,20 +91,75 @@ class UserRoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserRole
         fields = ["user_role_id", "user_role_type"]
-    def __str__(self):
-        return self.name
+
+class CampusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Campus
+        fields = ["campus_id", "campus_name"]
+
+class CollegeSerializer(serializers.ModelSerializer):
+    campus_id = serializers.IntegerField(source="campus.campus_id", read_only=True)
+    campus_name = serializers.CharField(source="campus.campus_name", read_only=True)
+    campus = serializers.PrimaryKeyRelatedField(
+        queryset=Campus.objects.all(), write_only=True, required=False
+    )
+
+    class Meta:
+        model = College
+        fields = ["college_id", "college_name", "campus", "campus_id", "campus_name"]
+
+    def validate(self, attrs):
+        if not attrs.get("campus"):
+            first = Campus.objects.first()
+            if not first:
+                raise serializers.ValidationError({"campus": "No campus exists yet."})
+            attrs["campus"] = first
+        return attrs
+
 
 class DepartmentSerializer(serializers.ModelSerializer):
+    campus_id = serializers.IntegerField(source="campus.campus_id", read_only=True)
+    campus_name = serializers.CharField(source="campus.campus_name", read_only=True)
+    college_id = serializers.IntegerField(source="college.college_id", read_only=True, allow_null=True)
+    college_name = serializers.CharField(source="college.college_name", read_only=True, allow_null=True)
+
+    campus = serializers.PrimaryKeyRelatedField(
+        queryset=Campus.objects.all(), write_only=True, required=False
+    )
+    college = serializers.PrimaryKeyRelatedField(
+        queryset=College.objects.all(), write_only=True, required=False, allow_null=True
+    )
+
     class Meta:
         model = Department
-        fields = ["department_id", "department_name"]
-    def __str__(self):
-        return self.name
+        fields = [
+            "department_id", "department_name",
+            "campus", "campus_id", "campus_name",
+            "college", "college_id", "college_name",
+        ]
+
+    def validate(self, attrs):
+        if not attrs.get("campus"):
+            first = Campus.objects.first()
+            if not first:
+                raise serializers.ValidationError({"campus": "No campus exists yet."})
+            attrs["campus"] = first
+        return attrs
+
 
 class ProgramSerializer(serializers.ModelSerializer):
+    department_id = serializers.IntegerField(source="department.department_id", read_only=True)
+    department_name = serializers.CharField(source="department.department_name", read_only=True)
+    department = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(), write_only=True
+    )
+
     class Meta:
         model = Program
-        fields = ["program_id", "program_name"]
+        fields = [
+            "program_id", "program_name",
+            "department", "department_id", "department_name",
+        ]
 
 class YearLevelSerializer(serializers.ModelSerializer):
     class Meta:
@@ -118,7 +183,7 @@ class AcademicYearSerializer(serializers.ModelSerializer):
 
 class InstructorSerializer(serializers.ModelSerializer):
     user_role = serializers.CharField(source="user_role.user_role_type", read_only=True)
-    department_id = serializers.CharField(source="department.department_id", read_only=True)
+    department_ids = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -127,5 +192,8 @@ class InstructorSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "user_role",
-            "department_id",
+            "department_ids",
         ]
+
+    def get_department_ids(self, obj):
+        return list(obj.departments.values_list("department_id", flat=True))
