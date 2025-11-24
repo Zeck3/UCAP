@@ -11,15 +11,15 @@ export const Roles = {
   Instructor: 2,
   DepartmentChair: 3,
   Dean: 4,
-  ViceChancellorOfAcademicAffairs: 5,
-  VicePresidentOfAcademicAffairs: 6,
+  ViceChancellorForAcademicAffairs: 5,
+  VicePresidentForAcademicAffairs: 6,
 };
 
 export const roleInheritance: Record<number, number[]> = {
   [Roles.DepartmentChair]: [Roles.Instructor],
   [Roles.Dean]: [Roles.Instructor],
-  [Roles.ViceChancellorOfAcademicAffairs]: [Roles.Instructor],
-  [Roles.VicePresidentOfAcademicAffairs]: [Roles.Instructor],
+  [Roles.ViceChancellorForAcademicAffairs]: [Roles.Instructor],
+  [Roles.VicePresidentForAcademicAffairs]: [Roles.Instructor],
 };
 
 

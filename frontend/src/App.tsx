@@ -15,15 +15,18 @@ import DepartmentChairCoursePage from "./pages/department_chair/DepartmentChairC
 import DepartmentChairAssessmentPage from "./pages/department_chair/DepartmentChairAssessmentPage";
 import DeanCourseDashboard from "./pages/dean/DeanCourseDashboard";
 import DeanAssessmentPage from "./pages/dean/DeanAssessmentPage";
-import CampusAssessmentPage from "./pages/vcaa/VcaaAssessmentPage";
-import CampusCoursePage from "./pages/vcaa/VcaaCoursePage";
-import CampusCourseDashboard from "./pages/vcaa/VcaaCourseDashboard";
 import DeanCoursePage from "./pages/dean/DeanCoursePage";
 import AssessmentPage from "./pages/instructor/AssessmentPage";
 import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import AdminHierarchyManagementDashboard from "./pages/admin/AdminHierarchyManagementDashboard";
 import DepartmentChairCourseManagement from "./pages/department_chair/DepartmentChairCourseManagement";
+import VcaaAssessmentPage from "./pages/vcaa/VcaaAssessmentPage";
+import VcaaCoursePage from "./pages/vcaa/VcaaCoursePage";
+import VcaaCourseDashboard from "./pages/vcaa/VcaaCourseDashboard";
+import VpaaAssessmentPage from "./pages/vpaa/VpaaAssessmentPage";
+import VpaaCoursePage from "./pages/vpaa/VpaaCoursePage";
+import VpaaCourseDashboard from "./pages/vpaa/VpaaCourseDashboard";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function App() {
   const auth = useContext(AuthContext);
@@ -57,10 +60,16 @@ export default function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<NotFoundPage />} />
 
-        <Route element={ <ProtectedRoute allowedRoles={[Roles.ViceChancellorOfAcademicAffairs]}/> }>
-          <Route path="/campus/:department_id/:loaded_course_id/:section_id" element={<CampusAssessmentPage />} />
-          <Route path="/campus/:department_id/:loaded_course_id" element={<CampusCoursePage />} />
-          <Route path="/campus/:department_id" element={<CampusCourseDashboard />} />
+        <Route element={ <ProtectedRoute allowedRoles={[Roles.VicePresidentForAcademicAffairs]}/> }>
+          <Route path="/university/:loaded_course_id/:section_id" element={<VpaaAssessmentPage />} />
+          <Route path="/university/:loaded_course_id" element={<VpaaCoursePage />} />
+          <Route path="/university/" element={<VpaaCourseDashboard />} />
+        </Route>
+
+        <Route element={ <ProtectedRoute allowedRoles={[Roles.ViceChancellorForAcademicAffairs]}/> }>
+          <Route path="/campus/:department_id/:loaded_course_id/:section_id" element={<VcaaAssessmentPage />} />
+          <Route path="/campus/:department_id/:loaded_course_id" element={<VcaaCoursePage />} />
+          <Route path="/campus/:department_id" element={<VcaaCourseDashboard />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={[Roles.Dean]} />}>

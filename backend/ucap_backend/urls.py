@@ -7,6 +7,7 @@ from ucap_backend.views.department_chair import dc_course_detail_view, dc_course
 from ucap_backend.views.instructor import AssessmentPageAPIView, AssessmentViewSet, ClassRecordViewSet, CourseComponentViewSet, CourseUnitViewSet, RawScoreUpdateView, StudentViewSet, SyllabusExtractView, course_outcome_detail_view, course_outcome_list_create_view, instructor_assigned_sections_view, instructor_loaded_courses_view, outcome_mapping_view, update_outcome_mapping
 from ucap_backend.views.user import change_password_view, csrf_token_view, heartbeat_view, login_view, logout_view, me_view, user_initial_info_view
 from ucap_backend.views.vcaa import vcaa_course_page_view, vcaa_loaded_courses_view
+from ucap_backend.views.vpaa import vpaa_course_page_view, vpaa_loaded_courses_view
 
 instructor_router = DefaultRouter()
 instructor_router.register(r"students", StudentViewSet, basename="student")
@@ -80,13 +81,18 @@ urlpatterns = [
     # ====================================================
     # Dean
     # ====================================================
-    path("dean/<int:department_id>/", dean_loaded_courses_view),
+    path("dean/<int:college_id>/", dean_loaded_courses_view),
     path("dean/loaded_course/<int:loaded_course_id>/", dean_course_page_view),
     # ====================================================
-    # VCAA and VPAA
+    # VCAA 
     # ====================================================
-    path("campus/<int:department_id>/", vcaa_loaded_courses_view),
+    path("campus/<int:campus_id>/", vcaa_loaded_courses_view),
     path("campus/loaded_course/<int:loaded_course_id>/", vcaa_course_page_view),
+    # ====================================================
+    # VPAA
+    # ====================================================
+    path("university/", vpaa_loaded_courses_view),
+    path("university/loaded_course/<int:loaded_course_id>/", vpaa_course_page_view),
     # ====================================================
     # Dropdown
     # ====================================================

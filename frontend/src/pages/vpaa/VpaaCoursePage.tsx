@@ -1,5 +1,3 @@
-// src/pages/vcaa/CampusCoursePage.tsx
-
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -12,15 +10,14 @@ import TableComponent from "../../components/TableComponent";
 import emptyImage from "../../assets/undraw_file-search.svg";
 import { useLayout } from "../../context/useLayout";
 
-import { fetchVcaaCoursePage } from "../../api/vcaaDashboardApi";
-import type {} from "../../types/campusLoadedCourseTypes";
+import { fetchVpaaCoursePage } from "../../api/vpaaDashboardApi";
 import type {
   BaseCoursePageResponse,
   BaseSection,
 } from "../../types/baseTypes";
 
 export default function VpaaCoursePage() {
-  const { department_id, loaded_course_id } = useParams();
+  const { loaded_course_id } = useParams();
   const navigate = useNavigate();
   const { layout } = useLayout();
 
@@ -31,28 +28,33 @@ export default function VpaaCoursePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
+    let active = true;
+
+    (async () => {
       if (!loaded_course_id) return;
 
       try {
         setLoading(true);
-        const data = await fetchVcaaCoursePage(Number(loaded_course_id));
+        const data = await fetchVpaaCoursePage(Number(loaded_course_id));
+        if (!active) return;
         setCourseData(data);
       } catch (e) {
-        console.error("Failed to fetch campus course page data", e);
+        console.error("Failed to fetch university course page data", e);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
-    };
+    })();
 
-    load();
+    return () => {
+      active = false;
+    };
   }, [loaded_course_id]);
 
   const filteredSections = useMemo(() => {
     if (!courseData) return [];
 
     const q = searchQuery.trim().toLowerCase();
-    const courseCode = courseData?.course_details.course_code ?? "";
+    const courseCode = courseData.course_details.course_code ?? "";
 
     const augmented = courseData.sections.map((s) => ({
       ...s,
@@ -67,21 +69,19 @@ export default function VpaaCoursePage() {
     return augmented.filter((section) =>
       Object.values(section).some((val) => {
         if (val == null) return false;
-
         const t = typeof val;
         if (t === "string" || t === "number" || t === "boolean") {
           return String(val).toLowerCase().includes(q);
         }
-
         return false;
       })
     );
   }, [courseData, searchQuery]);
 
   const goToAssessmentPage = (section: BaseSection) => {
-    if (!department_id || !loaded_course_id) return;
+    if (!loaded_course_id) return;
 
-    navigate(`/campus/${department_id}/${loaded_course_id}/${section.id}`, {
+    navigate(`/university/${loaded_course_id}/${section.id}`, {
       state: {
         course_code: courseData?.course_details.course_code ?? "",
         year_and_section: section.year_and_section,
@@ -92,7 +92,7 @@ export default function VpaaCoursePage() {
   const details = courseData?.course_details;
 
   return (
-    <AppLayout activeItem={`/campus/${department_id}`}>
+    <AppLayout activeItem="/university">
       <InfoComponent
         loading={loading}
         title={details?.course_title ?? ""}
@@ -107,6 +107,7 @@ export default function VpaaCoursePage() {
             : ""
         }
       />
+
       <ToolBarComponent
         titleOptions={[
           {

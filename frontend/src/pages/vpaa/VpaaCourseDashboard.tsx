@@ -1,21 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import AppLayout from "../../layout/AppLayout";
 import ToolBarComponent from "../../components/ToolBarComponent";
 import CardsGridComponent from "../../components/CardsGridComponent";
 import TableComponent from "../../components/TableComponent";
-
 import emptyImage from "../../assets/undraw_file-search.svg";
 import { useLayout } from "../../context/useLayout";
 
-import { fetchVcaaLoadedCourses } from "../../api/vcaaDashboardApi";
+import { fetchVpaaLoadedCourses } from "../../api/vpaaDashboardApi";
 import type { BaseLoadedCourse } from "../../types/baseTypes";
 import InfoComponent from "../../components/InfoComponent";
 import { useInitialInfo } from "../../context/useInitialInfo";
 
 export default function VpaaCourseDashboard() {
-  const { department_id } = useParams();
   const navigate = useNavigate();
   const { layout } = useLayout();
 
@@ -23,39 +21,36 @@ export default function VpaaCourseDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const { initialInfo, initialInfoLoading } = useInitialInfo();
-
-  const campusName =
-    initialInfo?.primary_campus?.campus_name ??
-    (initialInfo?.leadership?.level === "campus"
-      ? initialInfo.leadership.name
-      : "");
+  const { initialInfoLoading } = useInitialInfo();
 
   useEffect(() => {
-    const load = async () => {
-      if (!department_id) return;
+    let active = true;
 
+    (async () => {
       try {
         setLoading(true);
-        const data = await fetchVcaaLoadedCourses(Number(department_id));
+        const data = await fetchVpaaLoadedCourses();
+        if (!active) return;
 
-        const formatted = data.map((c) => ({
-          ...c,
-          id: c.loaded_course_id,
-          academic_year_and_semester: `${c.academic_year_start}-${c.academic_year_end} / ${c.semester_type}`,
-          year_level: c.year_level_type,
-        }));
-
-        setCourses(formatted);
+        setCourses(
+          data.map((c) => ({
+            ...c,
+            id: c.loaded_course_id,
+            academic_year_and_semester: `${c.academic_year_start}-${c.academic_year_end} / ${c.semester_type}`,
+            year_level: c.year_level_type,
+          }))
+        );
       } catch (e) {
-        console.error("Failed to fetch Campus loaded courses", e);
+        console.error("Failed to fetch University loaded courses", e);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
-    };
+    })();
 
-    load();
-  }, [department_id]);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const filteredCourses = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -72,32 +67,33 @@ export default function VpaaCourseDashboard() {
     return augmented.filter((course) =>
       Object.values(course).some((val) => {
         if (val == null) return false;
-
         const t = typeof val;
         if (t === "string" || t === "number" || t === "boolean") {
           return String(val).toLowerCase().includes(q);
         }
-
         return false;
       })
     );
   }, [searchQuery, courses]);
 
-  const goToCampusCoursePage = (course: BaseLoadedCourse) => {
-    navigate(`/campus/${department_id}/${course.loaded_course_id}`, {
-      state: {
-        course_code: course.course_code,
-      },
+  const goToUniversityCoursePage = (course: BaseLoadedCourse) => {
+    navigate(`/university/${course.loaded_course_id}`, {
+      state: { course_code: course.course_code },
     });
   };
 
   return (
-    <AppLayout activeItem={`/campus/${department_id}`}>
-      <InfoComponent loading={loading || initialInfoLoading} title={`${campusName} Campus`} />
+    <AppLayout activeItem="/university">
+      <InfoComponent
+        loading={loading || initialInfoLoading}
+        title="University Courses"
+        subtitle=""
+      />
+
       <ToolBarComponent
         titleOptions={[
           {
-            label: "Campus Courses",
+            label: "University Courses",
             value: "courses",
             enableSearch: true,
             enableLayout: true,
@@ -110,7 +106,7 @@ export default function VpaaCourseDashboard() {
       {layout === "cards" ? (
         <CardsGridComponent
           items={filteredCourses}
-          onCardClick={goToCampusCoursePage}
+          onCardClick={goToUniversityCoursePage}
           emptyImageSrc={emptyImage}
           emptyMessage="No Courses Available!"
           aspectRatio="20/9"
@@ -124,7 +120,7 @@ export default function VpaaCourseDashboard() {
       ) : (
         <TableComponent
           data={filteredCourses}
-          onRowClick={goToCampusCoursePage}
+          onRowClick={goToUniversityCoursePage}
           loading={loading}
           emptyImageSrc={emptyImage}
           emptyMessage="No Courses Available!"

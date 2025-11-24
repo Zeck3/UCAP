@@ -38,7 +38,7 @@ const OverviewChart = memo(function OverviewChart({
   return (
     <div className="mt-8">
       <h4 className="text-md mb-3">Overview</h4>
-      <div className="[&_*]:outline-none">
+      <div className="**:outline-none">
         <ResponsiveContainer width="100%" height={425}>
           <BarChart data={data} margin={OVERVIEW_CHART_MARGIN}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -814,7 +814,7 @@ export default function AssessmentPageComponent({
         singleColumn={true}
       >
         <div className="w-full h-full flex flex-col">
-          <div className="flex-grow">
+          <div className="grow">
             <h3 className="text-md mb-3">Course Outcome Attainment</h3>
             <div className="overflow-x-auto border border-[#E9E6E6] rounded-lg">
               <table className="table-auto w-full border-collapse ">

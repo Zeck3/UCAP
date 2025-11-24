@@ -2,15 +2,10 @@ import axiosClient from "./axiosClient";
 import type {
   BaseLoadedCourse,
   BaseCoursePageResponse,
-  BaseSection,
 } from "../types/baseTypes";
 
-export const fetchDeanLoadedCourses = async (
-  collegeId: number
-): Promise<BaseLoadedCourse[]> => {
-  const res = await axiosClient.get<BaseLoadedCourse[]>(
-    `/dean/${collegeId}/`
-  );
+export const fetchVpaaLoadedCourses = async (): Promise<BaseLoadedCourse[]> => {
+  const res = await axiosClient.get<BaseLoadedCourse[]>("/university/");
 
   return res.data.map((course) => ({
     ...course,
@@ -19,11 +14,11 @@ export const fetchDeanLoadedCourses = async (
   }));
 };
 
-export const fetchDeanCoursePage = async (
+export const fetchVpaaCoursePage = async (
   loadedCourseId: number
 ): Promise<BaseCoursePageResponse> => {
   const res = await axiosClient.get<BaseCoursePageResponse>(
-    `/dean/loaded_course/${loadedCourseId}/`
+    `/university/loaded_course/${loadedCourseId}/`
   );
 
   return {
@@ -31,7 +26,7 @@ export const fetchDeanCoursePage = async (
       ...res.data.course_details,
       loaded_course_id: loadedCourseId,
     },
-    sections: res.data.sections.map((s: BaseSection) => ({
+    sections: res.data.sections.map((s) => ({
       ...s,
       id: s.section_id,
     })),

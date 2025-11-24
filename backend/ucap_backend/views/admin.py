@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from ucap_backend.models import Course, User
+from ucap_backend.models import User
 from ucap_backend.serializers.admin import CreateFacultySerializer, FacultySerializer, UpdateFacultySerializer
 
 # ====================================================
