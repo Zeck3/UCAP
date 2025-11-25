@@ -6,7 +6,7 @@ interface Props {
 }
 
 export default function OutcomeMappingPredictionTable({ data }: Props) {
-  // Always define hooks first
+
   const sortedProgramOutcomes = useMemo(() => {
     if (!data?.program_outcomes) return [];
     return [...data.program_outcomes].sort((a, b) =>
@@ -91,7 +91,7 @@ export default function OutcomeMappingPredictionTable({ data }: Props) {
                   <td
                     key={po.program_outcome_id}
                     className={`px-2 py-2 text-center border-l border-[#E9E6E6] ${
-                      value === 1 ? "bg-green-300 text-white font-semibold" : ""
+                      value === 1 ? "bg-[#C5E0B3] font-semibold" : ""
                     }`}
                   >
                     {value}

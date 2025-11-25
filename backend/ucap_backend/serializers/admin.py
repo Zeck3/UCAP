@@ -21,7 +21,6 @@ class FacultySerializer(serializers.ModelSerializer):
         source="vcaa_campus.campus_name", read_only=True
     )
 
-
     class Meta:
         model = User
         fields = [
@@ -149,6 +148,20 @@ class UpdateFacultySerializer(serializers.ModelSerializer):
         ]
         extra_kwargs = {"user_id": {"read_only": True}}
 
+    def _unassign_sections_outside_departments(self, user: User):
+        allowed_dept_ids = set(
+            user.departments.values_list("department_id", flat=True)
+        )
+
+        qs = Section.objects.filter(instructor_assigned=user)
+
+        if allowed_dept_ids:
+            qs = qs.exclude(
+                loaded_course__course__program__department_id__in=allowed_dept_ids
+            )
+
+        qs.update(instructor_assigned=None)
+
     def validate(self, data):
         role = data.get("user_role", self.instance.user_role)
 
@@ -182,5 +195,6 @@ class UpdateFacultySerializer(serializers.ModelSerializer):
 
         if departments is not None:
             instance.departments.set(departments)
+            self._unassign_sections_outside_departments(instance)
 
         return instance

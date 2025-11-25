@@ -10,6 +10,8 @@ import AssessmentInfoPopup from "./context/AssessmentInfoPopup";
 import { useClassRecord } from "./utils/useClassRecord";
 import { getMaxDepth } from "./utils/ClassRecordFunctions";
 import "../../styles.css";
+import type { HeaderNode } from "./types/headerConfigTypes";
+import type { Student } from "../../types/classRecordTypes";
 
 interface Props {
   onInitialized?: () => void;
@@ -17,8 +19,8 @@ interface Props {
   onCanGenerateResultSheetChange?: (can: boolean) => void;
   onExistingStudentsChange?: (hasExisting: boolean) => void;
   onProvideExportData?: (fn: () => {
-    headerNodes: any[];
-    students: any[];
+    headerNodes: HeaderNode[];
+    students: Student[];
     studentScores: Record<number, Record<string, number>>;
     maxScores: Record<string, number>;
     computedValues: Record<number, Record<string, number>>;
@@ -201,7 +203,7 @@ export default function ClassRecordComponent({
     <>
       <table
         ref={tableRef}
-        className="table-fixed border-collapse border-0 min-w-max -ml-px -mt-px ucap-table"
+        className="table-fixed border-collapse mb-16 border-0 min-w-max -ml-px -mt-px ucap-table"
       >
         <thead>
           <BuildHeaderRow

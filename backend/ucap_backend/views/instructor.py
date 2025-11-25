@@ -1,7 +1,10 @@
 from collections import defaultdict
+import json
 import csv
 from io import TextIOWrapper
 import uuid
+import tempfile
+from gradio_client import Client, handle_file
 from django.db.models import Prefetch
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
@@ -933,3 +936,72 @@ class SyllabusExtractView(APIView):
                     default_storage.delete(path)
             except Exception:
                 pass
+
+# ====================================================
+# NLP Outcome Mapping
+# ====================================================
+HF_SPACE = "jestoniandales25/BERT_nlp"
+HF_API_NAME = "/process_json"
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def nlp_outcome_mapping_view(request, loaded_course_id: int):
+    try:
+        loaded_course = (
+            LoadedCourse.objects
+            .select_related("course__program")
+            .get(pk=loaded_course_id)
+        )
+
+        cos = CourseOutcome.objects.filter(
+            loaded_course_id=loaded_course_id
+        ).order_by("course_outcome_id")
+
+        program_id = loaded_course.course.program_id
+        pos = ProgramOutcome.objects.filter(
+            program_id=program_id
+        ).order_by("program_outcome_id")
+
+        co_data = CourseOutcomeSerializer(cos, many=True).data
+        po_data = ProgramOutcomeSerializer(pos, many=True).data
+
+        payload = {
+            "CourseOutcome": [
+                {
+                    "course_outcome_code": co["course_outcome_code"],
+                    "course_outcome_description": co["course_outcome_description"],
+                }
+                for co in co_data
+            ],
+            "ProgramOutcome": [
+                {
+                    "program_outcome_code": po["program_outcome_code"],
+                    "program_outcome_description": po["program_outcome_description"],
+                }
+                for po in po_data
+            ],
+        }
+
+        client = Client(HF_SPACE)
+
+        with tempfile.NamedTemporaryFile(mode="w+", suffix=".json") as f:
+            json.dump(payload, f)
+            f.flush()
+
+            result = client.predict(
+                file_obj=handle_file(f.name),
+                api_name=HF_API_NAME
+            )
+
+        return Response(result, status=status.HTTP_200_OK)
+
+    except LoadedCourse.DoesNotExist:
+        return Response(
+            {"message": "Loaded course not found."},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {"message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
