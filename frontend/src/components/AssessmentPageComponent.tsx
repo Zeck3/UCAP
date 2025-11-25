@@ -193,11 +193,14 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
       return;
     }
 
-    const newValues = {
-      ...kpiValues,
-      [getKpiKey(editingKpiCo, "pass70")]: kpi70,
-      [getKpiKey(editingKpiCo, "pass80")]: kpi80
-    };
+    const newValues = { ...kpiValues };
+    const allCos = layout.flatMap(po => po.cos.map(co => co.name));
+    
+    for (const coName of allCos) {
+      newValues[getKpiKey(coName, "pass70")] = kpi70;
+      newValues[getKpiKey(coName, "pass80")] = kpi80;
+    }
+    
     setKpiValues(newValues);
     saveKpiValues(newValues);
     setEditingKpiCo(null);
@@ -772,7 +775,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
                   onChange={(e) => setTempKpi70(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), saveKpiFromPopup())}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none"
-                  placeholder="Enter value (1-100)"
+                  placeholder="Enter value"
                 />
                 <span className="text-sm text-gray-500">%</span>
               </div>
@@ -787,7 +790,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
                   onChange={(e) => setTempKpi80(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), saveKpiFromPopup())}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none"
-                  placeholder="Enter value (1-100)"
+                  placeholder="Enter value"
                 />
                 <span className="text-sm text-gray-500">%</span>
               </div>
