@@ -112,11 +112,23 @@ export default function ClassRecordComponent({ onInitialized, onProvideFetchStud
             if (selectedCells.length > 0 && !isFocusedInInput) {
                 if (/^[0-9]$/.test(e.key)) {
                     e.preventDefault();
-                    bulkEditValueRef.current += e.key;
+                    const tentativeValue = bulkEditValueRef.current + e.key;
+                    const newValue = Number(tentativeValue);
+                    let anyAccepted = false;
                     selectedCells.forEach(cell => {
                         const input = cell.querySelector("input");
-                        if (input instanceof HTMLInputElement) input.value = bulkEditValueRef.current;
+                        if (input instanceof HTMLInputElement) {
+                            const maxAttr = input.getAttribute("max");
+                            const max = maxAttr ? Number(maxAttr) : 999;
+                            if (newValue <= max) {
+                                input.value = tentativeValue;
+                                anyAccepted = true;
+                            }
+                        }
                     });
+                    if (anyAccepted) {
+                        bulkEditValueRef.current = tentativeValue;
+                    }
                 } else if (e.key === "Backspace") {
                     e.preventDefault();
                     bulkEditValueRef.current = bulkEditValueRef.current.slice(0, -1);
