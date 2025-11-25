@@ -766,7 +766,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
 
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <label className="text-sm font-medium w-32">Passing ({getKpiValue(editingKpiCo, "pass70")}%):</label>
+                <label className="text-sm font-medium w-48">Individual Passing ({getKpiValue(editingKpiCo, "pass70")}%):</label>
                 <input
                   type="number"
                   min="1"
@@ -781,7 +781,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
               </div>
 
               <div className="flex items-center gap-4">
-                <label className="text-sm font-medium w-32">Passing ({getKpiValue(editingKpiCo, "pass80")}%):</label>
+                <label className="text-sm font-medium w-48">Class Passing ({getKpiValue(editingKpiCo, "pass80")}%):</label>
                 <input
                   type="number"
                   min="1"
