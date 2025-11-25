@@ -105,15 +105,17 @@ def instructor_assigned_sections_view(request, instructor_id, loaded_course_id):
 # ====================================================
 # Class Record
 # ====================================================
-def can_generate_result_sheet(section: Section) -> bool:
+def can_generate_result_sheet(section: Section, instructor) -> bool:
     loaded_course = section.loaded_course
 
     has_cos = CourseOutcome.objects.filter(
-        loaded_course=loaded_course
+        loaded_course=loaded_course,
+        instructor=instructor
     ).exists()
 
     has_mappings = OutcomeMapping.objects.filter(
-        course_outcome__loaded_course=loaded_course
+        course_outcome__loaded_course=loaded_course,
+        course_outcome__instructor=instructor
     ).exclude(outcome_mapping__isnull=True).exclude(outcome_mapping="")
     has_mappings = has_mappings.exists()
 
@@ -170,7 +172,7 @@ class ClassRecordViewSet(viewsets.ViewSet):
 
         serializer = ClassRecordSerializer(section)
         data = serializer.data
-        data["canGenerateResultSheet"] = can_generate_result_sheet(section)
+        data["canGenerateResultSheet"] = can_generate_result_sheet(section, request.user)
 
         return Response(data)
     
@@ -560,6 +562,9 @@ class AssessmentPageAPIView(APIView):
 
     def format_co_label(self, co_codes, course_unit_type):
         codes_sorted = sorted(co_codes, key=self.co_code_num)
+        
+        if len(codes_sorted) == 0:
+            return ""
 
         if len(codes_sorted) == 1:
             return (
@@ -627,7 +632,10 @@ class AssessmentPageAPIView(APIView):
             .order_by("assessment_id")
         )
 
-        co_qs = CourseOutcome.objects.filter(loaded_course=loaded_course)
+        co_qs = CourseOutcome.objects.filter(
+            loaded_course=loaded_course,
+            instructor=request.user
+        )
         co_id_to_code = {co.course_outcome_id: co.course_outcome_code for co in co_qs}
 
         co_to_po_codes = defaultdict(set)
@@ -635,6 +643,7 @@ class AssessmentPageAPIView(APIView):
             OutcomeMapping.objects
             .filter(
                 course_outcome__loaded_course=loaded_course,
+                course_outcome__instructor=request.user,
                 program_outcome__program=program,
                 outcome_mapping__in=["I", "D", "E"],
             )
@@ -659,11 +668,13 @@ class AssessmentPageAPIView(APIView):
                 if co.loaded_course_id == loaded_course.loaded_course_id
             ]
 
-            if not a_co_codes:
+            valid_co_codes = [c for c in a_co_codes if c]
+
+            if not valid_co_codes:
                 assessment_ids_in_order.append(a.assessment_id)
                 continue
 
-            co_label = self.format_co_label([c for c in a_co_codes if c], unit_type)
+            co_label = self.format_co_label(valid_co_codes, unit_type)
             bloom_key = self.normalize_bloom_names(list(a.blooms_classification.all()))
 
             co_to_bloom_to_assess[co_label][bloom_key].append({
@@ -778,7 +789,10 @@ class AssessmentPageAPIView(APIView):
 def course_outcome_list_create_view(request, loaded_course_id):
     try:
         if request.method == "GET":
-            outcomes = CourseOutcome.objects.filter(loaded_course_id=loaded_course_id).order_by("course_outcome_id")
+            outcomes = CourseOutcome.objects.filter(
+                loaded_course_id=loaded_course_id,
+                instructor=request.user
+            ).order_by("course_outcome_id")
             serializer = CourseOutcomeSerializer(outcomes, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -787,7 +801,10 @@ def course_outcome_list_create_view(request, loaded_course_id):
         except LoadedCourse.DoesNotExist:
             return Response({"message": "Loaded course not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        last_outcome = CourseOutcome.objects.filter(loaded_course=loaded_course).order_by("course_outcome_id").last()
+        last_outcome = CourseOutcome.objects.filter(
+            loaded_course=loaded_course,
+            instructor=request.user
+        ).order_by("course_outcome_id").last()
 
         if last_outcome:
             last_num = int(last_outcome.course_outcome_code.replace("CO", ""))
@@ -799,7 +816,11 @@ def course_outcome_list_create_view(request, loaded_course_id):
 
         serializer = CourseOutcomeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(loaded_course=loaded_course, course_outcome_code=next_code)
+            serializer.save(
+                loaded_course=loaded_course,
+                course_outcome_code=next_code,
+                instructor=request.user
+            )
             return Response(
                 {"message": "Course Outcome added successfully", "data": serializer.data},
                 status=status.HTTP_201_CREATED,
@@ -819,6 +840,13 @@ def course_outcome_detail_view(request, outcome_id):
         except CourseOutcome.DoesNotExist:
             return Response({"message": "Course Outcome not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        # Verify the instructor owns this course outcome
+        if outcome.instructor != request.user:
+            return Response(
+                {"message": "You do not have permission to modify this Course Outcome"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         if request.method == "PUT":
             serializer = CourseOutcomeSerializer(outcome, data=request.data, partial=True)
             if serializer.is_valid():
@@ -829,7 +857,10 @@ def course_outcome_detail_view(request, outcome_id):
                 )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        latest = CourseOutcome.objects.filter(loaded_course=outcome.loaded_course).order_by("course_outcome_id").last()
+        latest = CourseOutcome.objects.filter(
+            loaded_course=outcome.loaded_course,
+            instructor=request.user
+        ).order_by("course_outcome_id").last()
         if latest and latest.pk == outcome.pk:
             outcome.delete()
             return Response({"message": "Course Outcome deleted successfully"}, status=status.HTTP_200_OK)
@@ -848,7 +879,10 @@ def course_outcome_detail_view(request, outcome_id):
 @permission_classes([IsAuthenticated])
 def outcome_mapping_view(request, loaded_course_id):
     try:
-        course_outcomes = CourseOutcome.objects.filter(loaded_course_id=loaded_course_id)
+        course_outcomes = CourseOutcome.objects.filter(
+            loaded_course_id=loaded_course_id,
+            instructor=request.user
+        )
         
         if not course_outcomes.exists():
             loaded_course = LoadedCourse.objects.filter(pk=loaded_course_id).select_related("course__program").first()
@@ -954,7 +988,8 @@ def nlp_outcome_mapping_view(request, loaded_course_id: int):
         )
 
         cos = CourseOutcome.objects.filter(
-            loaded_course_id=loaded_course_id
+            loaded_course_id=loaded_course_id,
+            instructor=request.user
         ).order_by("course_outcome_id")
 
         program_id = loaded_course.course.program_id

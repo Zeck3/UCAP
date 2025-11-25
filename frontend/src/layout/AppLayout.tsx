@@ -55,6 +55,8 @@ export default function AppLayout({
     ));
   }, [user, roleNav, isSidebarOpen, currentPath]);
 
+  const sidebarWidth = user?.role_id === 3 ? "w-65" : "w-52";
+
   return (
     <div className="h-screen flex">
       <HeaderComponent
@@ -77,7 +79,7 @@ export default function AppLayout({
       <div className="flex flex-row w-full pt-16">
         <aside
           className={`flex border-r border-[#E9E6E6] transition-all duration-300 ${
-            isSidebarOpen ? "w-52" : "w-16"
+            isSidebarOpen ? sidebarWidth : "w-16"
           }`}
         >
           <nav className="flex flex-col w-full pt-4 sticky top-0">

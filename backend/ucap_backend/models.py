@@ -202,6 +202,7 @@ class RawScore(models.Model):
 class CourseOutcome(models.Model):
     course_outcome_id = models.AutoField(primary_key=True)
     loaded_course = models.ForeignKey("LoadedCourse", on_delete=models.CASCADE)
+    instructor = models.ForeignKey("User", on_delete=models.SET_NULL, null=True, blank=True, related_name="course_outcomes")
     course_outcome_code = models.CharField(max_length=10)
     course_outcome_description = models.TextField()
 

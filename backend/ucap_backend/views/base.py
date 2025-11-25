@@ -136,7 +136,7 @@ def course_outcome_list_view(request, loaded_course_id):
     try:
         outcomes = (
             CourseOutcome.objects
-            .filter(loaded_course_id=loaded_course_id)
+            .filter(loaded_course_id=loaded_course_id, instructor=request.user)
             .filter(outcomemapping__outcome_mapping__isnull=False)
             .exclude(outcomemapping__outcome_mapping="")
             .distinct()
