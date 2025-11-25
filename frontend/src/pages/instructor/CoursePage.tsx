@@ -435,7 +435,7 @@ export default function CoursePage() {
           </div>
 
           <div className="flex flex-col gap-8">
-            <h2 className="text-xl">Outcome Mapping</h2>
+            <h2 className="text-xl">CO-PO Mapping</h2>
             <OutcomeMappingTableComponent
               key={refreshMappingKey}
               loadedCourseId={Number(loaded_course_id)}

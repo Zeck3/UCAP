@@ -18,8 +18,6 @@ interface ExportData {
 }
 
 type NodeMatrix = (HeaderNode | null)[][];
-type LeafMap = Map<string, number>;
-type ParentMap = Map<HeaderNode, HeaderNode | null>;
 
 const GRADE_SCALE = [
   1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.25, 4.5,

@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -159,9 +159,21 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
   const statusBtnRef = useRef<HTMLButtonElement | null>(null);
   const statusMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const getKpiKey = (coName: string, kpiType: "pass70" | "pass80") => `${section_id}-${coName}-${kpiType}`;
-  const getKpiValue = (coName: string, kpiType: "pass70" | "pass80") =>
-    kpiValues[getKpiKey(coName, kpiType)] ?? (kpiType === "pass70" ? 70 : 80);
+  const getKpiKey = useCallback(
+    (coName: string, kpiType: "pass70" | "pass80") =>
+      `${section_id}-${coName}-${kpiType}`,
+    [section_id]
+  );
+  
+  const getKpiValue = useCallback(
+    (coName: string, kpiType: "pass70" | "pass80") => {
+      return (
+        kpiValues[getKpiKey(coName, kpiType)] ??
+        (kpiType === "pass70" ? 70 : 80)
+      );
+    },
+    [kpiValues, getKpiKey]
+  );
 
   const saveKpiValues = (newValues: Record<string, number>) =>
     localStorage.setItem(`kpi-values-${section_id}`, JSON.stringify(newValues));
@@ -396,7 +408,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
           return { totalMax, pass70, pass80Count, kpi70, kpi80 };
         })
       ),
-    [layout, studentCount, kpiValues, section_id]
+    [layout, studentCount, getKpiValue]
   );
 
   const coAnalytics = useMemo(() => {
@@ -516,7 +528,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
             >
               <div className="flex gap-2">
                 <span className="font-medium whitespace-nowrap">Remarks:</span>
-                <div className="font-medium text-gray-600 overflow-hidden break-words flex-1" style={{ display: '-webkit-box', WebkitLineClamp: 10, WebkitBoxOrient: 'vertical' }}>
+                <div className="font-medium text-gray-600 overflow-hidden wrap-break-word flex-1" style={{ display: '-webkit-box', WebkitLineClamp: 10, WebkitBoxOrient: 'vertical' }}>
                   {(data as any)?.generalRemarks || (!isReadOnly && <span className="text-gray-400">Click to add remarks...</span>)}
                 </div>
               </div>
@@ -802,7 +814,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
       {/* Remarks Editor Popup */}
       {editingRemarks && (
         <div
-          className="fixed inset-0 flex items-center justify-center z-50"
+          className="fixed inset-0 flex items-center justify-center z-6000"
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}
           onClick={() => setEditingRemarks(false)}
         >
@@ -851,7 +863,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
             <h3 className="text-lg font-semibold mb-4">Remarks:</h3>
 
             <div className="p-3 border border-gray-300 rounded-lg bg-gray-50 max-h-96 overflow-y-auto">
-              <p className="text-gray-700 whitespace-pre-wrap break-words">{(data as any)?.generalRemarks || "No remarks available."}</p>
+              <p className="text-gray-700 whitespace-pre-wrap wrap-break-word">{(data as any)?.generalRemarks || "No remarks available."}</p>
             </div>
 
             <div className="flex justify-end gap-3 mt-4">
