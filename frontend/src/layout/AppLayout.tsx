@@ -78,7 +78,7 @@ export default function AppLayout({
       />
       <div className="flex flex-row w-full pt-16">
         <aside
-          className={`flex border-r border-[#E9E6E6] transition-all duration-300 ${
+          className={`flex border-r border-[#E9E6E6] transition-all duration-300 z-2000 ${
             isSidebarOpen ? sidebarWidth : "w-16"
           }`}
         >
