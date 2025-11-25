@@ -164,7 +164,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
       `${section_id}-${coName}-${kpiType}`,
     [section_id]
   );
-  
+
   const getKpiValue = useCallback(
     (coName: string, kpiType: "pass70" | "pass80") => {
       return (
@@ -754,7 +754,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
       {/* KPI Editor Popup */}
       {editingKpiCo && (
         <div
-          className="fixed inset-0 flex items-center justify-center z-50"
+          className="fixed inset-0 flex items-center justify-center z-5000"
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}
           onClick={() => setEditingKpiCo(null)}
         >
