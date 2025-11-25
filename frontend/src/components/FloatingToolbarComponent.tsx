@@ -7,14 +7,16 @@ import { exportClassRecordToExcel } from "./classrecord/utils/ExportClassRecord"
 import type { AxiosError } from "axios";
 import { toast } from "react-toastify";
 import FileInstructionComponent from "./FileInstructionComponent";
+import type { HeaderNode } from "./classrecord/types/headerConfigTypes";
+import type { Student } from "../types/classRecordTypes";
 
 type Props = {
   goToAssessmentPage: () => void;
   sectionId: number;
   refreshStudents: () => Promise<void>;
   getExportData: () => {
-    headerNodes: any[];
-    students: any[];
+    headerNodes: HeaderNode[];
+    students: Student[];
     studentScores: Record<number, Record<string, number>>;
     maxScores: Record<string, number>;
     computedValues: Record<number, Record<string, number>>;
@@ -58,7 +60,6 @@ export default function FloatingToolbarComponent({
     const file = fileOverride ?? selectedFile;
     if (!file) return;
 
-    // CLOSE MODALS IMMEDIATELY WHEN PROCESSING STARTS
     setShowInstructionModal(false);
     setShowModeModal(false);
     setIsImporting(true);
@@ -123,8 +124,8 @@ export default function FloatingToolbarComponent({
         >
           <FileImportIcon className="w-5 h-5 text-[#767676]" />
           <span
-            className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2
-              text-xs text-white bg-[#767676] px-2 py-1 rounded opacity-0
+            className="pointer-events-none absolute bottom-full mb-3 left-1/2 -translate-x-1/2
+              text-xs text-white bg-[#767676] px-2 py-1 rounded whitespace-nowrap opacity-0
               group-hover:opacity-100 transition"
           >
             Import Student List
@@ -140,7 +141,7 @@ export default function FloatingToolbarComponent({
         >
           <DownloadIcon className="w-5 h-5 text-[#767676]" />
           <span
-            className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2
+            className="pointer-events-none absolute bottom-full mb-3 left-1/2 -translate-x-1/2
               text-xs text-white bg-[#767676] px-2 py-1 rounded whitespace-nowrap opacity-0
               group-hover:opacity-100 transition"
           >

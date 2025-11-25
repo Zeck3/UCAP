@@ -203,7 +203,7 @@ export default function ClassRecordComponent({
     <>
       <table
         ref={tableRef}
-        className="table-fixed border-collapse mb-16 border-0 min-w-max -ml-px -mt-px ucap-table"
+        className="table-fixed border-collapse mb-15 border-0 min-w-max -ml-px -mt-px ucap-table"
       >
         <thead>
           <BuildHeaderRow
