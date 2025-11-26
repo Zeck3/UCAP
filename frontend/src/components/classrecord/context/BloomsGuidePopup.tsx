@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import XIcon from "../assets/xmark-solid.svg?react"; // swap to your close icon if needed
+import XIcon from "../../../assets/x-solid-full.svg?react";
 
 type Props = {
   isOpen: boolean;
@@ -17,48 +17,114 @@ const BLOOMS: BloomLevel[] = [
     level: "Remember",
     description: "Recall facts and basic concepts.",
     verbs: [
-      "define","list","recall","identify","label","recognize","name",
-      "state","select","match","memorize","repeat"
+      "remember",
+      "define",
+      "list",
+      "recall",
+      "identify",
+      "label",
+      "recognize",
+      "name",
+      "state",
+      "select",
+      "match",
+      "memorize",
+      "repeat",
     ],
   },
   {
     level: "Understand",
     description: "Explain ideas or concepts.",
     verbs: [
-      "describe","explain","summarize","classify","compare","interpret",
-      "paraphrase","infer","illustrate","discuss","predict","give examples"
+      "understand",
+      "describe",
+      "explain",
+      "summarize",
+      "classify",
+      "compare",
+      "interpret",
+      "paraphrase",
+      "infer",
+      "illustrate",
+      "discuss",
+      "predict",
+      "give examples",
     ],
   },
   {
     level: "Apply",
     description: "Use information in new situations.",
     verbs: [
-      "use","execute","implement","solve","demonstrate","calculate",
-      "perform","operate","employ","practice","modify","compute"
+      "apply",
+      "use",
+      "execute",
+      "implement",
+      "solve",
+      "demonstrate",
+      "calculate",
+      "perform",
+      "operate",
+      "employ",
+      "practice",
+      "modify",
+      "compute",
     ],
   },
   {
     level: "Analyze",
     description: "Draw connections among ideas.",
     verbs: [
-      "differentiate","organize","attribute","contrast","examine","test",
-      "categorize","investigate","diagram","break down","compare","deconstruct"
+      "analyze",
+      "differentiate",
+      "organize",
+      "attribute",
+      "contrast",
+      "examine",
+      "test",
+      "categorize",
+      "investigate",
+      "diagram",
+      "break down",
+      "compare",
+      "deconstruct",
     ],
   },
   {
     level: "Evaluate",
     description: "Justify a decision or course of action.",
     verbs: [
-      "check","critique","judge","justify","appraise","argue",
-      "defend","assess","rate","recommend","validate","prioritize"
+      "evaluate",
+      "check",
+      "critique",
+      "judge",
+      "justify",
+      "appraise",
+      "argue",
+      "defend",
+      "assess",
+      "rate",
+      "recommend",
+      "validate",
+      "prioritize",
     ],
   },
   {
     level: "Create",
     description: "Produce new or original work.",
     verbs: [
-      "design","construct","develop","formulate","generate","plan",
-      "compose","produce","devise","invent","propose","synthesize"
+      "create",
+      "design",
+      "construct",
+      "develop",
+      "formulate",
+      "generate",
+      "plan",
+      "compose",
+      "produce",
+      "devise",
+      "invent",
+      "propose",
+      "synthesize",
     ],
   },
 ];
@@ -79,12 +145,9 @@ export default function BloomsGuidePopup({ isOpen, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-99999 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="relative w-[92vw] max-w-3xl bg-white rounded-2xl shadow-xl border border-[#E9E6E6] p-5">
+      <div className="relative w-[92vw] max-w-3xl bg-white rounded-2xl shadow-xl border border-[#E9E6E6] p-5 flex flex-col gap-2">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold">Bloom’s Taxonomy Guide</h2>
@@ -110,7 +173,7 @@ export default function BloomsGuidePopup({ isOpen, onClose }: Props) {
           onChange={(e) => setQuery(e.target.value)}
         />
 
-        <div className="max-h-[60vh] overflow-y-auto border border-[#E9E6E6] rounded-lg">
+        <div className="h-[40vh] overflow-y-auto border border-[#E9E6E6] rounded-lg">
           <table className="min-w-full text-sm">
             <thead className="sticky top-0 bg-gray-50 border-b border-[#E9E6E6]">
               <tr>
@@ -122,22 +185,29 @@ export default function BloomsGuidePopup({ isOpen, onClose }: Props) {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-3 py-6 text-center text-gray-500">
+                  <td
+                    colSpan={3}
+                    className="px-3 py-6 text-center text-gray-500"
+                  >
                     No verbs found for “{query}”.
                   </td>
                 </tr>
               ) : (
                 filtered.map((lvl) => {
                   const q = query.trim().toLowerCase();
-                  const shownVerbs =
-                    q
-                      ? lvl.verbs.filter((v) => v.toLowerCase().includes(q))
-                      : lvl.verbs;
+                  const shownVerbs = q
+                    ? lvl.verbs.filter((v) => v.toLowerCase().includes(q))
+                    : lvl.verbs;
 
                   return (
-                    <tr key={lvl.level} className="border-b border-[#E9E6E6] last:border-b-0">
+                    <tr
+                      key={lvl.level}
+                      className="border-b border-[#E9E6E6] last:border-b-0"
+                    >
                       <td className="px-3 py-3 font-medium">{lvl.level}</td>
-                      <td className="px-3 py-3 text-gray-700">{lvl.description}</td>
+                      <td className="px-3 py-3 text-gray-700">
+                        {lvl.description}
+                      </td>
                       <td className="px-3 py-3">
                         <div className="flex flex-wrap gap-1">
                           {shownVerbs.map((v) => (
@@ -162,8 +232,11 @@ export default function BloomsGuidePopup({ isOpen, onClose }: Props) {
             </tbody>
           </table>
         </div>
-
-
+        <div className="text-xs text-gray-500 mb-2">
+          Note: The verbs listed in this guide are commonly used examples for each
+          Bloom's level. This is not a complete list. Choose verbs that best match
+          the intended learning outcome (ILO) and course outcome (CO), and the level of cognitive complexity.
+        </div>
       </div>
     </div>
   );

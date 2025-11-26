@@ -19,7 +19,7 @@ import type {
 } from "../../types/baseTypes";
 
 export default function DeanCoursePage() {
-  const { department_id, loaded_course_id } = useParams();
+  const { college_id, loaded_course_id } = useParams();
   const navigate = useNavigate();
   const { layout } = useLayout();
 
@@ -69,9 +69,9 @@ export default function DeanCoursePage() {
   }, [courseData, searchQuery]);
 
   const goToAssessmentPage = (section: BaseSection) => {
-    if (!loaded_course_id || !department_id) return;
+    if (!loaded_course_id || !college_id) return;
 
-    navigate(`/college/${department_id}/${loaded_course_id}/${section.id}`, {
+    navigate(`/college/${college_id}/${loaded_course_id}/${section.id}`, {
       state: {
         course_code: courseData?.course_details.course_code ?? "",
         year_and_section: section.year_and_section,
@@ -82,7 +82,7 @@ export default function DeanCoursePage() {
   const details = courseData?.course_details;
 
   return (
-    <AppLayout activeItem={`/college/${department_id}`}>
+    <AppLayout activeItem={`/college/${college_id}`}>
       <InfoComponent
         loading={loading}
         title={details?.course_title ?? ""}

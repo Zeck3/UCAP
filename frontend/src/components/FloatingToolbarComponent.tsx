@@ -9,6 +9,8 @@ import { toast } from "react-toastify";
 import FileInstructionComponent from "./FileInstructionComponent";
 import type { HeaderNode } from "./classrecord/types/headerConfigTypes";
 import type { Student } from "../types/classRecordTypes";
+import BookIcon from "../assets/book-solid-full.svg?react";
+import BloomsGuidePopup from "./classrecord/context/BloomsGuidePopup";
 
 type Props = {
   goToAssessmentPage: () => void;
@@ -41,7 +43,7 @@ export default function FloatingToolbarComponent({
 
   const [showInstructionModal, setShowInstructionModal] = useState(false);
   const [showModeModal, setShowModeModal] = useState(false);
-
+  const [isBloomsOpen, setIsBloomsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
 
@@ -129,6 +131,23 @@ export default function FloatingToolbarComponent({
               group-hover:opacity-100 transition"
           >
             Import Student List
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className="relative p-2 rounded-full hover:bg-gray-100 hover:cursor-pointer group"
+          title="Open Blooms Guide"
+          aria-label="Open Blooms Guide"
+          onClick={() => setIsBloomsOpen(true)}
+        >
+          <BookIcon className="w-5 h-5 text-[#767676]" />
+          <span
+            className="pointer-events-none absolute bottom-full mb-3 left-1/2 -translate-x-1/2
+            text-xs text-white bg-[#767676] px-2 py-1 rounded whitespace-nowrap opacity-0
+            group-hover:opacity-100 transition"
+          >
+            Open Blooms Guide
           </span>
         </button>
 
@@ -295,6 +314,10 @@ export default function FloatingToolbarComponent({
           </div>
         </div>
       )}
+      <BloomsGuidePopup
+        isOpen={isBloomsOpen}
+        onClose={() => setIsBloomsOpen(false)}
+      />
     </>
   );
 }

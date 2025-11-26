@@ -101,7 +101,7 @@ export default function VcaaCourseDashboard() {
   };
 
   return (
-    <AppLayout activeItem={`/campus/${campusId ?? ""}`}>
+    <AppLayout activeItem={`/campus/${campusId}`}>
       <InfoComponent
         loading={loading || initialInfoLoading}
         title={`${campusName} Campus`}

@@ -67,15 +67,15 @@ export default function App() {
         </Route>
 
         <Route element={ <ProtectedRoute allowedRoles={[Roles.ViceChancellorForAcademicAffairs]}/> }>
-          <Route path="/campus/:department_id/:loaded_course_id/:section_id" element={<VcaaAssessmentPage />} />
-          <Route path="/campus/:department_id/:loaded_course_id" element={<VcaaCoursePage />} />
-          <Route path="/campus/:department_id" element={<VcaaCourseDashboard />} />
+          <Route path="/campus/:campus_id/:loaded_course_id/:section_id" element={<VcaaAssessmentPage />} />
+          <Route path="/campus/:campus_id/:loaded_course_id" element={<VcaaCoursePage />} />
+          <Route path="/campus/:campus_id" element={<VcaaCourseDashboard />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={[Roles.Dean]} />}>
-          <Route path="/college/:department_id/:loaded_course_id/:section_id" element={<DeanAssessmentPage />} />
-          <Route path="/college/:department_id/:loaded_course_id" element={<DeanCoursePage />} />
-          <Route path="/college/:department_id" element={<DeanCourseDashboard />} />
+          <Route path="/college/:college_id/:loaded_course_id/:section_id" element={<DeanAssessmentPage />} />
+          <Route path="/college/:college_id/:loaded_course_id" element={<DeanCoursePage />} />
+          <Route path="/college/:college_id" element={<DeanCourseDashboard />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRoles={[Roles.DepartmentChair]} />} >

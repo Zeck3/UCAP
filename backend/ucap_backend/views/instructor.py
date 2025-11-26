@@ -632,23 +632,31 @@ class AssessmentPageAPIView(APIView):
             .order_by("assessment_id")
         )
 
-        co_qs = CourseOutcome.objects.filter(
-            loaded_course=loaded_course,
-            instructor=request.user
-        )
+        instructor_for_section = getattr(section, "instructor_assigned", None)
+
+        co_filters = {"loaded_course": loaded_course}
+        if instructor_for_section is not None:
+            co_filters["instructor"] = instructor_for_section
+
+        co_qs = CourseOutcome.objects.filter(**co_filters)
         co_id_to_code = {co.course_outcome_id: co.course_outcome_code for co in co_qs}
 
         co_to_po_codes = defaultdict(set)
+        
+        mapping_filters = {
+            "course_outcome__loaded_course": loaded_course,
+            "program_outcome__program": program,
+            "outcome_mapping__in": ["I", "D", "E"],
+        }
+        if instructor_for_section is not None:
+            mapping_filters["course_outcome__instructor"] = instructor_for_section
+
         mappings_qs = (
             OutcomeMapping.objects
-            .filter(
-                course_outcome__loaded_course=loaded_course,
-                course_outcome__instructor=request.user,
-                program_outcome__program=program,
-                outcome_mapping__in=["I", "D", "E"],
-            )
+            .filter(**mapping_filters)
             .select_related("program_outcome", "course_outcome")
         )
+
 
         for m in mappings_qs:
             co_code = getattr(m.course_outcome, "course_outcome_code", None)

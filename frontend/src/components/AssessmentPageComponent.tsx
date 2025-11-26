@@ -85,6 +85,8 @@ const totalClassworkColumns = (pos: AssessmentPageData["pos"]) =>
   pos.reduce((sum, po) => sum + po.cos.reduce((s, co) => s + countClasswork(co), 0), 0);
 
 const OverviewChart = memo(({ data, studentCount }: { data: OverviewChartDatum[]; studentCount: number }) => {
+  if (!studentCount || !data.length) return null;
+  
   const chartWidth = Math.max(data.length * 25, 100);
   const widthStyle = chartWidth > 100 ? `${chartWidth}%` : '100%';
 
@@ -614,7 +616,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
           </tr>
 
           {data.students.map((student, sIdx) => (
-            <tr key={student.id}>
+            <tr key={`${student.id}-${sIdx}`}>
               <td className="border border-[#E9E6E6] px-2 py-2 text-left">{sIdx + 1}</td>
               <td className="border border-[#E9E6E6] px-2 py-2 text-left">{student.id}</td>
               <td className="border border-[#E9E6E6] px-2 py-2 whitespace-nowrap text-left">{student.name}</td>
@@ -656,7 +658,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
 
                       if (sIdx === 0) {
                         scoreCells.push(
-                          <td key={`student-pass80-${pIdx}-${cIdx}`} className="border border-[#E9E6E6] px-2 py-2 text-center font-semibold" rowSpan={studentCount}>
+                          <td key={`student-pass80-${pIdx}-${cIdx}`} className="border border-[#E9E6E6] px-2 py-2 align-text-top text-center font-semibold" rowSpan={studentCount}>
                             {pass80 ? <span>YES</span> : <span className="text-coa-red">NO</span>}
                           </td>
                         );
@@ -717,7 +719,9 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
               </table>
             </div>
 
-            <OverviewChart data={coAnalytics} studentCount={studentCount} />
+            {isOpen && coAnalytics.length > 0 && studentCount > 0 && (
+              <OverviewChart data={coAnalytics} studentCount={studentCount} />
+            )}
           </div>
 
           <div className="mt-8">
