@@ -151,7 +151,7 @@ export default function CoursePage() {
       sessionStorage.removeItem(nlpCacheKey);
     }
   }, [nlpMappingData, nlpCacheKey]);
-
+  
   const handleRunNlpMapping = async () => {
     if (!loaded_course_id || !baseMappingData) {
       toast.error("Load course/program outcomes first.");
@@ -186,14 +186,48 @@ export default function CoursePage() {
         isLoading: false,
         autoClose: 2500,
       });
-    } catch (e) {
-      console.error("NLP mapping failed:", e);
-      toast.update(toastId, {
-        render: "Failed to run NLP mapping.",
-        type: "error",
-        isLoading: false,
-        autoClose: 3500,
-      });
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const data = err.response?.data as
+          | { message?: string; detail?: string }
+          | undefined;
+
+        const backendMessage =
+          data?.message ??
+          data?.detail ??
+          (err.response?.status
+            ? `Failed to run NLP mapping (HTTP ${err.response.status}).`
+            : "Failed to run NLP mapping.");
+
+        console.error("NLP mapping failed (axios):", {
+          status: err.response?.status,
+          data: err.response?.data,
+          message: err.message,
+        });
+
+        toast.update(toastId, {
+          render: backendMessage,
+          type: "error",
+          isLoading: false,
+          autoClose: 3500,
+        });
+      } else if (err instanceof Error) {
+        console.error("NLP mapping failed:", err);
+        toast.update(toastId, {
+          render: err.message || "Failed to run NLP mapping.",
+          type: "error",
+          isLoading: false,
+          autoClose: 3500,
+        });
+      } else {
+        console.error("NLP mapping failed (unknown):", err);
+        toast.update(toastId, {
+          render: "Failed to run NLP mapping.",
+          type: "error",
+          isLoading: false,
+          autoClose: 3500,
+        });
+      }
     } finally {
       setNlpLoading(false);
     }

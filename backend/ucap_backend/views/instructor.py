@@ -2,6 +2,8 @@ from collections import defaultdict
 import json
 import csv
 from io import TextIOWrapper
+import logging
+import time
 import uuid
 import tempfile
 from gradio_client import Client, handle_file
@@ -1007,8 +1009,14 @@ class SyllabusExtractView(APIView):
 # ====================================================
 # NLP Outcome Mapping
 # ====================================================
+logger = logging.getLogger(__name__)
+
 HF_SPACE = "jestoniandales25/BERT_nlp"
 HF_API_NAME = "/process_json"
+
+MAX_HF_TRIES = 2
+RETRY_DELAY_SECONDS = 3
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -1068,10 +1076,29 @@ def nlp_outcome_mapping_view(request, loaded_course_id: int):
             json.dump(payload, f)
             f.flush()
 
-            result = client.predict(
-                file_obj=handle_file(f.name),
-                api_name=HF_API_NAME,
-            )
+            last_exc = None
+            result = None
+
+            for attempt in range(1, MAX_HF_TRIES + 1):
+                try:
+                    result = client.predict(
+                        file_obj=handle_file(f.name),
+                        api_name=HF_API_NAME,
+                    )
+                    break
+                except Exception as e:
+                    last_exc = e
+                    logger.exception(
+                        "HF NLP call failed on attempt %s for loaded_course_id=%s",
+                        attempt,
+                        loaded_course_id,
+                    )
+                    if attempt < MAX_HF_TRIES:
+                        time.sleep(RETRY_DELAY_SECONDS)
+
+            if result is None and last_exc is not None:
+                raise last_exc
+
     except Exception as e:
         return Response(
             {"message": f"HuggingFace NLP call failed: {e}"},
