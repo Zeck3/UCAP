@@ -6,12 +6,6 @@ export interface COPOResult {
   Mapped_POs: string[];
 }
 
-/**
- * Upload syllabus PDF and extract CO–PO mapping.
- *
- * @param loadedCourseId 
- * @param file
- */
 export async function extractSyllabus(
   loadedCourseId: number,
   file: File
@@ -29,5 +23,13 @@ export async function extractSyllabus(
     }
   );
 
-  return res.data;
+  const data = res.data;
+
+  console.log("Syllabus extraction result:", data);
+
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error("No CO–PO data extracted from the uploaded PDF.");
+  }
+
+  return data;
 }

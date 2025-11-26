@@ -238,6 +238,7 @@ export default function CoursePage() {
     if (isUploadingSyllabus) return;
     setShowSyllabusModal(false);
   };
+
   const handleSyllabusFileSelected = async (file: File | null) => {
     if (!file) return;
     if (!loaded_course_id) {
@@ -251,7 +252,9 @@ export default function CoursePage() {
     const toastId = toast.loading("Extracting syllabus… please wait.");
 
     try {
-      await extractSyllabus(Number(loaded_course_id), file);
+      const result = await extractSyllabus(Number(loaded_course_id), file);
+
+      console.log("Extracted CO–PO mapping:", result);
 
       refreshAfterSyllabus();
 
@@ -263,10 +266,15 @@ export default function CoursePage() {
       });
     } catch (err) {
       const error = err as import("axios").AxiosError<{ detail?: string }>;
+
+      const backendMessage =
+        error.response?.data?.detail ??
+        (error.message === "No CO–PO data extracted from the uploaded PDF."
+          ? error.message
+          : "Failed to extract syllabus. Please check the PDF format.");
+
       toast.update(toastId, {
-        render:
-          error.response?.data?.detail ??
-          "Failed to extract syllabus. Please check the PDF format.",
+        render: backendMessage,
         type: "error",
         isLoading: false,
         autoClose: 3500,

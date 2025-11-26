@@ -953,12 +953,15 @@ class SyllabusExtractView(APIView):
             ).get(pk=loaded_course_id)
         except LoadedCourse.DoesNotExist:
             return Response(
-                {"error": "Loaded course not found."},
+                {"detail": "Loaded course not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
         if "file" not in request.FILES:
-            return Response({"detail": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "No file uploaded"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         pdf_file = request.FILES["file"]
 
@@ -968,16 +971,27 @@ class SyllabusExtractView(APIView):
 
         try:
             result = extract_co_po(filepath)
+            if not result:
+                return Response(
+                    {
+                        "detail": (
+                            "No CO–PO mapping could be extracted from this PDF. "
+                            "Please check the syllabus format."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         finally:
-
             try:
                 if default_storage.exists(path):
                     default_storage.delete(path)
             except Exception:
                 pass
+
 
 # ====================================================
 # NLP Outcome Mapping
