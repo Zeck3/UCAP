@@ -1,10 +1,11 @@
 import axiosClient from "./axiosClient";
 
 export interface COPOResult {
-  CO: string;
-  Description: string;
-  Mapped_POs: string[];
+  course_outcome_code: string;
+  course_outcome_description: string;
+  outcome_mapping: Record<string, string>;
 }
+
 
 export async function extractSyllabus(
   loadedCourseId: number,

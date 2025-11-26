@@ -27,6 +27,7 @@ import type { OutcomeMappingResponse } from "../../types/outcomeMappingTypes";
 import { getOutcomeMappings } from "../../api/OutcomeMappingApi";
 import { fetchNlpOutcomeMapping } from "../../api/nlpOutcomeMappingApi";
 import OutcomeMappingPredictionTable from "../../components/OutcomeMappingPredictionTable";
+import axios from "axios";
 
 type AugmentedSection = BaseSection & {
   id: number;
@@ -238,7 +239,7 @@ export default function CoursePage() {
     if (isUploadingSyllabus) return;
     setShowSyllabusModal(false);
   };
-
+  
   const handleSyllabusFileSelected = async (file: File | null) => {
     if (!file) return;
     if (!loaded_course_id) {
@@ -256,7 +257,7 @@ export default function CoursePage() {
 
       console.log("Extracted CO–PO mapping:", result);
 
-      refreshAfterSyllabus();
+      await refreshAfterSyllabus();
 
       toast.update(toastId, {
         render: "Syllabus uploaded and CO-PO mapping extracted.",
@@ -265,16 +266,20 @@ export default function CoursePage() {
         autoClose: 2500,
       });
     } catch (err) {
-      const error = err as import("axios").AxiosError<{ detail?: string }>;
+      let message = "Failed to extract syllabus. Please check the PDF format.";
 
-      const backendMessage =
-        error.response?.data?.detail ??
-        (error.message === "No CO–PO data extracted from the uploaded PDF."
-          ? error.message
-          : "Failed to extract syllabus. Please check the PDF format.");
+      if (axios.isAxiosError(err)) {
+        const detail = (err.response?.data as { detail?: string } | undefined)
+          ?.detail;
+        if (detail) {
+          message = detail;
+        }
+      } else if (err instanceof Error && err.message) {
+        message = err.message;
+      }
 
       toast.update(toastId, {
-        render: backendMessage,
+        render: message,
         type: "error",
         isLoading: false,
         autoClose: 3500,
