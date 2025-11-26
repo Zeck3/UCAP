@@ -86,7 +86,7 @@ const totalClassworkColumns = (pos: AssessmentPageData["pos"]) =>
 
 const OverviewChart = memo(({ data, studentCount }: { data: OverviewChartDatum[]; studentCount: number }) => {
   if (!studentCount || !data.length) return null;
-  
+
   const chartWidth = Math.max(data.length * 25, 100);
   const widthStyle = chartWidth > 100 ? `${chartWidth}%` : '100%';
 
@@ -885,7 +885,6 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
         </div>
       )}
 
-      {/* Result Status Dropdown Menu */}
       {statusDropdownOpen && createPortal(
         <div
           ref={statusMenuRef}
