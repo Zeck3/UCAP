@@ -5,7 +5,7 @@ export const fetchCurrentUser = async (): Promise<CurrentUser | null> => {
   const { data } = await axiosClient.get<CurrentUser | null>("me/");
   return data;
 };
-//test
+
 export const loginRequest = async (
   userId: number,
   password: string
