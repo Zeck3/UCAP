@@ -11,11 +11,10 @@ import { useAuth } from "../../context/useAuth";
 import FileImport from "../../assets/file-import-solid.svg?react";
 import { fetchCourseDetails } from "../../api/instructorDashboardApi";
 import type {
-  AssignedSection,
-  CourseDetailsWithSections,
-} from "../../types/instructorDashboardTypes";
+  BaseSection,
+  BaseCoursePageResponse,
+} from "../../types/baseTypes";
 import ProgramOutcomesDisplayTable from "../../components/ProgramOutcomesDisplayTableComponent";
-import { useDepartment } from "../../context/useDepartment";
 import CourseOutcomesTableComponent from "../../components/CourseOutcomesTableComponent";
 import OutcomeMappingTableComponent from "../../components/OutcomeMappingTableComponent";
 import GearsSolid from "../../assets/gears-solid-full.svg?react";
@@ -24,6 +23,15 @@ import FileInstructionComponent from "../../components/FileInstructionComponent"
 import { toast } from "react-toastify";
 import { extractSyllabus } from "../../api/instructorDataExtractionApi";
 import type { AxiosError } from "axios";
+import type { OutcomeMappingResponse } from "../../types/outcomeMappingTypes";
+import { getOutcomeMappings } from "../../api/outcomeMappingApi";
+import { fetchNlpOutcomeMapping } from "../../api/nlpOutcomeMappingApi";
+import OutcomeMappingPredictionTable from "../../components/OutcomeMappingPredictionTable";
+
+type AugmentedSection = BaseSection & {
+  id: number;
+  combined_course_section: string;
+};
 
 export default function CoursePage() {
   const [activeMenu, setActiveMenu] = useState("section");
@@ -33,16 +41,29 @@ export default function CoursePage() {
   const [refreshOutcomesKey, setRefreshOutcomesKey] = useState(0);
   const [showSyllabusModal, setShowSyllabusModal] = useState(false);
   const [isUploadingSyllabus, setIsUploadingSyllabus] = useState(false);
-  const { department } = useDepartment();
-  const programId = department?.program_id ?? 0;
+  const [baseMappingData, setBaseMappingData] =
+    useState<OutcomeMappingResponse | null>(null);
+
+  const [nlpMappingData, setNlpMappingData] =
+    useState<OutcomeMappingResponse | null>(null);
+
+  const [nlpLoading, setNlpLoading] = useState(false);
+
   const { user } = useAuth();
   const { layout } = useLayout();
   const navigate = useNavigate();
   const [courseDetails, setCourseDetails] =
-    useState<CourseDetailsWithSections | null>(null);
+    useState<BaseCoursePageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [accessError, setAccessError] = useState<string | null>(null);
+
+  const nlpCacheKey = loaded_course_id
+    ? `nlp_mapping:${loaded_course_id}`
+    : null;
+
   const currentUserId = user?.user_id ?? null;
+  const programName = courseDetails?.course_details.program_name ?? "";
+  const programId = courseDetails?.course_details.program_id ?? null;
 
   useEffect(() => {
     const loadCourse = async () => {
@@ -78,13 +99,112 @@ export default function CoursePage() {
     loadCourse();
   }, [loaded_course_id, currentUserId]);
 
+  const clearNlpCache = useCallback(() => {
+    if (!nlpCacheKey) return;
+    sessionStorage.removeItem(nlpCacheKey);
+    setNlpMappingData(null);
+  }, [nlpCacheKey]);
+
+  useEffect(() => {
+    if (activeMenu !== "mapping" || !loaded_course_id) return;
+
+    (async () => {
+      const data = await getOutcomeMappings(Number(loaded_course_id));
+      try {
+        if (!data.course_outcomes?.length || !data.program_outcomes?.length) {
+          setBaseMappingData(data);
+          clearNlpCache();
+          return;
+        }
+
+        setBaseMappingData(data);
+      } catch (e) {
+        console.error("Failed to load base mapping data", e);
+        setBaseMappingData(null);
+      }
+    })();
+  }, [activeMenu, loaded_course_id, refreshMappingKey, clearNlpCache]);
+
+  useEffect(() => {
+    if (activeMenu !== "mapping" || !nlpCacheKey) return;
+
+    const raw = sessionStorage.getItem(nlpCacheKey);
+    if (!raw) return;
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed?.mapping?.length > 0) {
+        setNlpMappingData(parsed);
+      }
+    } catch {
+      sessionStorage.removeItem(nlpCacheKey);
+    }
+  }, [activeMenu, nlpCacheKey]);
+
+  useEffect(() => {
+    if (!nlpCacheKey) return;
+
+    if (nlpMappingData && nlpMappingData.mapping.length > 0) {
+      sessionStorage.setItem(nlpCacheKey, JSON.stringify(nlpMappingData));
+    } else {
+      sessionStorage.removeItem(nlpCacheKey);
+    }
+  }, [nlpMappingData, nlpCacheKey]);
+
+  const handleRunNlpMapping = async () => {
+    if (!loaded_course_id || !baseMappingData) {
+      toast.error("Load course/program outcomes first.");
+      return;
+    }
+
+    if (
+      !baseMappingData.course_outcomes?.length ||
+      !baseMappingData.program_outcomes?.length
+    ) {
+      toast.error(
+        "Cannot run NLP: missing course outcomes (COs) or program outcomes (POs)."
+      );
+      return;
+    }
+
+    setNlpLoading(true);
+    const toastId = toast.loading("Running NLP mapping… please wait.");
+
+    try {
+      const pred = await fetchNlpOutcomeMapping(
+        Number(loaded_course_id),
+        baseMappingData.course_outcomes,
+        baseMappingData.program_outcomes
+      );
+
+      setNlpMappingData(pred);
+
+      toast.update(toastId, {
+        render: "NLP mapping generated.",
+        type: "success",
+        isLoading: false,
+        autoClose: 2500,
+      });
+    } catch (e) {
+      console.error("NLP mapping failed:", e);
+      toast.update(toastId, {
+        render: "Failed to run NLP mapping.",
+        type: "error",
+        isLoading: false,
+        autoClose: 3500,
+      });
+    } finally {
+      setNlpLoading(false);
+    }
+  };
+
   const filteredSections = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
     const courseCode = courseDetails?.course_details?.course_code ?? "";
     const sections = courseDetails?.sections ?? [];
 
-    const augmented = sections.map((section) => ({
+    const augmented: AugmentedSection[] = sections.map((section) => ({
       ...section,
       id: section.section_id,
       combined_course_section: courseCode
@@ -156,7 +276,7 @@ export default function CoursePage() {
     }
   };
 
-  const goToClassRecord = (item: AssignedSection) => {
+  const goToClassRecord = (item: AugmentedSection) => {
     if (!loaded_course_id) return;
 
     navigate(`/instructor/${loaded_course_id}/${item.section_id}`, {
@@ -168,13 +288,15 @@ export default function CoursePage() {
   };
 
   const handleCourseOutcomesChanged = useCallback(() => {
+    clearNlpCache();
     setRefreshMappingKey((prev) => prev + 1);
-  }, []);
+  }, [clearNlpCache]);
 
   const refreshAfterSyllabus = useCallback(() => {
+    clearNlpCache();
     setRefreshOutcomesKey((prev) => prev + 1);
     setRefreshMappingKey((prev) => prev + 1);
-  }, []);
+  }, [clearNlpCache]);
 
   if (!currentUserId) {
     return <div>Unauthorized: No instructor logged in.</div>;
@@ -290,11 +412,10 @@ export default function CoursePage() {
             <div className="gap-2">
               <h2 className="text-xl">Program Outcomes</h2>
               <span className="text-[#767676]">
-                Upon completion of the {department?.program_name}, graduates are
-                able to:
+                Upon completion of the {programName}, graduates are able to:
               </span>
             </div>
-            <ProgramOutcomesDisplayTable programId={programId} />
+            <ProgramOutcomesDisplayTable programId={Number(programId)} />
           </div>
 
           <div className="flex flex-col gap-8">
@@ -314,7 +435,7 @@ export default function CoursePage() {
           </div>
 
           <div className="flex flex-col gap-8">
-            <h2 className="text-xl">Outcome Mapping</h2>
+            <h2 className="text-xl">CO-PO Mapping</h2>
             <OutcomeMappingTableComponent
               key={refreshMappingKey}
               loadedCourseId={Number(loaded_course_id)}
@@ -329,18 +450,47 @@ export default function CoursePage() {
               mappings are intended to serve as guidance for instructors and
               remain subject to their discretion.
             </p>
-            <button
-              onClick={() => {
-                alert("Feature coming soon!");
-              }}
-              className="py-4 border cursor-pointer rounded-lg bg-ucap-yellow bg-ucap-yellow-hover border-[#FCB315] w-full flex flex-row items-center justify-center gap-4"
-            >
-              <GearsSolid className="w-8 h-8 text-white" />
-              <span className="text-white text-base">
-                Perform Course Outcome to Program Outcome Mapping
-              </span>
-            </button>
+            {(!nlpMappingData || nlpMappingData.mapping.length === 0) && (
+              <button
+                disabled={nlpLoading}
+                onClick={handleRunNlpMapping}
+                className="py-4 border cursor-pointer rounded-lg bg-ucap-yellow bg-ucap-yellow-hover border-[#FCB315] w-full flex flex-row items-center justify-center gap-4 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <GearsSolid className="w-8 h-8 text-white" />
+                <span className="text-white text-base">
+                  Perform Course Outcome to Program Outcome Mapping
+                </span>
+              </button>
+            )}
           </div>
+          {nlpMappingData && nlpMappingData.mapping.length > 0 && (
+            <div className="flex flex-col gap-8">
+              <h2 className="text-xl">NLP Suggested CO-PO Mapping</h2>
+              <OutcomeMappingPredictionTable data={nlpMappingData} />
+              <div className="text-sm space-y-2 text-[#767676]">
+                <p className="font-medium text-[#3E3E3E]">Legend</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>
+                    <span className="font-semibold">
+                      1 or{" "}
+                      <span className="inline-block w-3 h-3 bg-[#C5E0B3] rounded-sm mr-1 align-middle" />
+                      ={" "}
+                    </span>
+                    NLP suggests an alignment between the Course Outcome (CO)
+                    and Program Outcome (PO).
+                  </li>
+                  <li>
+                    <span className="font-semibold">0</span> = NLP does not
+                    suggest an alignment.
+                  </li>
+                  <li>
+                    Suggestions are guidance only; final CO–PO mapping should be
+                    confirmed by the instructor.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </AppLayout>

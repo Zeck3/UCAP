@@ -2,8 +2,6 @@ import axiosClient from "./axiosClient";
 
 import type {
   UserRole,
-  Department,
-  Program,
   YearLevel,
   Semester,
   Credit,
@@ -11,6 +9,7 @@ import type {
   AcademicYear,
   BloomsClassification,
   CourseOutcomes,
+  Campus,
 } from "../types/dropdownTypes";
 
 export async function getRoles(): Promise<UserRole[]> {
@@ -23,22 +22,12 @@ export async function getRoles(): Promise<UserRole[]> {
   }
 }
 
-export async function getDepartments(): Promise<Department[]> {
+export async function getCampuses(): Promise<Campus[]> {
   try {
-    const res = await axiosClient.get<Department[]>("/department/");
+    const res = await axiosClient.get<Campus[]>("/campus/");
     return res.data;
   } catch (error) {
-    console.error("Error fetching departments:", error);
-    return [];
-  }
-}
-
-export async function getPrograms(): Promise<Program[]> {
-  try {
-    const res = await axiosClient.get("/program/");
-    return res.data;
-  } catch (error) {
-    console.error("Error fetching programs:", error);
+    console.error("Error fetching campuses:", error);
     return [];
   }
 }
@@ -73,7 +62,9 @@ export async function getCreditUnits(): Promise<Credit[]> {
   }
 }
 
-export async function getInstructors(departmentId?: number | null): Promise<Instructor[]> {
+export async function getInstructors(
+  departmentId?: number | null
+): Promise<Instructor[]> {
   try {
     const res = await axiosClient.get("/instructors/", {
       params: departmentId ? { department_id: departmentId } : {},
@@ -100,7 +91,9 @@ export async function getBloomsOptions(): Promise<BloomsClassification[]> {
   return data;
 }
 
-export async function getCourseOutcomes(loadedCourseId: number): Promise<CourseOutcomes[]> {
+export async function getCourseOutcomes(
+  loadedCourseId: number
+): Promise<CourseOutcomes[]> {
   const { data } = await axiosClient.get(`/course_outcomes/${loadedCourseId}`);
   return data;
 }

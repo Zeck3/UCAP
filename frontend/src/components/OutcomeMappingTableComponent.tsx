@@ -169,7 +169,7 @@ export default function OutcomeMappingTableComponent({
   return (
     <div className="flex flex-col gap-4">
       {noCOs && noPOs ? (
-        <div className="text-center text-[#3E3E3E] py-12 border border-[#E9E6E6] rounded-md">
+        <div className="text-center text-[#767676] py-12 border border-[#E9E6E6] rounded-md">
           No Course Outcome to Program Outcome mappings available.
         </div>
       ) : noCOs && !noPOs ? (
@@ -199,7 +199,7 @@ export default function OutcomeMappingTableComponent({
               <tr>
                 <td
                   colSpan={sortedProgramOutcomes.length}
-                  className="py-6 text-[#3E3E3E]"
+                  className="py-6 text-[#767676]"
                 >
                   No Course Outcomes available.
                 </td>
@@ -226,7 +226,7 @@ export default function OutcomeMappingTableComponent({
                 </th>
               </tr>
               <tr>
-                <th className="px-2 py-3 text-[#3E3E3E] font-normal">
+                <th className="px-2 py-3 text-[#767676] font-normal">
                   No Program Outcomes available.
                 </th>
               </tr>
@@ -305,7 +305,7 @@ export default function OutcomeMappingTableComponent({
                       <td
                         key={po.program_outcome_id}
                         onMouseDown={(e) => {
-                          if (e.button !== 0) return; // left button only
+                          if (e.button !== 0) return;
                           if (!currentId) return;
                           setIsSelecting(true);
                           setSelectionStart({ row: rowIndex, col: colIndex });

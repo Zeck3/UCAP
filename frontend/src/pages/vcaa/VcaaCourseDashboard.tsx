@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import AppLayout from "../../layout/AppLayout";
 import ToolBarComponent from "../../components/ToolBarComponent";
@@ -12,11 +12,9 @@ import { useLayout } from "../../context/useLayout";
 import { fetchVcaaLoadedCourses } from "../../api/vcaaDashboardApi";
 import type { BaseLoadedCourse } from "../../types/baseTypes";
 import InfoComponent from "../../components/InfoComponent";
-import { useDepartment } from "../../context/useDepartment";
+import { useInitialInfo } from "../../context/useInitialInfo";
 
-export default function CampusCourseDashboard() {
-  const { department_id } = useParams();
-  const { department } = useDepartment();
+export default function VcaaCourseDashboard() {
   const navigate = useNavigate();
   const { layout } = useLayout();
 
@@ -24,31 +22,51 @@ export default function CampusCourseDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async () => {
-      if (!department_id) return;
+  const { initialInfo, initialInfoLoading } = useInitialInfo();
 
+  const campusId =
+    initialInfo?.primary_campus?.campus_id ??
+    (initialInfo?.leadership?.level === "campus"
+      ? initialInfo.leadership.id
+      : null);
+
+  const campusName =
+    initialInfo?.primary_campus?.campus_name ??
+    (initialInfo?.leadership?.level === "campus"
+      ? initialInfo.leadership.name
+      : "");
+
+  useEffect(() => {
+    if (initialInfoLoading || campusId == null) return;
+
+    let active = true;
+
+    (async () => {
       try {
         setLoading(true);
-        const data = await fetchVcaaLoadedCourses(Number(department_id));
+        const data = await fetchVcaaLoadedCourses(campusId);
 
-        const formatted = data.map((c) => ({
-          ...c,
-          id: c.loaded_course_id,
-          academic_year_and_semester: `${c.academic_year_start}-${c.academic_year_end} / ${c.semester_type}`,
-          year_level: c.year_level_type,
-        }));
+        if (!active) return;
 
-        setCourses(formatted);
+        setCourses(
+          data.map((c) => ({
+            ...c,
+            id: c.loaded_course_id,
+            academic_year_and_semester: `${c.academic_year_start}-${c.academic_year_end} / ${c.semester_type}`,
+            year_level: c.year_level_type,
+          }))
+        );
       } catch (e) {
         console.error("Failed to fetch Campus loaded courses", e);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
-    };
+    })();
 
-    load();
-  }, [department_id]);
+    return () => {
+      active = false;
+    };
+  }, [initialInfoLoading, campusId]);
 
   const filteredCourses = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -77,18 +95,16 @@ export default function CampusCourseDashboard() {
   }, [searchQuery, courses]);
 
   const goToCampusCoursePage = (course: BaseLoadedCourse) => {
-    navigate(`/campus/${department_id}/${course.loaded_course_id}`, {
-      state: {
-        course_code: course.course_code,
-      },
+    navigate(`/campus/${campusId}/${course.loaded_course_id}`, {
+      state: { course_code: course.course_code },
     });
   };
 
   return (
-    <AppLayout activeItem={`/campus/${department_id}`}>
+    <AppLayout activeItem={`/campus/${campusId}`}>
       <InfoComponent
-        loading={loading}
-        title={`${department?.campus_name} Campus`}
+        loading={loading || initialInfoLoading}
+        title={`${campusName} Campus`}
       />
       <ToolBarComponent
         titleOptions={[

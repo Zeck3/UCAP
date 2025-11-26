@@ -6,10 +6,10 @@ import type {
 } from "../types/baseTypes";
 
 export const fetchDeanLoadedCourses = async (
-  departmentId: number
+  collegeId: number
 ): Promise<BaseLoadedCourse[]> => {
   const res = await axiosClient.get<BaseLoadedCourse[]>(
-    `/dean/${departmentId}/`
+    `/dean/${collegeId}/`
   );
 
   return res.data.map((course) => ({

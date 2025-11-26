@@ -13,6 +13,7 @@ type UserInputComponentProps = {
   readOnly?: boolean;
   maxLength?: number;
   numericOnly?: boolean;
+  type?: React.HTMLInputTypeAttribute;
 };
 
 export default function UserInputComponent({
@@ -28,6 +29,7 @@ export default function UserInputComponent({
   readOnly = false,
   maxLength,
   numericOnly = false,
+  type = "text",
 }: UserInputComponentProps) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,7 +75,7 @@ export default function UserInputComponent({
 
   return (
     <div className="flex flex-col gap-1">
-      <label className="flex text-sm" htmlFor={name}>
+      <label className="flex text-sm text-[#767676]" htmlFor={name}>
         {label}
         {required && showAsterisk && (
           <span className="text-red-500 ml-1">*</span>
@@ -91,6 +93,7 @@ export default function UserInputComponent({
         readOnly={readOnly}
         inputMode={numericOnly ? "numeric" : undefined}
         maxLength={maxLength}
+        type={type}
         autoComplete={name === "email" ? "email" : "off"}
         className={`w-full text-base h-10 px-3 py-2 border rounded-md ${
           error ? "border-red-500" : "border-[#E9E6E6]"

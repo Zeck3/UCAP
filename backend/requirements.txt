@@ -5,3 +5,4 @@ django-cors-headers
 camelot-py[cv]
 PyMuPDF
 gunicorn
+gradio-client

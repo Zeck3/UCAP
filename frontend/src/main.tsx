@@ -1,18 +1,18 @@
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/AuthProvider";
+import { InitialInfoProvider } from "./context/InitialInfoProvider";
 import { LayoutProvider } from "./context/LayoutProvider";
-import { DepartmentProvider } from "./context/DepartmentProvider";
 import App from "./App";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <AuthProvider>
-      <LayoutProvider>
-        <DepartmentProvider>
+      <InitialInfoProvider>
+        <LayoutProvider>
           <App />
-        </DepartmentProvider>
-      </LayoutProvider>
+        </LayoutProvider>
+      </InitialInfoProvider>
     </AuthProvider>
   </BrowserRouter>
 );

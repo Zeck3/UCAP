@@ -9,15 +9,13 @@ import TableComponent from "../../components/TableComponent";
 import emptyImage from "../../assets/undraw_file-search.svg";
 import { useLayout } from "../../context/useLayout";
 import { fetchDeanLoadedCourses } from "../../api/deanDashboardApi";
-import { useAuth } from "../../context/useAuth";
 import InfoComponent from "../../components/InfoComponent";
-import { useDepartment } from "../../context/useDepartment";
 import type { BaseLoadedCourse } from "../../types/baseTypes";
+import { useInitialInfo } from "../../context/useInitialInfo";
 
 export default function DeanCourseDashboard() {
-  const { user } = useAuth();
-  const { department } = useDepartment();
   const navigate = useNavigate();
+  const { initialInfo, initialInfoLoading } = useInitialInfo();
 
   const { layout } = useLayout();
 
@@ -25,19 +23,35 @@ export default function DeanCourseDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const department_id = user?.department_id;
+  const collegeId =
+    initialInfo?.primary_college?.college_id ??
+    (initialInfo?.leadership?.level === "college"
+      ? initialInfo.leadership.id
+      : null);
+
+  const collegeName =
+    initialInfo?.primary_college?.college_name ??
+    (initialInfo?.leadership?.level === "college"
+      ? initialInfo.leadership.name
+      : "");
+
+  const campusName =
+    initialInfo?.primary_campus?.campus_name ??
+    (initialInfo?.leadership?.level === "campus"
+      ? initialInfo.leadership.name
+      : "");
 
   useEffect(() => {
     const load = async () => {
       try {
-        if (!department_id) {
+        if (!collegeId) {
           setLoading(false);
           return;
         }
 
         setLoading(true);
 
-        const data = await fetchDeanLoadedCourses(Number(department_id));
+        const data = await fetchDeanLoadedCourses(Number(collegeId));
         const formatted = data.map((c) => ({
           ...c,
           id: c.loaded_course_id,
@@ -54,7 +68,7 @@ export default function DeanCourseDashboard() {
     };
 
     load();
-  }, [department_id]);
+  }, [collegeId]);
 
   const filteredLoadedCourses = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -75,7 +89,7 @@ export default function DeanCourseDashboard() {
   }, [searchQuery, courses]);
 
   const goToDeanCoursePage = (course: BaseLoadedCourse) => {
-    navigate(`/college/${department_id}/${course.loaded_course_id}`, {
+    navigate(`/college/${collegeId}/${course.loaded_course_id}`, {
       state: {
         course_code: course.course_code,
       },
@@ -83,11 +97,11 @@ export default function DeanCourseDashboard() {
   };
 
   return (
-    <AppLayout activeItem={`/college/${department_id}`}>
+    <AppLayout activeItem={`/college/${collegeId}`}>
       <InfoComponent
-        loading={loading}
-        title={`${department?.college_name}`}
-        subtitle={`${department?.campus_name} Campus`}
+        loading={loading || initialInfoLoading}
+        title={collegeName || "College"}
+        subtitle={campusName ? `${campusName} Campus` : "Campus"}
       />
       <ToolBarComponent
         titleOptions={[

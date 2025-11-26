@@ -10,6 +10,82 @@ interface DepartmentCoursesTableProps {
   onClearError?: (name: string) => void;
 }
 
+// ---- sorting helpers ----
+const YEAR_WORDS: Record<string, number> = {
+  first: 1,
+  second: 2,
+  third: 3,
+  fourth: 4,
+  fifth: 5,
+};
+
+function yearSortKey(year?: string | null) {
+  if (!year) return 999;
+
+  const y = year.toLowerCase();
+
+  const numMatch = y.match(/\d+/);
+  if (numMatch) return Number(numMatch[0]);
+
+  for (const [word, n] of Object.entries(YEAR_WORDS)) {
+    if (y.includes(word)) return n;
+  }
+
+  return 999;
+}
+
+function semSortKey(sem?: string | null) {
+  if (!sem) return 999;
+  const s = sem.toLowerCase();
+
+  if (s.includes("1st") || s.includes("first") || s.includes("1")) return 1;
+  if (s.includes("2nd") || s.includes("second") || s.includes("2")) return 2;
+  if (s.includes("midyear") || s.includes("mid-year") || s.includes("mid"))
+    return 3;
+
+  return 999;
+}
+
+function hasKey<K extends string>(
+  obj: unknown,
+  key: K
+): obj is Record<K, unknown> {
+  return typeof obj === "object" && obj !== null && key in obj;
+}
+
+function getCreatedDate(c: DepartmentCourses): string | null {
+  if (hasKey(c, "created_at") && typeof c.created_at === "string")
+    return c.created_at;
+
+  if (hasKey(c, "created_on") && typeof c.created_on === "string")
+    return c.created_on;
+
+  if (hasKey(c, "date_created") && typeof c.date_created === "string")
+    return c.date_created;
+
+  if (hasKey(c, "dateCreated") && typeof c.dateCreated === "string")
+    return c.dateCreated;
+
+  return null;
+}
+
+function courseCompare(a: DepartmentCourses, b: DepartmentCourses) {
+  const aCreated = getCreatedDate(a);
+  const bCreated = getCreatedDate(b);
+
+  if (aCreated && bCreated) {
+    const at = new Date(aCreated).getTime();
+    const bt = new Date(bCreated).getTime();
+    if (at !== bt) return at - bt;
+  }
+
+  return a.course_code.localeCompare(b.course_code, undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
+
 export default function DepartmentCoursesTableComponent({
   courses,
   onSelectionChange,
@@ -29,8 +105,8 @@ export default function DepartmentCoursesTableComponent({
 
   const hasError = Boolean(error);
 
-  const groupedData = useMemo(() => {
-    if (!courses || courses.length === 0) return {};
+  const groupedList = useMemo(() => {
+    if (!courses || courses.length === 0) return [];
 
     const groups: Record<string, Record<string, DepartmentCourses[]>> = {};
 
@@ -44,16 +120,21 @@ export default function DepartmentCoursesTableComponent({
 
     Object.keys(groups).forEach((year) => {
       Object.keys(groups[year]).forEach((sem) => {
-        groups[year][sem].sort((a, b) =>
-          a.course_code.localeCompare(b.course_code, undefined, {
-            numeric: true,
-            sensitivity: "base",
-          })
-        );
+        groups[year][sem].sort(courseCompare);
       });
     });
 
-    return groups;
+    return Object.keys(groups)
+      .sort((a, b) => yearSortKey(a) - yearSortKey(b))
+      .map((year) => ({
+        year,
+        semesters: Object.keys(groups[year])
+          .sort((a, b) => semSortKey(a) - semSortKey(b))
+          .map((sem) => ({
+            sem,
+            courses: groups[year][sem],
+          })),
+      }));
   }, [courses]);
 
   const toggleSelection = (code: string) => {
@@ -154,8 +235,8 @@ export default function DepartmentCoursesTableComponent({
             </tr>
           </thead>
           <tbody>
-            {Object.entries(groupedData).map(([year, semesters]) =>
-              Object.entries(semesters).map(([sem, semCourses]) => {
+            {groupedList.map(({ year, semesters }) =>
+              semesters.map(({ sem, courses: semCourses }) => {
                 const totals = semCourses.reduce(
                   (acc, c) => ({
                     lec: acc.lec + Number(c.lecture_unit || 0),
@@ -167,6 +248,7 @@ export default function DepartmentCoursesTableComponent({
 
                 return (
                   <React.Fragment key={`${year}-${sem}`}>
+                    {/* header row */}
                     <tr className="border-t border-[#E9E6E6] bg-gray-50">
                       <td className="px-2 py-3 text-center">
                         <input
@@ -205,6 +287,7 @@ export default function DepartmentCoursesTableComponent({
                       </td>
                     </tr>
 
+                    {/* course rows */}
                     {semCourses.map((c) => (
                       <tr
                         key={c.course_code}
@@ -234,6 +317,7 @@ export default function DepartmentCoursesTableComponent({
                       </tr>
                     ))}
 
+                    {/* totals row */}
                     <tr className="border-t border-[#E9E6E6]">
                       <td colSpan={3}></td>
                       <td className="px-4 py-3 text-center font-medium">

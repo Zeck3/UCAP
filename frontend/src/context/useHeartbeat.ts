@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import axiosClient from "../api/axiosClient";
-import type { CurrentUser } from "../types/userManagementTypes";
+import type { CurrentUser } from "../types/userTypes";
 
 export const useHeartbeat = (
   user: CurrentUser | null,

@@ -208,8 +208,9 @@ class CourseOutcomeSerializer(serializers.ModelSerializer):
             "course_outcome_code",
             "course_outcome_description",
             "loaded_course",
+            "instructor",
         ]
-        read_only_fields = ["course_outcome_code", "loaded_course"]
+        read_only_fields = ["course_outcome_code", "loaded_course", "instructor"]
 
 class ProgramOutcomeSerializer(serializers.ModelSerializer):
     class Meta:

@@ -35,24 +35,63 @@ def populate_default_data():
         "Instructor",
         "Department Chair",
         "Dean",
-        "Vice Chancellor of Academic Affairs",
-        "Vice President of Academic Affairs",
+        "Vice Chancellor for Academic Affairs",
+        "Vice President for Academic Affairs",
     ]
 
-    role_objs = {r: UserRole.objects.get_or_create(user_role_type=r)[0] for r in roles}
+    ROLE_SCOPE_MAP = {
+        "Administrator": "university",
+        "Instructor": "department",
+        "Department Chair": "department",
+        "Dean": "college",
+        "Vice Chancellor for Academic Affairs": "campus",
+        "Vice President for Academic Affairs": "university",
+    }
+
+    role_objs = {}
+
+    for role_name in roles:
+        scope_value = ROLE_SCOPE_MAP[role_name]
+
+        role_obj, created = UserRole.objects.get_or_create(
+            user_role_type=role_name,
+            defaults={"scope": scope_value}
+        )
+
+        if not created and role_obj.scope != scope_value:
+            role_obj.scope = scope_value
+            role_obj.save()
+
+        role_objs[role_name] = role_obj
 
     users_data = [
-        {"user_id": 1, "role": "Administrator", "last_name": "Administrator", "email": "admin@example.com"},
+        {
+            "user_id": 10001,
+            "user_role": "Administrator",
+            "last_name": "Administrator",
+            "email": "admin@example.com"
+        },
     ]
 
     for user_data in users_data:
-        role = role_objs[user_data.pop("role")]
+        role_name = user_data.pop("user_role")
+        role_obj = role_objs[role_name]
+
         user_id = user_data.pop("user_id")
+
         user = User.objects.create_user(
             user_id=user_id,
-            user_role=role,
             **user_data
         )
+
+        user.user_role = role_obj
+
+        if role_name == "Administrator":
+            user.is_staff = True
+            user.is_superuser = True
+
+        user.save()
+
     # ===================================
     # Courses
     # ===================================

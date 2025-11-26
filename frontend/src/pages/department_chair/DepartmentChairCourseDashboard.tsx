@@ -4,13 +4,11 @@ import TableComponent from "../../components/TableComponent";
 import AppLayout from "../../layout/AppLayout";
 import emptyImage from "../../assets/undraw_file-search.svg";
 import { useLayout } from "../../context/useLayout";
-import { useAuth } from "../../context/useAuth";
 import { useMemo, useState, useEffect } from "react";
 import PlusIcon from "../../assets/plus-solid.svg?react";
 import SidePanelComponent from "../../components/SidePanelComponent";
 import DropdownComponent from "../../components/DropDownComponent";
 import { useNavigate, useParams } from "react-router-dom";
-import { useDepartment } from "../../context/useDepartment";
 import type { AcademicYear } from "../../types/dropdownTypes";
 import { getAcademicYears } from "../../api/dropdownApi";
 import {
@@ -30,16 +28,23 @@ import ProgramOutcomesTableComponent from "../../components/ProgramOutcomesTable
 import type { BaseLoadedCourse } from "../../types/baseTypes";
 import type { AxiosError } from "axios";
 import { toast } from "react-toastify";
+import { useInitialInfo } from "../../context/useInitialInfo";
+import { getLeadershipDepartmentId } from "../../types/userTypes";
 
 export default function DepartmentChairCourseDashboard() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeMenu, setActiveMenu] = useState("courses");
   const { layout } = useLayout();
-  const { user } = useAuth();
+  const {
+    initialInfo,
+    initialInfoLoading,
+    primaryDepartment,
+    primaryCollege,
+    primaryCampus,
+  } = useInitialInfo();
   const navigate = useNavigate();
   const { department_id, department_name } = useParams();
-  const { department } = useDepartment();
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [ayLoaded, setAyLoaded] = useState(false);
   const [loadedCoursesFetched, setLoadedCoursesFetched] = useState(false);
@@ -63,8 +68,25 @@ export default function DepartmentChairCourseDashboard() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [submitLoading, setSubmitLoading] = useState(false);
 
-  const departmentId = user?.department_id ?? 0;
-  const programId = department?.program_id ?? 0;
+  const departmentId = useMemo(() => {
+    return (
+      getLeadershipDepartmentId(initialInfo) ??
+      primaryDepartment?.department_id ??
+      null
+    );
+  }, [initialInfo, primaryDepartment]);
+
+  const deptName =
+    primaryDepartment?.department_name ??
+    (initialInfo?.leadership?.level === "department"
+      ? initialInfo.leadership.name
+      : "") ??
+    "";
+
+  const collegeName = primaryCollege?.college_name ?? "";
+  const campusName = primaryCampus?.campus_name ?? "";
+  const programName = departmentLoadedCourses[0]?.program_name;
+  const programId = departmentLoadedCourses[0]?.program_id ?? 0;
 
   useEffect(() => {
     if (!departmentId) return;
@@ -90,6 +112,7 @@ export default function DepartmentChairCourseDashboard() {
   }, [ayLoaded]);
 
   useEffect(() => {
+    if (departmentId == null) return;
     if (activeMenu !== "courses") return;
     if (loadedCoursesFetched) return;
 
@@ -113,6 +136,7 @@ export default function DepartmentChairCourseDashboard() {
   }, [activeMenu, departmentId, loadedCoursesFetched]);
 
   useEffect(() => {
+    if (departmentId == null) return;
     if (!isPanelOpen) return;
     if (deptCoursesFetched) return;
 
@@ -180,6 +204,13 @@ export default function DepartmentChairCourseDashboard() {
 
   const handleLoadCourse = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (departmentId == null) {
+      toast.error("Department info not loaded yet.");
+      return;
+    }
+    const deptId = departmentId;
+
     setErrors({});
     setSubmitLoading(true);
 
@@ -211,7 +242,7 @@ export default function DepartmentChairCourseDashboard() {
         };
 
         try {
-          await addLoadedCourse(departmentId, loadCourse);
+          await addLoadedCourse(deptId, loadCourse);
           successCount++;
         } catch (err) {
           const axiosErr = err as AxiosError<DepartmentCourseErrorResponse>;
@@ -227,7 +258,7 @@ export default function DepartmentChairCourseDashboard() {
         }
       }
 
-      const updatedCourses = await getDepartmentLoadedCourses(departmentId);
+      const updatedCourses = await getDepartmentLoadedCourses(deptId);
       setDepartmentLoadedCourses(updatedCourses);
 
       if (duplicateCourseCodes.length > 0) {
@@ -238,10 +269,7 @@ export default function DepartmentChairCourseDashboard() {
                 ", "
               )}].`;
 
-        setErrors((prev) => ({
-          ...prev,
-          courses: msg,
-        }));
+        setErrors((prev) => ({ ...prev, courses: msg }));
       }
 
       if (successCount > 0) {
@@ -303,18 +331,31 @@ export default function DepartmentChairCourseDashboard() {
     });
   };
 
+  if (initialInfoLoading || departmentId == null) {
+    return (
+      <AppLayout activeItem={`/department/${department_id ?? ""}`}>
+        <InfoComponent
+          loading
+          title="Loading department..."
+          subtitle=""
+          details=""
+        />
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout activeItem={`/department/${department_id}`}>
       <InfoComponent
         loading={loading}
-        title={`Department of ${department?.department_name ?? ""}`}
-        subtitle={`${department?.college_name ?? ""}`}
-        details={`${department?.campus_name ?? ""} Campus`}
+        title={`Department of ${deptName}`}
+        subtitle={collegeName}
+        details={campusName ? `${campusName} Campus` : "Campus"}
       />
       <ToolBarComponent
         titleOptions={[
           {
-            label: "Department Courses",
+            label: "Loaded Courses",
             value: "courses",
             enableSearch: true,
             enableLayout: true,
@@ -380,7 +421,7 @@ export default function DepartmentChairCourseDashboard() {
       ) : activeMenu === "outcomes" ? (
         <div className="pb-20 pt-8 flex flex-col gap-4">
           <span>
-            Upon completion of the {department?.program_name}, graduates are
+            Upon completion of the {programName ?? "program"}, graduates are
             able to:
           </span>
           <ProgramOutcomesTableComponent programId={programId} />
@@ -397,7 +438,8 @@ export default function DepartmentChairCourseDashboard() {
         loading={sidePanelLoading || submitLoading}
         disableSubmit={departmentCourses.length === 0 || submitLoading}
       >
-        <div className="mb-4">
+        <div className="flex flex-col gap-4">
+          {errors && <p className="text-red-500">{errors.academic_year}</p>}
           <DepartmentCoursesTableComponent
             courses={filteredDepartmentCourses}
             selectedCourses={selectedCourses.map((c) => c.course_code)}
@@ -410,9 +452,7 @@ export default function DepartmentChairCourseDashboard() {
             error={errors.courses}
             onClearError={handleClearError}
           />
-        </div>
 
-        <div className="mb-4">
           <DropdownComponent
             label="Academic Year"
             name="academic_year"

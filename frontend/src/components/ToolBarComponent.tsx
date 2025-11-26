@@ -119,9 +119,7 @@ export default function ToolBarComponent({
           </div>
         </div>
 
-        {/* Right side: search / layout / button */}
         <div className="h-11 flex flex-row gap-5 items-center">
-          {/* Desktop / large search input (md and up) */}
           {activeOption?.enableSearch && (
             <div className="relative flex-1 hidden md:block">
               <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-auto" />
@@ -136,13 +134,10 @@ export default function ToolBarComponent({
             </div>
           )}
 
-          {/* Mobile / small: search icon + expanded search mode */}
           {activeOption?.enableSearch && (
             <div className="flex md:hidden items-center gap-3">
-              {/* When mobile search is not open: show icon (and optionally layout/button) */}
               {!mobileSearchOpen && (
                 <>
-                  {/* Search icon only on small screens */}
                   <button
                     type="button"
                     className="flex items-center justify-center p-2 rounded-full hover:bg-gray-100 cursor-pointer"
@@ -154,7 +149,6 @@ export default function ToolBarComponent({
                 </>
               )}
 
-              {/* When mobile search is open: show full-width search, hide other controls */}
               {mobileSearchOpen && (
                 <div className="flex items-center gap-2 w-full">
                   <div className="relative flex-1">
@@ -181,7 +175,6 @@ export default function ToolBarComponent({
             </div>
           )}
 
-          {/* Layout toggle: visible normally; hidden on mobile while search overlay is open */}
           {activeOption?.enableLayout && (
             <div
               className={`
@@ -227,7 +220,6 @@ export default function ToolBarComponent({
             </div>
           )}
 
-          {/* Button: visible normally; hidden on mobile while search overlay is open */}
           {activeOption?.enableButton && (
             <button
               onClick={onButtonClick}

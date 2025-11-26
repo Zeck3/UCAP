@@ -2,10 +2,10 @@ import { useParams } from "react-router-dom";
 import AppLayout from "../../layout/AppLayout";
 import AssessmentPageComponent from "../../components/AssessmentPageComponent";
 
-export default function CampusAssessmentPage() {
-  const { department_id, section_id } = useParams();
+export default function VcaaAssessmentPage() {
+  const { campus_id, section_id } = useParams();
   return (
-    <AppLayout activeItem={`/campus/${department_id}`} disablePadding>
+    <AppLayout activeItem={`/campus/${campus_id}`} disablePadding>
       <AssessmentPageComponent sectionId={Number(section_id)}/>
     </AppLayout>
   );

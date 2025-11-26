@@ -1,15 +1,28 @@
 import { useState, useRef } from "react";
 import FileImportIcon from "../assets/file-import-solid.svg?react";
+import DownloadIcon from "../assets/download-solid.svg?react";
 import AnalyticsIcon from "../assets/chart-simple.svg?react";
 import { importStudentsCSV } from "../api/instructorStudentListUploadApi";
+import { exportClassRecordToExcel } from "./classrecord/utils/ExportClassRecord";
 import type { AxiosError } from "axios";
 import { toast } from "react-toastify";
 import FileInstructionComponent from "./FileInstructionComponent";
+import type { HeaderNode } from "./classrecord/types/headerConfigTypes";
+import type { Student } from "../types/classRecordTypes";
+import BookIcon from "../assets/book-solid-full.svg?react";
+import BloomsGuidePopup from "./classrecord/context/BloomsGuidePopup";
 
 type Props = {
   goToAssessmentPage: () => void;
   sectionId: number;
   refreshStudents: () => Promise<void>;
+  getExportData: () => {
+    headerNodes: HeaderNode[];
+    students: Student[];
+    studentScores: Record<number, Record<string, number>>;
+    maxScores: Record<string, number>;
+    computedValues: Record<number, Record<string, number>>;
+  };
   canGenerateResultSheet: boolean;
   hasExistingStudents: boolean;
 };
@@ -22,6 +35,7 @@ export default function FloatingToolbarComponent({
   goToAssessmentPage,
   sectionId,
   refreshStudents,
+  getExportData,
   canGenerateResultSheet,
   hasExistingStudents,
 }: Props) {
@@ -29,7 +43,7 @@ export default function FloatingToolbarComponent({
 
   const [showInstructionModal, setShowInstructionModal] = useState(false);
   const [showModeModal, setShowModeModal] = useState(false);
-
+  const [isBloomsOpen, setIsBloomsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
 
@@ -48,7 +62,6 @@ export default function FloatingToolbarComponent({
     const file = fileOverride ?? selectedFile;
     if (!file) return;
 
-    // CLOSE MODALS IMMEDIATELY WHEN PROCESSING STARTS
     setShowInstructionModal(false);
     setShowModeModal(false);
     setIsImporting(true);
@@ -67,6 +80,17 @@ export default function FloatingToolbarComponent({
       setIsImporting(false);
       setSelectedFile(null);
       resetFileInput();
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const data = getExportData();
+      await exportClassRecordToExcel(data);
+      toast.success("Class record exported successfully");
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Failed to export class record");
     }
   };
 
@@ -102,11 +126,45 @@ export default function FloatingToolbarComponent({
         >
           <FileImportIcon className="w-5 h-5 text-[#767676]" />
           <span
-            className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2
-              text-xs text-white bg-[#767676] px-2 py-1 rounded opacity-0
+            className="pointer-events-none absolute bottom-full mb-3 left-1/2 -translate-x-1/2
+              text-xs text-white bg-[#767676] px-2 py-1 rounded whitespace-nowrap opacity-0
               group-hover:opacity-100 transition"
           >
             Import Student List
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className="relative p-2 rounded-full hover:bg-gray-100 hover:cursor-pointer group"
+          title="Open Blooms Guide"
+          aria-label="Open Blooms Guide"
+          onClick={() => setIsBloomsOpen(true)}
+        >
+          <BookIcon className="w-5 h-5 text-[#767676]" />
+          <span
+            className="pointer-events-none absolute bottom-full mb-3 left-1/2 -translate-x-1/2
+            text-xs text-white bg-[#767676] px-2 py-1 rounded whitespace-nowrap opacity-0
+            group-hover:opacity-100 transition"
+          >
+            Open Blooms Guide
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className="relative p-2 rounded-full hover:bg-gray-100 hover:cursor-pointer group"
+          title="Export Class Record"
+          aria-label="Export Class Record"
+          onClick={handleExport}
+        >
+          <DownloadIcon className="w-5 h-5 text-[#767676]" />
+          <span
+            className="pointer-events-none absolute bottom-full mb-3 left-1/2 -translate-x-1/2
+              text-xs text-white bg-[#767676] px-2 py-1 rounded whitespace-nowrap opacity-0
+              group-hover:opacity-100 transition"
+          >
+            Export Class Record
           </span>
         </button>
 
@@ -256,6 +314,10 @@ export default function FloatingToolbarComponent({
           </div>
         </div>
       )}
+      <BloomsGuidePopup
+        isOpen={isBloomsOpen}
+        onClose={() => setIsBloomsOpen(false)}
+      />
     </>
   );
 }

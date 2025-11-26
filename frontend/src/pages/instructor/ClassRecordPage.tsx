@@ -3,6 +3,8 @@ import ClassRecordComponent from "../../components/classrecord/ClassRecordCompon
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useState } from "react";
 import FloatingToolbar from "../../components/FloatingToolbarComponent";
+import type { HeaderNode } from "../../components/classrecord/types/headerConfigTypes";
+import type { Student } from "../../types/classRecordTypes";
 
 export default function ClassRecordPage() {
   const navigate = useNavigate();
@@ -20,6 +22,13 @@ export default function ClassRecordPage() {
   const [refreshFn, setRefreshFn] = useState<(() => Promise<void>) | null>(
     null
   );
+  const [exportDataFn, setExportDataFn] = useState<(() => {
+    headerNodes: HeaderNode[];
+    students: Student[];
+    studentScores: Record<number, Record<string, number>>;
+    maxScores: Record<string, number>;
+    computedValues: Record<number, Record<string, number>>;
+  }) | null>(null);
 
   const goToAssessmentPage = () => {
     navigate(`/instructor/${loaded_course_id}/${section_id}/assessment`, {
@@ -32,15 +41,17 @@ export default function ClassRecordPage() {
       <ClassRecordComponent
         onInitialized={() => setCrReady(true)}
         onProvideFetchStudents={(fn) => setRefreshFn(() => fn)}
+        onProvideExportData={(fn) => setExportDataFn(() => fn)}
         onCanGenerateResultSheetChange={setCanGenerateResultSheet}
         onExistingStudentsChange={setHasExistingStudents} 
       />
 
-      {crReady && refreshFn && (
+      {crReady && refreshFn && exportDataFn && (
         <FloatingToolbar
           sectionId={Number(section_id)}
           goToAssessmentPage={goToAssessmentPage}
           refreshStudents={refreshFn}
+          getExportData={exportDataFn}
           canGenerateResultSheet={canGenerateResultSheet}
           hasExistingStudents={hasExistingStudents}
         />

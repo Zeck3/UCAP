@@ -1,7 +1,10 @@
 from collections import defaultdict
+import json
 import csv
 from io import TextIOWrapper
 import uuid
+import tempfile
+from gradio_client import Client, handle_file
 from django.db.models import Prefetch
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
@@ -102,15 +105,17 @@ def instructor_assigned_sections_view(request, instructor_id, loaded_course_id):
 # ====================================================
 # Class Record
 # ====================================================
-def can_generate_result_sheet(section: Section) -> bool:
+def can_generate_result_sheet(section: Section, instructor) -> bool:
     loaded_course = section.loaded_course
 
     has_cos = CourseOutcome.objects.filter(
-        loaded_course=loaded_course
+        loaded_course=loaded_course,
+        instructor=instructor
     ).exists()
 
     has_mappings = OutcomeMapping.objects.filter(
-        course_outcome__loaded_course=loaded_course
+        course_outcome__loaded_course=loaded_course,
+        course_outcome__instructor=instructor
     ).exclude(outcome_mapping__isnull=True).exclude(outcome_mapping="")
     has_mappings = has_mappings.exists()
 
@@ -167,7 +172,7 @@ class ClassRecordViewSet(viewsets.ViewSet):
 
         serializer = ClassRecordSerializer(section)
         data = serializer.data
-        data["canGenerateResultSheet"] = can_generate_result_sheet(section)
+        data["canGenerateResultSheet"] = can_generate_result_sheet(section, request.user)
 
         return Response(data)
     
@@ -557,6 +562,9 @@ class AssessmentPageAPIView(APIView):
 
     def format_co_label(self, co_codes, course_unit_type):
         codes_sorted = sorted(co_codes, key=self.co_code_num)
+        
+        if len(codes_sorted) == 0:
+            return ""
 
         if len(codes_sorted) == 1:
             return (
@@ -607,6 +615,9 @@ class AssessmentPageAPIView(APIView):
                 f"{section.instructor_assigned.first_name} {section.instructor_assigned.last_name}".strip()
                 if section.instructor_assigned else ""
             ),
+            "department": getattr(dept, "department_name", ""),
+            "subject": getattr(course, "course_title", ""),
+            "year_section": getattr(section, "year_and_section", ""),
         }
 
         assessments_qs = (
@@ -621,19 +632,31 @@ class AssessmentPageAPIView(APIView):
             .order_by("assessment_id")
         )
 
-        co_qs = CourseOutcome.objects.filter(loaded_course=loaded_course)
+        instructor_for_section = getattr(section, "instructor_assigned", None)
+
+        co_filters = {"loaded_course": loaded_course}
+        if instructor_for_section is not None:
+            co_filters["instructor"] = instructor_for_section
+
+        co_qs = CourseOutcome.objects.filter(**co_filters)
         co_id_to_code = {co.course_outcome_id: co.course_outcome_code for co in co_qs}
 
         co_to_po_codes = defaultdict(set)
+        
+        mapping_filters = {
+            "course_outcome__loaded_course": loaded_course,
+            "program_outcome__program": program,
+            "outcome_mapping__in": ["I", "D", "E"],
+        }
+        if instructor_for_section is not None:
+            mapping_filters["course_outcome__instructor"] = instructor_for_section
+
         mappings_qs = (
             OutcomeMapping.objects
-            .filter(
-                course_outcome__loaded_course=loaded_course,
-                program_outcome__program=program,
-                outcome_mapping__in=["I", "D", "E"],
-            )
+            .filter(**mapping_filters)
             .select_related("program_outcome", "course_outcome")
         )
+
 
         for m in mappings_qs:
             co_code = getattr(m.course_outcome, "course_outcome_code", None)
@@ -653,11 +676,13 @@ class AssessmentPageAPIView(APIView):
                 if co.loaded_course_id == loaded_course.loaded_course_id
             ]
 
-            if not a_co_codes:
+            valid_co_codes = [c for c in a_co_codes if c]
+
+            if not valid_co_codes:
                 assessment_ids_in_order.append(a.assessment_id)
                 continue
 
-            co_label = self.format_co_label([c for c in a_co_codes if c], unit_type)
+            co_label = self.format_co_label(valid_co_codes, unit_type)
             bloom_key = self.normalize_bloom_names(list(a.blooms_classification.all()))
 
             co_to_bloom_to_assess[co_label][bloom_key].append({
@@ -772,7 +797,10 @@ class AssessmentPageAPIView(APIView):
 def course_outcome_list_create_view(request, loaded_course_id):
     try:
         if request.method == "GET":
-            outcomes = CourseOutcome.objects.filter(loaded_course_id=loaded_course_id).order_by("course_outcome_id")
+            outcomes = CourseOutcome.objects.filter(
+                loaded_course_id=loaded_course_id,
+                instructor=request.user
+            ).order_by("course_outcome_id")
             serializer = CourseOutcomeSerializer(outcomes, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -781,7 +809,10 @@ def course_outcome_list_create_view(request, loaded_course_id):
         except LoadedCourse.DoesNotExist:
             return Response({"message": "Loaded course not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        last_outcome = CourseOutcome.objects.filter(loaded_course=loaded_course).order_by("course_outcome_id").last()
+        last_outcome = CourseOutcome.objects.filter(
+            loaded_course=loaded_course,
+            instructor=request.user
+        ).order_by("course_outcome_id").last()
 
         if last_outcome:
             last_num = int(last_outcome.course_outcome_code.replace("CO", ""))
@@ -793,7 +824,11 @@ def course_outcome_list_create_view(request, loaded_course_id):
 
         serializer = CourseOutcomeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(loaded_course=loaded_course, course_outcome_code=next_code)
+            serializer.save(
+                loaded_course=loaded_course,
+                course_outcome_code=next_code,
+                instructor=request.user
+            )
             return Response(
                 {"message": "Course Outcome added successfully", "data": serializer.data},
                 status=status.HTTP_201_CREATED,
@@ -813,6 +848,13 @@ def course_outcome_detail_view(request, outcome_id):
         except CourseOutcome.DoesNotExist:
             return Response({"message": "Course Outcome not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        # Verify the instructor owns this course outcome
+        if outcome.instructor != request.user:
+            return Response(
+                {"message": "You do not have permission to modify this Course Outcome"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         if request.method == "PUT":
             serializer = CourseOutcomeSerializer(outcome, data=request.data, partial=True)
             if serializer.is_valid():
@@ -823,7 +865,10 @@ def course_outcome_detail_view(request, outcome_id):
                 )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        latest = CourseOutcome.objects.filter(loaded_course=outcome.loaded_course).order_by("course_outcome_id").last()
+        latest = CourseOutcome.objects.filter(
+            loaded_course=outcome.loaded_course,
+            instructor=request.user
+        ).order_by("course_outcome_id").last()
         if latest and latest.pk == outcome.pk:
             outcome.delete()
             return Response({"message": "Course Outcome deleted successfully"}, status=status.HTTP_200_OK)
@@ -842,7 +887,10 @@ def course_outcome_detail_view(request, outcome_id):
 @permission_classes([IsAuthenticated])
 def outcome_mapping_view(request, loaded_course_id):
     try:
-        course_outcomes = CourseOutcome.objects.filter(loaded_course_id=loaded_course_id)
+        course_outcomes = CourseOutcome.objects.filter(
+            loaded_course_id=loaded_course_id,
+            instructor=request.user
+        )
         
         if not course_outcomes.exists():
             loaded_course = LoadedCourse.objects.filter(pk=loaded_course_id).select_related("course__program").first()
@@ -930,3 +978,73 @@ class SyllabusExtractView(APIView):
                     default_storage.delete(path)
             except Exception:
                 pass
+
+# ====================================================
+# NLP Outcome Mapping
+# ====================================================
+HF_SPACE = "jestoniandales25/BERT_nlp"
+HF_API_NAME = "/process_json"
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def nlp_outcome_mapping_view(request, loaded_course_id: int):
+    try:
+        loaded_course = (
+            LoadedCourse.objects
+            .select_related("course__program")
+            .get(pk=loaded_course_id)
+        )
+
+        cos = CourseOutcome.objects.filter(
+            loaded_course_id=loaded_course_id,
+            instructor=request.user
+        ).order_by("course_outcome_id")
+
+        program_id = loaded_course.course.program_id
+        pos = ProgramOutcome.objects.filter(
+            program_id=program_id
+        ).order_by("program_outcome_id")
+
+        co_data = CourseOutcomeSerializer(cos, many=True).data
+        po_data = ProgramOutcomeSerializer(pos, many=True).data
+
+        payload = {
+            "CourseOutcome": [
+                {
+                    "course_outcome_code": co["course_outcome_code"],
+                    "course_outcome_description": co["course_outcome_description"],
+                }
+                for co in co_data
+            ],
+            "ProgramOutcome": [
+                {
+                    "program_outcome_code": po["program_outcome_code"],
+                    "program_outcome_description": po["program_outcome_description"],
+                }
+                for po in po_data
+            ],
+        }
+
+        client = Client(HF_SPACE)
+
+        with tempfile.NamedTemporaryFile(mode="w+", suffix=".json") as f:
+            json.dump(payload, f)
+            f.flush()
+
+            result = client.predict(
+                file_obj=handle_file(f.name),
+                api_name=HF_API_NAME
+            )
+
+        return Response(result, status=status.HTTP_200_OK)
+
+    except LoadedCourse.DoesNotExist:
+        return Response(
+            {"message": "Loaded course not found."},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {"message": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

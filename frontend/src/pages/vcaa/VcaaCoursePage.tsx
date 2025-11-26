@@ -19,8 +19,8 @@ import type {
   BaseSection,
 } from "../../types/baseTypes";
 
-export default function CampusCoursePage() {
-  const { department_id, loaded_course_id } = useParams();
+export default function VcaaCoursePage() {
+  const { campus_id, loaded_course_id } = useParams();
   const navigate = useNavigate();
   const { layout } = useLayout();
 
@@ -79,9 +79,9 @@ export default function CampusCoursePage() {
   }, [courseData, searchQuery]);
 
   const goToAssessmentPage = (section: BaseSection) => {
-    if (!department_id || !loaded_course_id) return;
+    if (!campus_id || !loaded_course_id) return;
 
-    navigate(`/campus/${department_id}/${loaded_course_id}/${section.id}`, {
+    navigate(`/campus/${campus_id}/${loaded_course_id}/${section.id}`, {
       state: {
         course_code: courseData?.course_details.course_code ?? "",
         year_and_section: section.year_and_section,
@@ -92,7 +92,7 @@ export default function CampusCoursePage() {
   const details = courseData?.course_details;
 
   return (
-    <AppLayout activeItem={`/campus/${department_id}`}>
+    <AppLayout activeItem={`/campus/${campus_id}`}>
       <InfoComponent
         loading={loading}
         title={details?.course_title ?? ""}

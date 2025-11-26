@@ -266,7 +266,7 @@ def _norm(s: str) -> str:
     return (s or "").strip().upper().replace(" ", "")
 
 @transaction.atomic
-def apply_extracted_override(loaded_course, extracted_items):
+def apply_extracted_override(loaded_course, extracted_items, instructor=None):
     """
     extracted_items:
     [
@@ -300,10 +300,21 @@ def apply_extracted_override(loaded_course, extracted_items):
         if not co_code:
             continue
 
+        # Create or get course outcome with instructor filter
+        filter_kwargs = {
+            "loaded_course": loaded_course,
+            "course_outcome_code": co_code,
+        }
+        if instructor:
+            filter_kwargs["instructor"] = instructor
+        
+        defaults = {"course_outcome_description": co_desc}
+        if instructor:
+            defaults["instructor"] = instructor
+            
         co_obj, created = CourseOutcome.objects.get_or_create(
-            loaded_course=loaded_course,
-            course_outcome_code=co_code,
-            defaults={"course_outcome_description": co_desc},
+            **filter_kwargs,
+            defaults=defaults
         )
 
         if created:

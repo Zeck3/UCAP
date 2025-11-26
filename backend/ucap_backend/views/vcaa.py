@@ -2,7 +2,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from ucap_backend.models import Department, LoadedCourse, Section
+from rest_framework.exceptions import PermissionDenied
+from ucap_backend.models import LoadedCourse, Section
 from ucap_backend.serializers.vcaa import VcaaCourseDetailsSerializer, VcaaLoadedCourseSerializer, VcaaSectionSerializer
 
 # ====================================================
@@ -10,29 +11,30 @@ from ucap_backend.serializers.vcaa import VcaaCourseDetailsSerializer, VcaaLoade
 # ====================================================
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-def vcaa_loaded_courses_view(request, department_id):
+def vcaa_loaded_courses_view(request, campus_id):
     try:
-        dept = Department.objects.select_related("campus").get(pk=department_id)
-        campus_id = dept.campus_id
+        user_campus_id = getattr(request.user, "vcaa_campus_id", None)
+        if user_campus_id is None or int(user_campus_id) != int(campus_id):
+            raise PermissionDenied("You are not assigned to this campus.")
 
         loaded_courses = (
             LoadedCourse.objects
             .select_related(
-                "course__program__department__campus",
+                "course__program__department__college__campus",
                 "course__program",
                 "course__semester",
                 "course__year_level",
-                "academic_year"
+                "academic_year",
             )
-            .filter(course__program__department__campus_id=campus_id)
+            .filter(course__program__department__college__campus_id=campus_id)
             .order_by("course__course_code")
         )
 
         serializer = VcaaLoadedCourseSerializer(loaded_courses, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    except Department.DoesNotExist:
-        return Response({"message": "Department not found"}, status=status.HTTP_404_NOT_FOUND)
+    except PermissionDenied as e:
+        return Response({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

@@ -3,21 +3,20 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 from ucap_backend.serializers.dean import DeanCourseDetailsSerializer, DeanLoadedCourseSerializer, DeanSectionSerializer
-from ucap_backend.models import Department, LoadedCourse, Section
+from ucap_backend.models import LoadedCourse, Section
 
 # ====================================================
 # Dean
 # ====================================================
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-def dean_loaded_courses_view(request, department_id):
+def dean_loaded_courses_view(request, college_id):
     try:
-        department = Department.objects.select_related("college").get(pk=department_id)
-        college = department.college
-
-        if not college:
-            return JsonResponse({"message": "Department has no assigned college"}, status=400)
+        user_college_id = getattr(request.user, "dean_college_id", None)
+        if user_college_id is None or int(user_college_id) != int(college_id):
+            raise PermissionDenied("You are not assigned to this college.")
 
         loaded_courses = (
             LoadedCourse.objects
@@ -27,15 +26,15 @@ def dean_loaded_courses_view(request, department_id):
                 "course__semester",
                 "academic_year",
             )
-            .filter(course__program__department__college=college)
+            .filter(course__program__department__college_id=college_id)
             .order_by("loaded_course_id")
         )
 
         serializer = DeanLoadedCourseSerializer(loaded_courses, many=True)
         return Response(serializer.data, status=200)
 
-    except Department.DoesNotExist:
-        return JsonResponse({"message": "Department not found"}, status=404)
+    except PermissionDenied as e:
+        return JsonResponse({"message": str(e)}, status=403)
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500)
 

@@ -1,12 +1,11 @@
 from django.http import JsonResponse
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from ucap_backend.models import Department
-from ucap_backend.serializers.user import CurrentUserSerializer, UserDepartmentSerializer
+from ucap_backend.serializers.user import ChangePasswordSerializer, CurrentUserSerializer, UserInitialInfoSerializer
 
 # ====================================================
 # Login Authentication
@@ -41,25 +40,39 @@ def me_view(request):
     if not request.user.is_authenticated:
         return Response(None, status=status.HTTP_200_OK)
     serializer = CurrentUserSerializer(request.user)
-    return Response(serializer.data)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def heartbeat_view(request):
     return Response({"detail": "alive"})
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def change_password_view(request):
+    serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
+    serializer.is_valid(raise_exception=True)
+
+    user = request.user
+    old_password = serializer.validated_data["old_password"]
+    new_password = serializer.validated_data["new_password"]
+
+    if not user.check_password(old_password):
+        return Response({"old_password": ["Old password is incorrect."]},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    user.set_password(new_password)
+    user.save()
+
+    update_session_auth_hash(request, user)
+
+    return Response({"detail": "Password updated successfully."}, status=status.HTTP_200_OK)
+
 # ====================================================
-# User Department
+# User Initial Info
 # ====================================================
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-def user_department_view(request, departmentId):
-    try:
-        department = Department.objects.select_related("college", "campus").filter(department_id=departmentId).first()
-        if not department:
-            return JsonResponse({"message": "Department not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = UserDepartmentSerializer(department)
-        return JsonResponse(serializer.data, safe=False)
-    except Exception as e:
-        return JsonResponse({"message": str(e)}, status.HTTP_500_INTERNAL_SERVER_ERROR)
+def user_initial_info_view(request):
+    serializer = UserInitialInfoSerializer(request.user)
+    return Response(serializer.data, status=status.HTTP_200_OK)

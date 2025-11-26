@@ -113,27 +113,20 @@ export default function AssessmentInfoContextMenu({
     >
       {bloomsOptions.length > 0 && (
         <div>
-          <label className="block text-sm mb-1">
-            Bloom's Classification
-          </label>
+          <label className="block text-sm mb-1">Bloom's Classification</label>
 
           <div className="flex flex-wrap gap-1 overflow-hidden">
             {bloomsOptions.map((b) => {
               const isSelected = selectedBlooms.includes(String(b.id));
               const color =
-                BLOOM_COLORS[b.name] ||
-                "bg-gray-50 border-[#E9E6E6]";
+                BLOOM_COLORS[b.name] || "bg-gray-50 border-[#E9E6E6]";
 
               return (
                 <button
                   key={b.id}
                   onClick={() => toggleBloom(String(b.id))}
                   className={`px-2 py-1 text-xs border rounded-full transition 
-                    ${
-                      isSelected
-                        ? color
-                        : "bg-white border-[#E9E6E6]"
-                    }
+                    ${isSelected ? color : "bg-white border-[#E9E6E6]"}
                   `}
                 >
                   {b.name}
@@ -144,11 +137,14 @@ export default function AssessmentInfoContextMenu({
         </div>
       )}
 
-      {outcomesOptions.length > 0 && (
+      {outcomesOptions.length === 0 ? (
+        <div className="p-2 rounded-md text-xs text-[#767676]">
+          No mapped Course Outcomes yet. Add Course Outcomes and map them to
+          Program Outcomes first.
+        </div>
+      ) : (
         <div>
-          <label className="block text-sm mb-1">
-            Course Outcomes
-          </label>
+          <label className="block text-sm mb-1">Course Outcomes</label>
 
           <div className="overflow-hidden space-y-1">
             {outcomesOptions.map((o) => (
