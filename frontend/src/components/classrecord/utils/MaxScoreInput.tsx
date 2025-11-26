@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import type { HeaderNode } from "../types/headerConfigTypes";
 
-const MaxScoreInput = React.memo(function MaxScoreInput({ node, value, onChange, onBlur, setMaxScores, handleUpdateAssessment }: { node: HeaderNode; value: number | ""; onChange: (v: number) => void; onBlur: (v: number) => void; setMaxScores?: (updater: (prev: Record<string, number>) => Record<string, number>) => void; handleUpdateAssessment?: (assessmentId: number, updates: { assessment_highest_score: number }) => void }) {
+const MaxScoreInput = React.memo(function MaxScoreInput({ node, value, onChange, onBlur }: { node: HeaderNode; value: number | ""; onChange: (v: number) => void; onBlur: (v: number) => void; setMaxScores?: (updater: (prev: Record<string, number>) => Record<string, number>) => void; handleUpdateAssessment?: (assessmentId: number, updates: { assessment_highest_score: number }) => void }) {
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
