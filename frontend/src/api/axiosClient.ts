@@ -1,7 +1,8 @@
+
 import axios, { AxiosError } from "axios";
 
 const axiosClient = axios.create({
-  baseURL: "/api/",
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
   withXSRFToken: true,
   xsrfCookieName: "csrftoken",
