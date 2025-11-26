@@ -261,35 +261,33 @@ def main(filepath, output="co_po_mapping.json"):
 
 if __name__ == "__main__":
     main("IT212 - Fundl of DBMS Syllabus-APPROVED.pdf")
-
 def _norm(s: str) -> str:
     return (s or "").strip().upper().replace(" ", "")
 
+
 @transaction.atomic
 def apply_extracted_override(loaded_course, extracted_items, instructor=None):
-    """
-    extracted_items:
-    [
-      {
-        "course_outcome_code": "CO1",
-        "course_outcome_description": "...",
-        "outcome_mapping": {"PO-A": "I", "PO-B": "E"}
-      },
-      ...
-    ]
-    """
+
     program = loaded_course.course.program
     program_outcomes = ProgramOutcome.objects.filter(program=program)
-
     po_lookup = {_norm(po.program_outcome_code): po for po in program_outcomes}
 
+    co_scope = CourseOutcome.objects.filter(loaded_course=loaded_course)
+    if instructor is not None:
+        co_scope = co_scope.filter(instructor=instructor)
+
+    deleted_mappings_count, _ = OutcomeMapping.objects.filter(
+        course_outcome__in=co_scope
+    ).delete()
+
+    deleted_cos_count, _ = co_scope.delete()
+
     summary = {
+        "deleted_course_outcomes": deleted_cos_count,
+        "deleted_mappings": deleted_mappings_count,
         "created_course_outcomes": 0,
-        "updated_course_outcomes": 0,
-        "skipped_course_outcomes": 0,
         "created_mappings": 0,
-        "updated_mappings": 0,
-        "skipped_pos_missing_in_program": [],  # POs found in PDF but not in DB
+        "skipped_pos_missing_in_program": [],
     }
 
     for item in extracted_items:
@@ -300,37 +298,20 @@ def apply_extracted_override(loaded_course, extracted_items, instructor=None):
         if not co_code:
             continue
 
-        # Create or get course outcome with instructor filter
-        filter_kwargs = {
+        co_kwargs = {
             "loaded_course": loaded_course,
             "course_outcome_code": co_code,
+            "course_outcome_description": co_desc,
         }
-        if instructor:
-            filter_kwargs["instructor"] = instructor
-        
-        defaults = {"course_outcome_description": co_desc}
-        if instructor:
-            defaults["instructor"] = instructor
-            
-        co_obj, created = CourseOutcome.objects.get_or_create(
-            **filter_kwargs,
-            defaults=defaults
-        )
+        if instructor is not None:
+            co_kwargs["instructor"] = instructor
 
-        if created:
-            summary["created_course_outcomes"] += 1
-        else:
-            if co_desc:  # only overwrite if PDF gave a description
-                co_obj.course_outcome_description = co_desc
-                co_obj.save(update_fields=["course_outcome_description"])
-                summary["updated_course_outcomes"] += 1
-            else:
-                summary["skipped_course_outcomes"] += 1
+        co_obj = CourseOutcome.objects.create(**co_kwargs)
+        summary["created_course_outcomes"] += 1
 
-        # Override PO mappings for this CO
         for raw_po_code, level in po_levels.items():
-            po_code_norm = _norm(raw_po_code)   # e.g., "PO-A"
-            level_norm = _norm(level)           # "I"/"D"/"E"
+            po_code_norm = _norm(raw_po_code)
+            level_norm = _norm(level)
 
             if level_norm not in {"I", "D", "E"}:
                 continue
@@ -340,21 +321,14 @@ def apply_extracted_override(loaded_course, extracted_items, instructor=None):
                 summary["skipped_pos_missing_in_program"].append(raw_po_code)
                 continue
 
-            mapping_obj, map_created = OutcomeMapping.objects.get_or_create(
+            OutcomeMapping.objects.create(
                 program_outcome=po_obj,
                 course_outcome=co_obj,
-                defaults={"outcome_mapping": level_norm},
+                outcome_mapping=level_norm,
             )
-
-            if map_created:
-                summary["created_mappings"] += 1
-            else:
-                # overwrite always
-                mapping_obj.outcome_mapping = level_norm
-                mapping_obj.save(update_fields=["outcome_mapping"])
-                summary["updated_mappings"] += 1
+            summary["created_mappings"] += 1
 
     summary["skipped_pos_missing_in_program"] = sorted(
-        list(set(summary["skipped_pos_missing_in_program"]))
+        set(summary["skipped_pos_missing_in_program"])
     )
     return summary

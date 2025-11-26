@@ -1004,8 +1004,6 @@ class SyllabusExtractView(APIView):
             except Exception:
                 pass
 
-
-
 # ====================================================
 # NLP Outcome Mapping
 # ====================================================
