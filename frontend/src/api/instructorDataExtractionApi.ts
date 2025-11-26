@@ -1,17 +1,12 @@
 import axiosClient from "./axiosClient";
 
 export interface COPOResult {
-  CO: string;
-  Description: string;
-  Mapped_POs: string[];
+  course_outcome_code: string;
+  course_outcome_description: string;
+  outcome_mapping: Record<string, string>;
 }
 
-/**
- * Upload syllabus PDF and extract CO–PO mapping.
- *
- * @param loadedCourseId 
- * @param file
- */
+
 export async function extractSyllabus(
   loadedCourseId: number,
   file: File
@@ -29,5 +24,11 @@ export async function extractSyllabus(
     }
   );
 
-  return res.data;
+  const data = res.data;
+
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error("No CO–PO data extracted from the uploaded PDF.");
+  }
+
+  return data;
 }

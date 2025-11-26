@@ -8,9 +8,11 @@ export async function fetchNlpOutcomeMapping(
   courseOutcomes: OutcomeMappingResponse["course_outcomes"],
   programOutcomes: OutcomeMappingResponse["program_outcomes"]
 ): Promise<OutcomeMappingResponse> {
-  const { data: raw } = await axiosClient.get<RawNlpResult>(
+  const res = await axiosClient.get<RawNlpResult>(
     `/instructor/nlp_outcome_mapping/${loadedCourseId}/`
   );
+
+  const raw = res.data;
 
   const coByCode = new Map(
     courseOutcomes.map((co) => [co.course_outcome_code, co])

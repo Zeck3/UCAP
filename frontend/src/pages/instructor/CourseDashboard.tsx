@@ -26,9 +26,17 @@ export default function CourseDashboard() {
       try {
         setLoading(true);
         const data = await InstructorCourses(currentUserId);
+
+        if (!Array.isArray(data)) {
+          console.error("InstructorCourses: expected array, got:", data);
+          setCourses([]);
+          return;
+        }
+
         setCourses(data);
       } catch (err) {
         console.error("Failed to fetch instructor courses:", err);
+        setCourses([]);
       } finally {
         setLoading(false);
       }

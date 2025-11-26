@@ -2,6 +2,8 @@ from collections import defaultdict
 import json
 import csv
 from io import TextIOWrapper
+import logging
+import time
 import uuid
 import tempfile
 from gradio_client import Client, handle_file
@@ -953,12 +955,15 @@ class SyllabusExtractView(APIView):
             ).get(pk=loaded_course_id)
         except LoadedCourse.DoesNotExist:
             return Response(
-                {"error": "Loaded course not found."},
+                {"detail": "Loaded course not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
         if "file" not in request.FILES:
-            return Response({"detail": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "No file uploaded"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         pdf_file = request.FILES["file"]
 
@@ -968,22 +973,50 @@ class SyllabusExtractView(APIView):
 
         try:
             result = extract_co_po(filepath)
+
+            if not result:
+                return Response(
+                    {
+                        "detail": (
+                            "No CO–PO mapping could be extracted from this PDF. "
+                            "Please check the syllabus format."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            summary = apply_extracted_override(
+                loaded_course=loaded_course,
+                extracted_items=result,
+                instructor=request.user,
+            )
+
             return Response(result, status=status.HTTP_200_OK)
+
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         finally:
-
             try:
                 if default_storage.exists(path):
                     default_storage.delete(path)
             except Exception:
                 pass
 
+
+
 # ====================================================
 # NLP Outcome Mapping
 # ====================================================
+logger = logging.getLogger(__name__)
+
 HF_SPACE = "jestoniandales25/BERT_nlp"
 HF_API_NAME = "/process_json"
+
+MAX_HF_TRIES = 2
+RETRY_DELAY_SECONDS = 3
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -994,57 +1027,82 @@ def nlp_outcome_mapping_view(request, loaded_course_id: int):
             .select_related("course__program")
             .get(pk=loaded_course_id)
         )
-
-        cos = CourseOutcome.objects.filter(
-            loaded_course_id=loaded_course_id,
-            instructor=request.user
-        ).order_by("course_outcome_id")
-
-        program_id = loaded_course.course.program_id
-        pos = ProgramOutcome.objects.filter(
-            program_id=program_id
-        ).order_by("program_outcome_id")
-
-        co_data = CourseOutcomeSerializer(cos, many=True).data
-        po_data = ProgramOutcomeSerializer(pos, many=True).data
-
-        payload = {
-            "CourseOutcome": [
-                {
-                    "course_outcome_code": co["course_outcome_code"],
-                    "course_outcome_description": co["course_outcome_description"],
-                }
-                for co in co_data
-            ],
-            "ProgramOutcome": [
-                {
-                    "program_outcome_code": po["program_outcome_code"],
-                    "program_outcome_description": po["program_outcome_description"],
-                }
-                for po in po_data
-            ],
-        }
-
-        client = Client(HF_SPACE)
-
-        with tempfile.NamedTemporaryFile(mode="w+", suffix=".json") as f:
-            json.dump(payload, f)
-            f.flush()
-
-            result = client.predict(
-                file_obj=handle_file(f.name),
-                api_name=HF_API_NAME
-            )
-
-        return Response(result, status=status.HTTP_200_OK)
-
     except LoadedCourse.DoesNotExist:
         return Response(
             {"message": "Loaded course not found."},
             status=status.HTTP_404_NOT_FOUND
         )
+
+    cos = CourseOutcome.objects.filter(
+        loaded_course_id=loaded_course_id,
+        instructor=request.user
+    ).order_by("course_outcome_id")
+
+    program_id = loaded_course.course.program_id
+    pos = ProgramOutcome.objects.filter(
+        program_id=program_id
+    ).order_by("program_outcome_id")
+
+    if not cos.exists() or not pos.exists():
+        return Response(
+            {"message": "Cannot run NLP: missing course outcomes or program outcomes."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    co_data = CourseOutcomeSerializer(cos, many=True).data
+    po_data = ProgramOutcomeSerializer(pos, many=True).data
+
+    payload = {
+        "CourseOutcome": [
+            {
+                "course_outcome_code": co["course_outcome_code"],
+                "course_outcome_description": co["course_outcome_description"],
+            }
+            for co in co_data
+        ],
+        "ProgramOutcome": [
+            {
+                "program_outcome_code": po["program_outcome_code"],
+                "program_outcome_description": po["program_outcome_description"],
+            }
+            for po in po_data
+        ],
+    }
+
+    client = Client(HF_SPACE)
+
+    try:
+        with tempfile.NamedTemporaryFile(mode="w+", suffix=".json") as f:
+            json.dump(payload, f)
+            f.flush()
+
+            last_exc = None
+            result = None
+
+            for attempt in range(1, MAX_HF_TRIES + 1):
+                try:
+                    result = client.predict(
+                        file_obj=handle_file(f.name),
+                        api_name=HF_API_NAME,
+                    )
+                    break
+                except Exception as e:
+                    last_exc = e
+                    logger.exception(
+                        "HF NLP call failed on attempt %s for loaded_course_id=%s",
+                        attempt,
+                        loaded_course_id,
+                    )
+                    if attempt < MAX_HF_TRIES:
+                        time.sleep(RETRY_DELAY_SECONDS)
+
+            if result is None and last_exc is not None:
+                raise last_exc
+
     except Exception as e:
         return Response(
-            {"message": str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            {"message": f"HuggingFace NLP call failed: {e}"},
+            status=status.HTTP_502_BAD_GATEWAY,
         )
+
+    return Response(result, status=status.HTTP_200_OK)

@@ -27,6 +27,7 @@ import type { OutcomeMappingResponse } from "../../types/outcomeMappingTypes";
 import { getOutcomeMappings } from "../../api/OutcomeMappingApi";
 import { fetchNlpOutcomeMapping } from "../../api/nlpOutcomeMappingApi";
 import OutcomeMappingPredictionTable from "../../components/OutcomeMappingPredictionTable";
+import axios from "axios";
 
 type AugmentedSection = BaseSection & {
   id: number;
@@ -150,7 +151,7 @@ export default function CoursePage() {
       sessionStorage.removeItem(nlpCacheKey);
     }
   }, [nlpMappingData, nlpCacheKey]);
-
+  
   const handleRunNlpMapping = async () => {
     if (!loaded_course_id || !baseMappingData) {
       toast.error("Load course/program outcomes first.");
@@ -185,14 +186,48 @@ export default function CoursePage() {
         isLoading: false,
         autoClose: 2500,
       });
-    } catch (e) {
-      console.error("NLP mapping failed:", e);
-      toast.update(toastId, {
-        render: "Failed to run NLP mapping.",
-        type: "error",
-        isLoading: false,
-        autoClose: 3500,
-      });
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const data = err.response?.data as
+          | { message?: string; detail?: string }
+          | undefined;
+
+        const backendMessage =
+          data?.message ??
+          data?.detail ??
+          (err.response?.status
+            ? `Failed to run NLP mapping (HTTP ${err.response.status}).`
+            : "Failed to run NLP mapping.");
+
+        console.error("NLP mapping failed (axios):", {
+          status: err.response?.status,
+          data: err.response?.data,
+          message: err.message,
+        });
+
+        toast.update(toastId, {
+          render: backendMessage,
+          type: "error",
+          isLoading: false,
+          autoClose: 3500,
+        });
+      } else if (err instanceof Error) {
+        console.error("NLP mapping failed:", err);
+        toast.update(toastId, {
+          render: err.message || "Failed to run NLP mapping.",
+          type: "error",
+          isLoading: false,
+          autoClose: 3500,
+        });
+      } else {
+        console.error("NLP mapping failed (unknown):", err);
+        toast.update(toastId, {
+          render: "Failed to run NLP mapping.",
+          type: "error",
+          isLoading: false,
+          autoClose: 3500,
+        });
+      }
     } finally {
       setNlpLoading(false);
     }
@@ -238,6 +273,7 @@ export default function CoursePage() {
     if (isUploadingSyllabus) return;
     setShowSyllabusModal(false);
   };
+
   const handleSyllabusFileSelected = async (file: File | null) => {
     if (!file) return;
     if (!loaded_course_id) {
@@ -252,8 +288,7 @@ export default function CoursePage() {
 
     try {
       await extractSyllabus(Number(loaded_course_id), file);
-
-      refreshAfterSyllabus();
+      await refreshAfterSyllabus();
 
       toast.update(toastId, {
         render: "Syllabus uploaded and CO-PO mapping extracted.",
@@ -262,11 +297,20 @@ export default function CoursePage() {
         autoClose: 2500,
       });
     } catch (err) {
-      const error = err as import("axios").AxiosError<{ detail?: string }>;
+      let message = "Failed to extract syllabus. Please check the PDF format.";
+
+      if (axios.isAxiosError(err)) {
+        const detail = (err.response?.data as { detail?: string } | undefined)
+          ?.detail;
+        if (detail) {
+          message = detail;
+        }
+      } else if (err instanceof Error && err.message) {
+        message = err.message;
+      }
+
       toast.update(toastId, {
-        render:
-          error.response?.data?.detail ??
-          "Failed to extract syllabus. Please check the PDF format.",
+        render: message,
         type: "error",
         isLoading: false,
         autoClose: 3500,
