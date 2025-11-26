@@ -24,7 +24,7 @@ import { toast } from "react-toastify";
 import { extractSyllabus } from "../../api/instructorDataExtractionApi";
 import type { AxiosError } from "axios";
 import type { OutcomeMappingResponse } from "../../types/outcomeMappingTypes";
-import { getOutcomeMappings } from "../../api/outcomeMappingApi";
+import { getOutcomeMappings } from "../../api/OutcomeMappingApi";
 import { fetchNlpOutcomeMapping } from "../../api/nlpOutcomeMappingApi";
 import OutcomeMappingPredictionTable from "../../components/OutcomeMappingPredictionTable";
 
