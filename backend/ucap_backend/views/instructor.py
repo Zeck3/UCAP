@@ -994,57 +994,63 @@ def nlp_outcome_mapping_view(request, loaded_course_id: int):
             .select_related("course__program")
             .get(pk=loaded_course_id)
         )
+    except LoadedCourse.DoesNotExist:
+        return Response(
+            {"message": "Loaded course not found."},
+            status=status.HTTP_404_NOT_FOUND
+        )
 
-        cos = CourseOutcome.objects.filter(
-            loaded_course_id=loaded_course_id,
-            instructor=request.user
-        ).order_by("course_outcome_id")
+    cos = CourseOutcome.objects.filter(
+        loaded_course_id=loaded_course_id,
+        instructor=request.user
+    ).order_by("course_outcome_id")
 
-        program_id = loaded_course.course.program_id
-        pos = ProgramOutcome.objects.filter(
-            program_id=program_id
-        ).order_by("program_outcome_id")
+    program_id = loaded_course.course.program_id
+    pos = ProgramOutcome.objects.filter(
+        program_id=program_id
+    ).order_by("program_outcome_id")
 
-        co_data = CourseOutcomeSerializer(cos, many=True).data
-        po_data = ProgramOutcomeSerializer(pos, many=True).data
+    if not cos.exists() or not pos.exists():
+        return Response(
+            {"message": "Cannot run NLP: missing course outcomes or program outcomes."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
-        payload = {
-            "CourseOutcome": [
-                {
-                    "course_outcome_code": co["course_outcome_code"],
-                    "course_outcome_description": co["course_outcome_description"],
-                }
-                for co in co_data
-            ],
-            "ProgramOutcome": [
-                {
-                    "program_outcome_code": po["program_outcome_code"],
-                    "program_outcome_description": po["program_outcome_description"],
-                }
-                for po in po_data
-            ],
-        }
+    co_data = CourseOutcomeSerializer(cos, many=True).data
+    po_data = ProgramOutcomeSerializer(pos, many=True).data
 
-        client = Client(HF_SPACE)
+    payload = {
+        "CourseOutcome": [
+            {
+                "course_outcome_code": co["course_outcome_code"],
+                "course_outcome_description": co["course_outcome_description"],
+            }
+            for co in co_data
+        ],
+        "ProgramOutcome": [
+            {
+                "program_outcome_code": po["program_outcome_code"],
+                "program_outcome_description": po["program_outcome_description"],
+            }
+            for po in po_data
+        ],
+    }
 
+    client = Client(HF_SPACE)
+
+    try:
         with tempfile.NamedTemporaryFile(mode="w+", suffix=".json") as f:
             json.dump(payload, f)
             f.flush()
 
             result = client.predict(
                 file_obj=handle_file(f.name),
-                api_name=HF_API_NAME
+                api_name=HF_API_NAME,
             )
-
-        return Response(result, status=status.HTTP_200_OK)
-
-    except LoadedCourse.DoesNotExist:
-        return Response(
-            {"message": "Loaded course not found."},
-            status=status.HTTP_404_NOT_FOUND
-        )
     except Exception as e:
         return Response(
-            {"message": str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            {"message": f"HuggingFace NLP call failed: {e}"},
+            status=status.HTTP_502_BAD_GATEWAY,
         )
+
+    return Response(result, status=status.HTTP_200_OK)

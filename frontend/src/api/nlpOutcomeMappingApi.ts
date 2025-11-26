@@ -2,15 +2,31 @@ import axiosClient from "./axiosClient";
 import type { OutcomeMappingResponse } from "../types/outcomeMappingTypes";
 
 type RawNlpResult = Record<string, Record<string, number>>;
+type NlpErrorPayload = { message?: string; detail?: string };
 
 export async function fetchNlpOutcomeMapping(
   loadedCourseId: number,
   courseOutcomes: OutcomeMappingResponse["course_outcomes"],
   programOutcomes: OutcomeMappingResponse["program_outcomes"]
 ): Promise<OutcomeMappingResponse> {
-  const { data: raw } = await axiosClient.get<RawNlpResult>(
+  const res = await axiosClient.get<RawNlpResult | NlpErrorPayload>(
     `/instructor/nlp_outcome_mapping/${loadedCourseId}/`
   );
+
+  const data = res.data;
+
+  if (!data || typeof data !== "object") {
+    throw new Error("Unexpected NLP response shape.");
+  }
+
+  if ("message" in data || "detail" in data) {
+    const err = data as NlpErrorPayload;
+    throw new Error(
+      err.message ?? err.detail ?? "NLP endpoint returned an error."
+    );
+  }
+
+  const raw = data as RawNlpResult;
 
   const coByCode = new Map(
     courseOutcomes.map((co) => [co.course_outcome_code, co])
