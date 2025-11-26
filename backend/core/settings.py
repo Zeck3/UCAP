@@ -5,7 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY", "dummy")
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = ["ucap-staging.up.railway.app"]
+ALLOWED_HOSTS = ["ucap.up.railway.app"]
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -36,7 +36,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = []
-CSRF_TRUSTED_ORIGINS = ["https://ucap-staging.up.railway.app"]
+CSRF_TRUSTED_ORIGINS = ["https://ucap.up.railway.app"]
 
 CORS_ALLOW_CREDENTIALS = False
 
