@@ -138,15 +138,25 @@ class UpdateFacultySerializer(serializers.ModelSerializer):
             "last_name",
             "suffix",
             "email",
-
             "user_role",
             "departments",
-
             "chair_department",
             "dean_college",
             "vcaa_campus",
         ]
         extra_kwargs = {"user_id": {"read_only": True}}
+
+    def validate_email(self, value):
+        if not value:
+            return value
+
+        qs = User.objects.filter(email=value)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
+            raise serializers.ValidationError("Email already exists.")
+        return value
 
     def _unassign_sections_outside_departments(self, user: User):
         allowed_dept_ids = set(
