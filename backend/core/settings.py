@@ -1,14 +1,17 @@
+from pathlib import Path
 import os
 
-SECRET_KEY = "dummy"
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
+BASE_DIR = Path(__file__).resolve().parent.parent
+SECRET_KEY = os.environ.get("SECRET_KEY", "dummy")
+DEBUG = os.environ.get("DEBUG", "False") == "True"
+
+ALLOWED_HOSTS = ["ucap-staging.up.railway.app"]
 
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.staticfiles",
-    'django.contrib.sessions', 
+    "django.contrib.sessions",
     "corsheaders",
     "ucap_backend",
     "rest_framework",
@@ -25,20 +28,33 @@ REST_FRAMEWORK = {
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
 ]
 
-CORS_ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:4173"]
-CSRF_TRUSTED_ORIGINS = ["http://localhost:5173", "http://localhost:4173"]
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = []
+CSRF_TRUSTED_ORIGINS = ["https://ucap-staging.up.railway.app"]
+
+CORS_ALLOW_CREDENTIALS = False
 
 AUTH_USER_MODEL = "ucap_backend.User"
 
 ROOT_URLCONF = "core.urls"
 WSGI_APPLICATION = "core.wsgi.application"
+
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_HTTPONLY = True
+
+CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = False
+
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 SESSION_COOKIE_AGE = 900
 SESSION_SAVE_EVERY_REQUEST = True
@@ -46,12 +62,13 @@ SESSION_SAVE_EVERY_REQUEST = True
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME"),
-        "USER": os.environ.get("DB_USER"),
-        "PASSWORD": os.environ.get("DB_PASSWORD"),
-        "HOST": os.environ.get("DB_HOST"),
-        "PORT": os.environ.get("DB_PORT"),
+        "NAME": os.environ.get("PGDATABASE"),
+        "USER": os.environ.get("PGUSER"),
+        "PASSWORD": os.environ.get("PGPASSWORD"),
+        "HOST": os.environ.get("PGHOST"),
+        "PORT": os.environ.get("PGPORT"),
     }
 }
 
 STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
