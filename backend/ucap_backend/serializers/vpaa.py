@@ -8,7 +8,6 @@ class VpaaLoadedCourseSerializer(BaseLoadedCourseSerializer):
     class Meta(BaseLoadedCourseSerializer.Meta):
         fields = BaseLoadedCourseSerializer.Meta.fields
 
-
 class VpaaSectionSerializer(BaseSectionSerializer):
     class Meta(BaseSectionSerializer.Meta):
         model = Section

@@ -240,7 +240,7 @@ def merge_co_data(mapping_list, desc_map):
             {
                 "course_outcome_code": item["CO"],
                 "course_outcome_description": item["Description"],
-                "outcome_mapping": item["PO_Levels"],  # {"PO-A": "I", ...}
+                "outcome_mapping": item["PO_Levels"],
             }
         )
 

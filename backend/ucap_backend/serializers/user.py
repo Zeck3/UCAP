@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ucap_backend.models import *
+from ucap_backend.models import User
 from django.contrib.auth.password_validation import validate_password
 
 # ====================================================

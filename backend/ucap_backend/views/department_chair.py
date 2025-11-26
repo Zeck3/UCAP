@@ -36,7 +36,6 @@ def department_course_list_view(request, department_id):
     except PermissionDenied as e:
         return JsonResponse({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
 
-
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def department_course_management_view(request, department_id):

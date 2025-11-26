@@ -212,25 +212,25 @@ class StudentViewSet(viewsets.ModelViewSet):
         mode = request.query_params.get("mode", "append")
 
         if not section_id:
-            return Response({"detail": "section is required"}, status=400)
+            return Response({"detail": "section is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         if "file" not in request.FILES:
-            return Response({"detail": "CSV file is required"}, status=400)
+            return Response({"detail": "CSV file is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         file = request.FILES["file"]
 
         if not file.name.lower().endswith(".csv"):
-            return Response({"detail": "Invalid file format. Only .csv is allowed."}, status=400)
+            return Response({"detail": "Invalid file format. Only .csv is allowed."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             students_from_csv = self._parse_grade_sheet_csv(file)
         except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception:
-            return Response({"detail": "Failed to read CSV file."}, status=400)
+            return Response({"detail": "Failed to read CSV file."}, status=status.HTTP_400_BAD_REQUEST)
 
         if not students_from_csv:
-            return Response({"detail": "No student data could be extracted from CSV."}, status=400)
+            return Response({"detail": "No student data could be extracted from CSV."}, status=status.HTTP_400_BAD_REQUEST)
 
         filtered = []
         seen = set()
@@ -248,7 +248,7 @@ class StudentViewSet(viewsets.ModelViewSet):
         if mode == "override":
             return self._import_override(section_id, existing, filtered)
 
-        return Response({"detail": "invalid mode"}, status=400)
+        return Response({"detail": "invalid mode"}, status=status.HTTP_400_BAD_REQUEST)
 
 
     def _parse_grade_sheet_csv(self, file):

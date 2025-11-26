@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ucap_backend.models import *
+from ucap_backend.models import AcademicYear, Campus, College, Credit, Department, LoadedCourse, Program, Section, Semester, User, UserRole, YearLevel
 
 # ====================================================
 # Reusable Serializers
