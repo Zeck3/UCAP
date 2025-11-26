@@ -6,7 +6,6 @@ export interface COPOResult {
   outcome_mapping: Record<string, string>;
 }
 
-
 export async function extractSyllabus(
   loadedCourseId: number,
   file: File
@@ -15,7 +14,7 @@ export async function extractSyllabus(
   formData.append("file", file);
 
   const res = await axiosClient.post<COPOResult[]>(
-    `/instructor/${loadedCourseId}/extract-syllabus/`,
+   `/instructor/course_syllabus_data_extraction/${loadedCourseId}/`,
     formData,
     {
       headers: {
@@ -27,7 +26,7 @@ export async function extractSyllabus(
   const data = res.data;
 
   if (!Array.isArray(data) || data.length === 0) {
-    throw new Error("No CO–PO data extracted from the uploaded PDF.");
+    throw new Error("No CO-PO data extracted from the uploaded PDF.");
   }
 
   return data;

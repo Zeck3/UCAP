@@ -258,9 +258,9 @@ def main(filepath, output="co_po_mapping.json"):
         json.dump(result, f, indent=2, ensure_ascii=False)
     print(f"Done → {output}")
 
-
 if __name__ == "__main__":
     main("IT212 - Fundl of DBMS Syllabus-APPROVED.pdf")
+
 def _norm(s: str) -> str:
     return (s or "").strip().upper().replace(" ", "")
 
