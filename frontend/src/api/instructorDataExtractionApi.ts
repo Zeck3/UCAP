@@ -26,8 +26,6 @@ export async function extractSyllabus(
 
   const data = res.data;
 
-  console.log("Syllabus extraction result:", data);
-
   if (!Array.isArray(data) || data.length === 0) {
     throw new Error("No CO–PO data extracted from the uploaded PDF.");
   }

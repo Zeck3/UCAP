@@ -971,6 +971,7 @@ class SyllabusExtractView(APIView):
 
         try:
             result = extract_co_po(filepath)
+
             if not result:
                 return Response(
                     {
@@ -982,8 +983,17 @@ class SyllabusExtractView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+            summary = apply_extracted_override(
+                loaded_course=loaded_course,
+                extracted_items=result,
+                instructor=request.user,
+            )
+
             return Response(result, status=status.HTTP_200_OK)
+
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         finally:
             try:
@@ -991,6 +1001,7 @@ class SyllabusExtractView(APIView):
                     default_storage.delete(path)
             except Exception:
                 pass
+
 
 
 # ====================================================

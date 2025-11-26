@@ -239,7 +239,7 @@ export default function CoursePage() {
     if (isUploadingSyllabus) return;
     setShowSyllabusModal(false);
   };
-  
+
   const handleSyllabusFileSelected = async (file: File | null) => {
     if (!file) return;
     if (!loaded_course_id) {
@@ -253,10 +253,7 @@ export default function CoursePage() {
     const toastId = toast.loading("Extracting syllabus… please wait.");
 
     try {
-      const result = await extractSyllabus(Number(loaded_course_id), file);
-
-      console.log("Extracted CO–PO mapping:", result);
-
+      await extractSyllabus(Number(loaded_course_id), file);
       await refreshAfterSyllabus();
 
       toast.update(toastId, {
