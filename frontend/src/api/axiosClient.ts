@@ -1,15 +1,12 @@
 import axios, { AxiosError } from "axios";
 
 const axiosClient = axios.create({
-  baseURL: "http://localhost:8000/api",
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
-  headers: { "Content-Type": "application/json" },
+  withXSRFToken: true,
+  xsrfCookieName: "csrftoken",
+  xsrfHeaderName: "X-CSRFToken",
 });
-
-axiosClient.defaults.withXSRFToken = true;
-axiosClient.defaults.withCredentials = true;
-axiosClient.defaults.xsrfCookieName = "csrftoken";
-axiosClient.defaults.xsrfHeaderName = "X-CSRFToken";
 
 axiosClient.interceptors.response.use(
   (response) => response,
