@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ucap_backend.models import *
+from ucap_backend.models import Department, Section, User, UserRole
 from django.contrib.auth.hashers import make_password
 
 # ====================================================
@@ -195,11 +195,33 @@ class UpdateFacultySerializer(serializers.ModelSerializer):
 
         return data
 
+    def _normalize_designations_for_role(self, instance: User, role: UserRole) -> None:
+        role_type = role.user_role_type if role else None
+
+        if role_type == "Department Chair":
+            instance.dean_college = None
+            instance.vcaa_campus = None
+        elif role_type == "Dean":
+            instance.chair_department = None
+            instance.vcaa_campus = None
+        elif role_type == "Vice Chancellor for Academic Affairs":
+            instance.chair_department = None
+            instance.dean_college = None
+        else:
+            instance.chair_department = None
+            instance.dean_college = None
+            instance.vcaa_campus = None
+
     def update(self, instance, validated_data):
         departments = validated_data.pop("departments", None)
 
+        new_role = validated_data.get("user_role", instance.user_role)
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+
+        if new_role:
+            self._normalize_designations_for_role(instance, new_role)
 
         instance.save()
 

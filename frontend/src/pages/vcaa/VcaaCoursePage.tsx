@@ -1,5 +1,3 @@
-// src/pages/vcaa/CampusCoursePage.tsx
-
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 

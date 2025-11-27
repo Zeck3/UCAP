@@ -50,7 +50,7 @@ export default function CourseOutcomesTableComponent({
       const newOutcome = await addCourseOutcome(loadedCourseId, {
         course_outcome_description: newDescription,
       });
-      setOutcomes((prev) => [...prev, newOutcome]); // append locally
+      setOutcomes((prev) => [...prev, newOutcome]);
       setNewDescription("");
       onCourseOutcomesChanged?.();
     } catch (err) {
@@ -155,7 +155,6 @@ export default function CourseOutcomesTableComponent({
               </tr>
             ))}
 
-            {/* Input row for next CO */}
             <tr className="border-t border-[#E9E6E6]">
               <td className="px-4 py-3 text-gray-400 italic">Next CO</td>
               <td className="px-4 py-3">

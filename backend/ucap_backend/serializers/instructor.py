@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.db.models import Prefetch
-from ucap_backend.models import *
-from .base import *
+from ucap_backend.models import Assessment, BloomsClassification, CourseComponent, CourseOutcome, CourseTerm, CourseUnit, OutcomeMapping, ProgramOutcome, RawScore, Section, Student
+from .base import BaseCourseDetailsSerializer, BaseLoadedCourseSerializer, BaseSectionSerializer
 
 # ====================================================
 # Instructor

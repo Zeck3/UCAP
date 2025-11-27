@@ -9,11 +9,7 @@ export const useHeartbeat = (
   const timeoutRef = useRef<number | null>(null);
 
   const sendHeartbeat = useCallback(async () => {
-    try {
-      await axiosClient.get("/heartbeat/");
-    } catch {
-      // Handle error silently
-    }
+    await axiosClient.get("/heartbeat/");
   }, []);
 
   const resetHeartbeatTimer = useCallback(() => {

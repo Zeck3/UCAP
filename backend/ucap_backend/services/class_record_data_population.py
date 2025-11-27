@@ -1,4 +1,4 @@
-from ucap_backend.models import *
+from ucap_backend.models import Assessment, CourseComponent, CourseTerm, CourseUnit, RawScore, Student
 
 def create_class_record_service(section):
     loaded_course = section.loaded_course

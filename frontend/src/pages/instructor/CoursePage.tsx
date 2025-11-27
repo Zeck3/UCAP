@@ -49,6 +49,7 @@ export default function CoursePage() {
     useState<OutcomeMappingResponse | null>(null);
 
   const [nlpLoading, setNlpLoading] = useState(false);
+  const isProcessing = nlpLoading || isUploadingSyllabus;
 
   const { user } = useAuth();
   const { layout } = useLayout();
@@ -151,8 +152,13 @@ export default function CoursePage() {
       sessionStorage.removeItem(nlpCacheKey);
     }
   }, [nlpMappingData, nlpCacheKey]);
-  
+
   const handleRunNlpMapping = async () => {
+    if (isUploadingSyllabus) {
+      toast.info("Please wait for syllabus extraction to finish.");
+      return;
+    }
+
     if (!loaded_course_id || !baseMappingData) {
       toast.error("Load course/program outcomes first.");
       return;
@@ -281,6 +287,11 @@ export default function CoursePage() {
       return;
     }
 
+    if (nlpLoading) {
+      toast.info("Please wait for NLP mapping to finish.");
+      return;
+    }
+
     setShowSyllabusModal(false);
     setIsUploadingSyllabus(true);
 
@@ -401,13 +412,14 @@ export default function CoursePage() {
         buttonLabel="Upload Course Syllabus"
         onButtonClick={handleOpenSyllabusModal}
         buttonIcon={<FileImport className="w-5 h-5" />}
+        buttonDisabled={isProcessing}
       />
       <FileInstructionComponent
         isOpen={showSyllabusModal}
-        title="Upload Course Syllabus (PDF)"
+        title="Upload Course Syllabus (Text-based PDF)"
         description="Select a syllabus PDF file for this course. The system will extract Course Outcomes (CO) and Outcome Mappings."
         instructions={[
-          "Only .pdf files are allowed.",
+          "Only text-based .pdf files are allowed.",
           "Ensure the syllabus clearly lists Course Outcomes and the CO-PO mapping.",
           "Large PDFs may take a little time to process.",
         ]}
@@ -496,7 +508,7 @@ export default function CoursePage() {
             </p>
             {(!nlpMappingData || nlpMappingData.mapping.length === 0) && (
               <button
-                disabled={nlpLoading}
+                disabled={isProcessing}
                 onClick={handleRunNlpMapping}
                 className="py-4 border cursor-pointer rounded-lg bg-ucap-yellow bg-ucap-yellow-hover border-[#FCB315] w-full flex flex-row items-center justify-center gap-4 disabled:opacity-60 disabled:cursor-not-allowed"
               >

@@ -1,5 +1,3 @@
-
-
 from ucap_backend.models import Section
 from .base import BaseCourseDetailsSerializer, BaseLoadedCourseSerializer, BaseSectionSerializer
 

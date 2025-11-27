@@ -1,4 +1,3 @@
-// src/pages/admin/AdminHierarchyManagementDashboard.tsx
 import { useEffect, useMemo, useState } from "react";
 import InfoComponent from "../../components/InfoComponent";
 import TableComponent from "../../components/TableComponent";

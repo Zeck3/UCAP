@@ -23,6 +23,7 @@ type ToolBarProps = {
   buttonIcon?: ReactNode;
   onButtonClick?: () => void;
   layout?: "cards" | "list";
+  buttonDisabled?: boolean;
 };
 
 export default function ToolBarComponent({
@@ -32,13 +33,13 @@ export default function ToolBarComponent({
   buttonLabel = "Action",
   buttonIcon,
   onButtonClick,
+  buttonDisabled = false,
 }: ToolBarProps) {
   const { layout, setLayout } = useLayout();
   const [activeTitle, setActiveTitle] = useState(titleOptions[0]?.value || "");
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // NEW: mobile search state
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -58,7 +59,6 @@ export default function ToolBarComponent({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Focus mobile search input when opened
   useEffect(() => {
     if (mobileSearchOpen && mobileSearchInputRef.current) {
       mobileSearchInputRef.current.focus();
@@ -74,14 +74,12 @@ export default function ToolBarComponent({
 
   const handleCloseMobileSearch = () => {
     setMobileSearchOpen(false);
-    // Optional: clear search when closing mobile search
     onSearch?.("");
   };
 
   return (
     <div className="flex flex-col gap-4 sticky top-0 z-30 bg-white">
       <div className="flex flex-row items-center mt-6">
-        {/* Left side: titles */}
         <div className="flex items-center gap-4 flex-1">
           <div className="flex items-center gap-8">
             {titleOptions.map((opt) => {
@@ -105,7 +103,9 @@ export default function ToolBarComponent({
                 >
                   <span
                     className={`${
-                      !isSingle && isActive ? "text-ucap-yellow" : "text-[#767676]"
+                      !isSingle && isActive
+                        ? "text-ucap-yellow"
+                        : "text-[#767676]"
                     }`}
                   >
                     {opt.label}
@@ -223,10 +223,13 @@ export default function ToolBarComponent({
           {activeOption?.enableButton && (
             <button
               onClick={onButtonClick}
+              disabled={buttonDisabled}
               className={`
-                bg-ucap-yellow bg-ucap-yellow-hover text-white px-4 py-2 border border-[#FCB315] rounded-full cursor-pointer transition text-base flex items-center gap-2
-                ${mobileSearchOpen ? "hidden md:flex" : ""}
-              `}
+              bg-ucap-yellow text-white px-4 py-2 border border-[#FCB315]
+              rounded-full transition text-base flex items-center gap-2
+              ${buttonDisabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer bg-ucap-yellow-hover"}
+              ${mobileSearchOpen ? "hidden md:flex" : ""}
+            `}
             >
               {buttonIcon && <span className="h-5">{buttonIcon}</span>}
               <span>{buttonLabel}</span>
