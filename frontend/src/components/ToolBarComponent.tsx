@@ -138,7 +138,6 @@ export default function ToolBarComponent({
                 <>
                   <button
                     type="button"
-                    disabled={buttonDisabled}
                     className="flex items-center justify-center p-2 rounded-full hover:bg-gray-100 cursor-pointer"
                     onClick={() => setMobileSearchOpen(true)}
                     aria-label="Open search"
@@ -222,6 +221,7 @@ export default function ToolBarComponent({
           {activeOption?.enableButton && (
             <button
               onClick={onButtonClick}
+              disabled={buttonDisabled}
               className={`
                 bg-ucap-yellow bg-ucap-yellow-hover text-white px-4 py-2 border border-[#FCB315] rounded-full cursor-pointer transition text-base flex items-center gap-2
                 ${mobileSearchOpen ? "hidden md:flex" : ""}
