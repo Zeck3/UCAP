@@ -38,7 +38,6 @@ export default function ToolBarComponent({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // NEW: mobile search state
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -58,7 +57,6 @@ export default function ToolBarComponent({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Focus mobile search input when opened
   useEffect(() => {
     if (mobileSearchOpen && mobileSearchInputRef.current) {
       mobileSearchInputRef.current.focus();
@@ -74,14 +72,12 @@ export default function ToolBarComponent({
 
   const handleCloseMobileSearch = () => {
     setMobileSearchOpen(false);
-    // Optional: clear search when closing mobile search
     onSearch?.("");
   };
 
   return (
     <div className="flex flex-col gap-4 sticky top-0 z-30 bg-white">
       <div className="flex flex-row items-center mt-6">
-        {/* Left side: titles */}
         <div className="flex items-center gap-4 flex-1">
           <div className="flex items-center gap-8">
             {titleOptions.map((opt) => {

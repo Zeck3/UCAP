@@ -143,7 +143,7 @@ export default function DropdownComponent({
             className={`min-h-10 px-3 py-2 cursor-pointer rounded-lg truncate max-w-full whitespace-nowrap text-gray-400 ${
               value === "" ? "bg-gray-100" : ""
             }`}
-            onMouseDown={(e) => e.preventDefault()} // prevent input blur
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleSelect("")}
           >
             {""}

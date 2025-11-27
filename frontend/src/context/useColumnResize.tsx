@@ -1,4 +1,3 @@
-// hooks/useColumnResize.ts
 import { useCallback } from "react";
 
 export function useColumnResize(onResize: (key: string, newWidth: number) => void) {

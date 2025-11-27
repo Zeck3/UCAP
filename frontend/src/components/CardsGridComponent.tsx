@@ -22,7 +22,7 @@ export interface CardsGridProps<T> {
   skeletonCard?: number;
   disableEdit?: boolean;
 }
-//test
+
 export default function CardsGridComponent<T extends { id: string | number }>({
   items,
   onCardClick,
@@ -167,7 +167,6 @@ export default function CardsGridComponent<T extends { id: string | number }>({
                     className="w-8 h-8 flex items-center justify-center rounded-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      // toggle: clicking same button closes the menu
                       setOpenMenuId((prev) =>
                         prev === item.id ? null : item.id
                       );

@@ -50,7 +50,6 @@ export default function ClassRecordError({
     </div>
   );
 
-  // Render inside portal root
   const portalRoot = document.getElementById("portal-root");
   return portalRoot ? createPortal(content, portalRoot) : content;
 }

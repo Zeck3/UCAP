@@ -104,7 +104,6 @@ export default function TableComponent<T extends { id: string | number }>({
       const target = event.target as HTMLElement | null;
       if (!target) return;
 
-      // Any element inside the action menu or its button
       const insideAction = target.closest('[data-action-menu="true"]');
 
       if (!insideAction) {

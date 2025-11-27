@@ -10,7 +10,6 @@ interface DepartmentCoursesTableProps {
   onClearError?: (name: string) => void;
 }
 
-// ---- sorting helpers ----
 const YEAR_WORDS: Record<string, number> = {
   first: 1,
   second: 2,
@@ -248,7 +247,6 @@ export default function DepartmentCoursesTableComponent({
 
                 return (
                   <React.Fragment key={`${year}-${sem}`}>
-                    {/* header row */}
                     <tr className="border-t border-[#E9E6E6] bg-gray-50">
                       <td className="px-2 py-3 text-center">
                         <input
@@ -287,7 +285,6 @@ export default function DepartmentCoursesTableComponent({
                       </td>
                     </tr>
 
-                    {/* course rows */}
                     {semCourses.map((c) => (
                       <tr
                         key={c.course_code}
@@ -317,7 +314,6 @@ export default function DepartmentCoursesTableComponent({
                       </tr>
                     ))}
 
-                    {/* totals row */}
                     <tr className="border-t border-[#E9E6E6]">
                       <td colSpan={3}></td>
                       <td className="px-4 py-3 text-center font-medium">

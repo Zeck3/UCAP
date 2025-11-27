@@ -1,5 +1,3 @@
-
-
 export type CurrentUser = {
   user_id: number;
   role_id: number;

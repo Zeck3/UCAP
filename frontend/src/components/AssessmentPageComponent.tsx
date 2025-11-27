@@ -758,7 +758,6 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
         </div>
       </SidePanelComponent>
 
-      {/* KPI Editor Popup */}
       {editingKpiCo && (
         <div
           className="fixed inset-0 flex items-center justify-center z-5000"
@@ -818,7 +817,6 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
         </div>
       )}
 
-      {/* Remarks Editor Popup */}
       {editingRemarks && (
         <div
           className="fixed inset-0 flex items-center justify-center z-6000"
@@ -859,7 +857,6 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
         </div>
       )}
 
-      {/* Remarks Viewing Popup (Read-Only) */}
       {viewingRemarks && (
         <div
           className="fixed inset-0 flex items-center justify-center z-50"
