@@ -35,7 +35,7 @@ export interface CourseFormData {
   lecture_unit: string;
   laboratory_unit: string;
 }
-//test
+
 export interface CoursePayload {
   course_code: string;
   course_title: string;
