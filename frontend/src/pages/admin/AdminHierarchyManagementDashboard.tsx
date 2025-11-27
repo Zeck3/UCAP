@@ -33,6 +33,7 @@ import type {
   Department,
   Program,
 } from "../../types/dropdownTypes";
+import { useDocumentTitle } from "../../context/useDocumentTitle";
 
 type Menu = "Campus" | "College" | "Department" | "Program";
 
@@ -65,6 +66,8 @@ type ProgramRow = RowBase & {
 type TableColumn<T extends RowBase> = { key: keyof T; label: string };
 
 export default function AdminHierarchyManagementDashboard() {
+  useDocumentTitle("UCAP - Admin Hierarchy Management");
+  
   const [activeMenu, setActiveMenu] = useState<Menu>("Campus");
   const [searchQuery, setSearchQuery] = useState("");
 
