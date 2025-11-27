@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from ucap_backend.models import *
-from .base import *
+from .base import BaseCourseDetailsSerializer, BaseLoadedCourseSerializer, BaseSectionSerializer
+from ucap_backend.models import Course, Credit, LoadedCourse, Program, Section, Semester, User, YearLevel
 
 # ====================================================
 # Department Chair
@@ -47,7 +47,6 @@ class CreateDepartmentLoadedCourseSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Course does not belong to this department.")
 
         return attrs
-
 
 class DepartmentChairSectionSerializer(BaseSectionSerializer):
     class Meta(BaseSectionSerializer.Meta):

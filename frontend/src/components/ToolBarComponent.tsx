@@ -23,6 +23,7 @@ type ToolBarProps = {
   buttonIcon?: ReactNode;
   onButtonClick?: () => void;
   layout?: "cards" | "list";
+  buttonDisabled?: boolean;
 };
 
 export default function ToolBarComponent({
@@ -32,6 +33,7 @@ export default function ToolBarComponent({
   buttonLabel = "Action",
   buttonIcon,
   onButtonClick,
+  buttonDisabled = false,
 }: ToolBarProps) {
   const { layout, setLayout } = useLayout();
   const [activeTitle, setActiveTitle] = useState(titleOptions[0]?.value || "");
@@ -101,7 +103,9 @@ export default function ToolBarComponent({
                 >
                   <span
                     className={`${
-                      !isSingle && isActive ? "text-ucap-yellow" : "text-[#767676]"
+                      !isSingle && isActive
+                        ? "text-ucap-yellow"
+                        : "text-[#767676]"
                     }`}
                   >
                     {opt.label}
@@ -219,10 +223,13 @@ export default function ToolBarComponent({
           {activeOption?.enableButton && (
             <button
               onClick={onButtonClick}
+              disabled={buttonDisabled}
               className={`
-                bg-ucap-yellow bg-ucap-yellow-hover text-white px-4 py-2 border border-[#FCB315] rounded-full cursor-pointer transition text-base flex items-center gap-2
-                ${mobileSearchOpen ? "hidden md:flex" : ""}
-              `}
+              bg-ucap-yellow text-white px-4 py-2 border border-[#FCB315]
+              rounded-full transition text-base flex items-center gap-2
+              ${buttonDisabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer bg-ucap-yellow-hover"}
+              ${mobileSearchOpen ? "hidden md:flex" : ""}
+            `}
             >
               {buttonIcon && <span className="h-5">{buttonIcon}</span>}
               <span>{buttonLabel}</span>

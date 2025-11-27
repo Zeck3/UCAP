@@ -16,10 +16,10 @@ instructor_router.register(r"course_components", CourseComponentViewSet, basenam
 instructor_router.register(r"course_units", CourseUnitViewSet, basename="course_unit")
 instructor_router.register(r"class_record", ClassRecordViewSet, basename="class_record")
 
-core_router = DefaultRouter()
-core_router.register(r"college", CollegeViewSet, basename="college")
-core_router.register(r"department", DepartmentViewSet, basename="department")
-core_router.register(r"program", ProgramViewSet, basename="program")
+admin_router = DefaultRouter()
+admin_router.register(r"college", CollegeViewSet, basename="college")
+admin_router.register(r"department", DepartmentViewSet, basename="department")
+admin_router.register(r"program", ProgramViewSet, basename="program")
 
 urlpatterns = [
     # ====================================================
@@ -32,16 +32,17 @@ urlpatterns = [
     path("heartbeat/", heartbeat_view),
     path("change-password/", change_password_view),
     # ====================================================
-    # User Management
+    # User Initial Info
+    # ====================================================
+    path("user/initial-info/", user_initial_info_view),
+    # ====================================================
+    # Admin
     # ====================================================
     path("admin/user_management/", user_management_view),
     path("admin/user_management/<int:user_id>", user_detail_view),
+    path("admin/", include(admin_router.urls)),
     # ====================================================
-    # Hierarchy Management
-    # ====================================================
-    path("admin/", include(core_router.urls)),
-    # ====================================================
-    # Instructor Dashboard
+    # Instructor
     # ====================================================
     path("instructor/<int:instructor_id>/", instructor_loaded_courses_view,),
     path("instructor/<int:instructor_id>/<str:loaded_course_id>", instructor_assigned_sections_view,),
@@ -52,11 +53,9 @@ urlpatterns = [
     path("instructor/outcome_mapping_management/<int:loaded_course_id>/", outcome_mapping_view),
     path("instructor/outcome_mapping_management/update/<int:pk>/", update_outcome_mapping),
 
-    path("instructor/<int:loaded_course_id>/extract-syllabus/", SyllabusExtractView.as_view(),),
+    path("instructor/course_syllabus_data_extraction/<int:loaded_course_id>/", SyllabusExtractView.as_view(),),
     path("instructor/nlp_outcome_mapping/<int:loaded_course_id>/", nlp_outcome_mapping_view),
-    # ====================================================
-    # Class Record
-    # ====================================================
+
     path("instructor/", include(instructor_router.urls)),
     path("instructor/rawscores/<int:student_id>/<int:assessment_id>/", RawScoreUpdateView.as_view()),
     # ====================================================
@@ -64,7 +63,7 @@ urlpatterns = [
     # ====================================================
     path("assessments/<int:section_id>/", AssessmentPageAPIView.as_view()),
     # ====================================================
-    # Department Chair Dashboard
+    # Department Chair
     # ====================================================
     path("department_chair/department_course_list/<int:department_id>/", department_course_list_view),
 
@@ -106,8 +105,4 @@ urlpatterns = [
     path("instructors/", instructor_list_view),
     path("blooms_classification/", blooms_classification_list_view),
     path("course_outcomes/<int:loaded_course_id>", course_outcome_list_view),
-    # ====================================================
-    # User Department
-    # ====================================================
-    path("user/initial-info/", user_initial_info_view),
 ]

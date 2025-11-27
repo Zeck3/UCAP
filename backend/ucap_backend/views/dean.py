@@ -31,13 +31,12 @@ def dean_loaded_courses_view(request, college_id):
         )
 
         serializer = DeanLoadedCourseSerializer(loaded_courses, many=True)
-        return Response(serializer.data, status=200)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     except PermissionDenied as e:
-        return JsonResponse({"message": str(e)}, status=403)
+        return JsonResponse({"message": str(e)}, status=status.HTTP_403_FORBIDDEN)
     except Exception as e:
-        return JsonResponse({"message": str(e)}, status=500)
-
+        return JsonResponse({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

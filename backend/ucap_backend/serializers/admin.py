@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ucap_backend.models import *
+from ucap_backend.models import Department, Section, User, UserRole
 from django.contrib.auth.hashers import make_password
 
 # ====================================================

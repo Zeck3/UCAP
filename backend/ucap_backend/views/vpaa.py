@@ -6,6 +6,9 @@ from rest_framework.exceptions import PermissionDenied
 from ucap_backend.models import LoadedCourse, Section
 from ucap_backend.serializers.vpaa import VpaaLoadedCourseSerializer, VpaaCourseDetailsSerializer, VpaaSectionSerializer
 
+# ====================================================
+# VPAA
+# ====================================================
 def assert_university_access(user):
     role = getattr(user, "user_role", None)
 
@@ -18,9 +21,6 @@ def assert_university_access(user):
     if not (is_university_scope or is_vpaa or user.is_superuser or user.is_staff):
         raise PermissionDenied("You are not allowed to access university-wide data.")
 
-# ====================================================
-# VPAA
-# ====================================================
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def vpaa_loaded_courses_view(request):
