@@ -223,7 +223,7 @@ export default function ToolBarComponent({
               onClick={onButtonClick}
               disabled={buttonDisabled}
               className={`
-                bg-ucap-yellow bg-ucap-yellow-hover text-white px-4 py-2 border border-[#FCB315] rounded-full cursor-pointer transition text-base flex items-center gap-2
+                bg-ucap-yellow bg-ucap-yellow-hover text-white px-4 py-2 border border-[#FCB315] rounded-full cursor-pointer transition text-base flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed
                 ${mobileSearchOpen ? "hidden md:flex" : ""}
               `}
             >
