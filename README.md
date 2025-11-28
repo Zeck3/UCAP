@@ -1,7 +1,6 @@
 # University Course Assessment Portal (UCAP)
 
-📌 What is **UCAP**?
-The University Course Assessment Portal (UCAP) is a web-based system designed to help instructors and academic administrators efficiently manage class records, compute course outcome attainment, and generate standardized COA result sheets.
+📌 The University Course Assessment Portal (UCAP) is a web-based system designed to help instructors and academic administrators efficiently manage class records, compute course outcome attainment, and generate standardized COA result sheets.
 It integrates multiple tools—CRMS, COAS, and NLP-based CO–PO Mapping into a single streamlined platform to improve academic reporting, reduce manual workload, and ensure alignment with program outcomes.
 
 🎯 **Key Features**
