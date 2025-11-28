@@ -65,7 +65,7 @@ It integrates multiple tools—CRMS, COAS, and NLP-based CO–PO Mapping into a 
 - Backend: http://localhost:8000
 
 👥 **Team**
-  Carlo Angelo Cortes – Project Manager
-  Neil Jan Dinglasa – Developer
-  Jestoni Andales – Database Manager
-  Dave Deguanco – QA Manager
+  - Carlo Angelo Cortes – Project Manager
+  - Neil Jan Dinglasa – Developer
+  - Jestoni Andales – Database Manager
+  - Dave Deguanco – QA Manager
