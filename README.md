@@ -39,7 +39,6 @@ It integrates multiple tools—CRMS, COAS, and NLP-based CO–PO Mapping into a 
 **Backend**
   - Django
   - Django REST Framework
-  - Database
   - PostgreSQL
 
 **Other Tools**
