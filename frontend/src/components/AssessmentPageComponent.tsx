@@ -110,11 +110,29 @@ const OverviewChart = memo(({ data, studentCount }: { data: OverviewChartDatum[]
                 allowDecimals={false}
                 domain={[0, studentCount]}
               />
-              <Tooltip contentStyle={CHART_CONFIG.tooltipStyle} itemStyle={CHART_CONFIG.tooltipStyle} />
-              <Bar dataKey="achievedCount" fill="#B6E2A1" name="Achieved" barSize={50} />
-              <Bar dataKey="notAchievedCount" fill="#F7A4A4" name="Not Achieved" barSize={50} />
+              <Tooltip
+                contentStyle={CHART_CONFIG.tooltipStyle}
+                itemStyle={CHART_CONFIG.tooltipStyle}
+                formatter={(value: any, _name: string) => {
+                  const num = Number(value ?? 0);
+                  const pct = studentCount > 0 ? ((num / studentCount) * 100).toFixed(2) : "0.00";
+                  return `${num} (${pct}%)`;
+                }}
+              />
+              <Bar dataKey="achievedCount" fill="#BCE29E" name="Achieved" barSize={50} />
+              <Bar dataKey="notAchievedCount" fill="#DF6A6A" name="Not Achieved" barSize={50} />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+      <div className="mt-4 flex justify-center gap-6">
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-sm" style={{ background: '#BCE29E' }} />
+          <span className="text-gray-700 text-sm">Achieved</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-sm" style={{ background: '#DF6A6A' }} />
+          <span className="text-gray-700 text-sm">Not Achieved</span>
         </div>
       </div>
     </div>
@@ -409,8 +427,9 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
           const kpi70 = getKpiValue(co.name, "pass70");
           const kpi80 = getKpiValue(co.name, "pass80");
           const pass70 = Math.round(totalMax * (kpi70 / 100));
+          const pass70Count = Math.ceil(studentCount * (kpi70 / 100));
           const pass80Count = Math.ceil(studentCount * (kpi80 / 100));
-          return { totalMax, pass70, pass80Count, kpi70, kpi80 };
+          return { totalMax, pass70, pass70Count, pass80Count, kpi70, kpi80 };
         })
       ),
     [layout, studentCount, getKpiValue]
@@ -420,6 +439,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
     const allCos = layout.flatMap(po => po.cos);
     return allCos.map((co, idx) => {
       const pass70Threshold = coTotalsMemo[idx].pass70;
+      const pass80Count = coTotalsMemo[idx].pass80Count;
       const achieved = (data?.students ?? []).filter(s => {
         const scores = s.scores[co.name] ?? [];
         const total = scores.reduce((sum, sc) => sum + (sc?.raw ?? 0), 0);
@@ -427,15 +447,44 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
       }).length;
       const notAchieved = studentCount - achieved;
       const [pctAch, pctNot] = [((achieved / studentCount) * 100).toFixed(2), ((notAchieved / studentCount) * 100).toFixed(2)];
+      const overallAchieved = achieved >= pass80Count;
+      const interpretation = overallAchieved ? "Outcome Achieved" : "Requires Intervention";
       return {
         outcome: co.name,
         achieved: `${achieved} (${pctAch}%)`,
         notAchieved: `${notAchieved} (${pctNot}%)`,
+        overallAchieved,
+        interpretation,
         achievedCount: achieved,
         notAchievedCount: notAchieved,
       };
     });
   }, [layout, coTotalsMemo, studentCount, data]);
+
+  const overallPerformanceSummary = useMemo(() => {
+    const yes: string[] = [];
+    const approaching: string[] = [];
+    const no: string[] = [];
+
+    for (let i = 0; i < coAnalytics.length; i++) {
+      const row = coAnalytics[i];
+      const pass80Count = coTotalsMemo[i]?.pass80Count ?? 0;
+      const achieved = row.achievedCount;
+
+      if (pass80Count <= 0) {
+        if (achieved >= 1) yes.push(row.outcome);
+        else no.push(row.outcome);
+      } else if (achieved >= pass80Count) {
+        yes.push(row.outcome);
+      } else if (achieved >= Math.ceil(pass80Count * 0.8)) {
+        approaching.push(row.outcome);
+      } else {
+        no.push(row.outcome);
+      }
+    }
+
+    return { yes, approaching, no };
+  }, [coAnalytics, coTotalsMemo]);
 
   if (loading) return <PageLoading />;
   if (error) return <div className="p-6 text-red-500">{error}</div>;
@@ -699,16 +748,16 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
           <div className="grow">
             <h3 className="text-md mb-3">Course Outcome Attainment</h3>
             <div className="overflow-x-auto border border-[#E9E6E6] rounded-lg">
-              <table className="table-auto w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Outcome</th>
-                    <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">No. of Students Achieved</th>
-                    <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">No. of Students Not Achieved</th>
-                  </tr>
-                </thead>
+                    <table className="table-auto w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Outcome</th>
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">No. of Students Achieved</th>
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">No. of Students Not Achieved</th>
+                        </tr>
+                      </thead>
                 <tbody>
-                  {coAnalytics.map((row, idx) => (
+                    {coAnalytics.map((row, idx) => (
                     <tr key={idx} className="hover:bg-gray-50">
                       <td className="px-2 py-2">{row.outcome}</td>
                       <td className="px-2 py-2">{row.achieved}</td>
@@ -720,7 +769,61 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
             </div>
 
             {isOpen && coAnalytics.length > 0 && studentCount > 0 && (
-              <OverviewChart data={coAnalytics} studentCount={studentCount} />
+              <>
+                <OverviewChart data={coAnalytics} studentCount={studentCount} />
+
+                <div className="mt-8">
+                  <h4 className="text-md mb-3">Overall Performance Summary</h4>
+                  <div className="overflow-x-auto border border-[#E9E6E6] rounded-lg">
+                    <table className="table-auto w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6] text-sm">Overall KPIs</th>
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6] text-sm">Interpretation</th>
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6] text-sm">Outcome</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="hover:bg-gray-50">
+                          <td className="px-2 py-2 font-medium text-sm">Met</td>
+                          <td className="px-2 py-2 text-sm">Outcomes Achieved.</td>
+                          <td className="px-2 py-2">
+                            {overallPerformanceSummary.yes.length ? (
+                              <div className="flex flex-wrap items-start">
+                                {overallPerformanceSummary.yes.map((o, i) => (
+                                  <span key={`yes-${o}-${i}`} className="inline-flex items-center mr-2 mb-2 px-2 py-0.5 rounded-full bg-green-50 text-green-800 text-xs">
+                                    {formatCOLabel(o, i + 1)}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-sm">None.</span>
+                            )}
+                          </td>
+                        </tr>
+
+                        <tr className="hover:bg-gray-50">
+                          <td className="px-2 py-2 font-medium text-sm">Not Met</td>
+                          <td className="px-2 py-2 text-sm">Outcomes Not Achieved; Requires Intervention.</td>
+                          <td className="px-2 py-2">
+                            {overallPerformanceSummary.no.length ? (
+                              <div className="flex flex-wrap items-start">
+                                {overallPerformanceSummary.no.map((o, i) => (
+                                  <span key={`no-${o}-${i}`} className="inline-flex items-center mr-2 mb-2 px-2 py-0.5 rounded-full bg-red-50 text-red-800 text-xs">
+                                    {formatCOLabel(o, i + 1)}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-sm">None.</span>
+                            )}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
             )}
           </div>
 
@@ -739,7 +842,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
               />
               <button
                 type="button"
-                className="absolute top-2 right-2 w-5 h-5 rounded-full border border-gray-400 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+                className="absolute top-3 right-2 w-5 h-5 rounded-full border border-gray-400 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
                 onClick={() => setShowNoteTooltip(!showNoteTooltip)}
                 onBlur={() => setTimeout(() => setShowNoteTooltip(false), 200)}
               >
