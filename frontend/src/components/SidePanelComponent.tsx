@@ -45,8 +45,8 @@ export default function SidePanelComponent({
       return child;
     });
   }, [children, loading, disableInputs]);
-
-  const panelWidth = React.useMemo(() => window.screen.width / 2, []);
+  
+  const panelWidth = React.useMemo(() => Math.floor(window.screen.width * 0.60), []);
 
   return (
     <div>

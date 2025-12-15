@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import type { AssessmentPageData } from "../types/assessmentPageTypes";
 import { getAssessmentPageData } from "../api/assessmentPageApi";
 import { exportAssessmentResultSheet } from "./utils/ExportAssessmentResultSheet";
@@ -18,6 +18,63 @@ const CHART_CONFIG = {
 } as const;
 
 const BLOOM_ORDER = ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"];
+
+const PIE_COLOR_PALETTE = [
+  '#1B3C53',
+  '#234C6A',
+  '#456882',
+  '#6D94C5',
+  '#9FB3DF',
+  '#C5D3E8',
+  '#D2E0FB',
+  '#EEF1FF',
+  '#F5EFE6',
+  '#F4E9D7',
+
+  '#E8DFCA',
+  '#DCCFC0',
+  '#C4A484',
+  '#D29F80',
+  '#B87C4C',
+  '#D97D55',
+  '#E97F4A',
+  '#E16A54',
+  '#E493B3',
+  '#A87676',
+
+  '#867070',
+  '#9E7676',
+  '#815B5B',
+  '#594545',
+  '#665A48',
+  '#97866A',
+  '#A59D84',
+  '#C1BAA1',
+  '#D7D3BF',
+  '#ECEBDE',
+
+  '#E7E8D8',
+  '#CADABF',
+  '#B5CFB7',
+  '#D2DCB6',
+  '#B6CEB4',
+  '#CAE8BD',
+  '#A1BC98',
+  '#B0DB9C',
+  '#C1CFA1',
+  '#A5B68D',
+
+  '#729762',
+  '#658147',
+  '#597445',
+  '#6F826A',
+  '#778873',
+  '#96A78D',
+  '#C5C7BC',
+  '#CBCBCB',
+  '#D1D3D4',
+  '#EEEEEE',
+];
 
 type OverviewChartDatum = { outcome: string; achievedCount: number; notAchievedCount: number };
 type ExpandedCW = { name: string; blooms: string; coIndex: number };
@@ -110,7 +167,16 @@ const OverviewChart = memo(({ data, studentCount }: { data: OverviewChartDatum[]
                 allowDecimals={false}
                 domain={[0, studentCount]}
               />
-              <Tooltip contentStyle={CHART_CONFIG.tooltipStyle} itemStyle={CHART_CONFIG.tooltipStyle} />
+              <Tooltip
+                contentStyle={CHART_CONFIG.tooltipStyle}
+                itemStyle={CHART_CONFIG.tooltipStyle}
+                formatter={(value: any, _name: string) => {
+                  const num = Number(value ?? 0);
+                  const pct = studentCount > 0 ? ((num / studentCount) * 100).toFixed(2) : "0.00";
+                  return `${num} (${pct}%)`;
+                }}
+              />
+              <Legend verticalAlign="bottom" align="center" />
               <Bar dataKey="achievedCount" fill="#B6E2A1" name="Achieved" barSize={50} />
               <Bar dataKey="notAchievedCount" fill="#F7A4A4" name="Not Achieved" barSize={50} />
             </BarChart>
@@ -409,8 +475,9 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
           const kpi70 = getKpiValue(co.name, "pass70");
           const kpi80 = getKpiValue(co.name, "pass80");
           const pass70 = Math.round(totalMax * (kpi70 / 100));
+          const pass70Count = Math.ceil(studentCount * (kpi70 / 100));
           const pass80Count = Math.ceil(studentCount * (kpi80 / 100));
-          return { totalMax, pass70, pass80Count, kpi70, kpi80 };
+          return { totalMax, pass70, pass70Count, pass80Count, kpi70, kpi80 };
         })
       ),
     [layout, studentCount, getKpiValue]
@@ -420,6 +487,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
     const allCos = layout.flatMap(po => po.cos);
     return allCos.map((co, idx) => {
       const pass70Threshold = coTotalsMemo[idx].pass70;
+      const pass80Count = coTotalsMemo[idx].pass80Count;
       const achieved = (data?.students ?? []).filter(s => {
         const scores = s.scores[co.name] ?? [];
         const total = scores.reduce((sum, sc) => sum + (sc?.raw ?? 0), 0);
@@ -427,15 +495,51 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
       }).length;
       const notAchieved = studentCount - achieved;
       const [pctAch, pctNot] = [((achieved / studentCount) * 100).toFixed(2), ((notAchieved / studentCount) * 100).toFixed(2)];
+      const overallAchieved = achieved >= pass80Count;
+      const interpretation = overallAchieved ? "Outcome Achieved" : "Requires Intervention";
       return {
         outcome: co.name,
         achieved: `${achieved} (${pctAch}%)`,
         notAchieved: `${notAchieved} (${pctNot}%)`,
+        overallAchieved,
+        interpretation,
         achievedCount: achieved,
         notAchievedCount: notAchieved,
       };
     });
   }, [layout, coTotalsMemo, studentCount, data]);
+
+  const assessmentPieData = useMemo(() => {
+    type PieDatum = { name: string; value: number; fill?: string };
+    const passedMap: Map<string, number> = new Map();
+    const notPassedMap: Map<string, number> = new Map();
+
+    for (const po of layout) {
+      for (const co of po.cos) {
+        const kpi70 = getKpiValue(co.name, "pass70");
+        for (let idx = 0; idx < co.classwork.length; idx++) {
+          const cw = co.classwork[idx];
+          const passThreshold = Math.round(((kpi70 ?? 70) / 100) * (cw.maxScore ?? 0));
+          const passedCount = (data?.students ?? []).filter(s => {
+            const raw = (s.scores[co.name] ?? [])[idx]?.raw ?? 0;
+            return raw >= passThreshold;
+          }).length;
+          const notPassedCount = studentCount - passedCount;
+          if (passedCount > 0) passedMap.set(cw.name, (passedMap.get(cw.name) ?? 0) + passedCount);
+          if (notPassedCount > 0) notPassedMap.set(cw.name, (notPassedMap.get(cw.name) ?? 0) + notPassedCount);
+        }
+      }
+    }
+
+    const passed: PieDatum[] = Array.from(passedMap.entries())
+      .map(([name, value], idx) => ({ name, value, fill: PIE_COLOR_PALETTE[idx % PIE_COLOR_PALETTE.length] }))
+      .sort((a, b) => b.value - a.value);
+    const notPassed: PieDatum[] = Array.from(notPassedMap.entries())
+      .map(([name, value], idx) => ({ name, value, fill: PIE_COLOR_PALETTE[idx % PIE_COLOR_PALETTE.length] }))
+      .sort((a, b) => b.value - a.value);
+
+    return { passed, notPassed };
+  }, [layout, data, studentCount, getKpiValue]);
 
   if (loading) return <PageLoading />;
   if (error) return <div className="p-6 text-red-500">{error}</div>;
@@ -704,7 +808,9 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
                   <tr className="bg-gray-50">
                     <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Outcome</th>
                     <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">No. of Students Achieved</th>
-                    <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">No. of Students Not Achieved</th>
+                      <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">No. of Students Not Achieved</th>
+                      <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Overall KPIs Met</th>
+                      <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Interpretation</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -713,6 +819,12 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
                       <td className="px-2 py-2">{row.outcome}</td>
                       <td className="px-2 py-2">{row.achieved}</td>
                       <td className="px-2 py-2">{row.notAchieved}</td>
+                      <td className={`px-2 py-2 ${row.overallAchieved ? 'text-black' : 'text-coa-red'}`}>
+                        {row.overallAchieved ? 'Yes' : 'No'}
+                      </td>
+                      <td className={`px-2 py-2 ${row.overallAchieved ? 'font-medium text-black' : 'text-coa-red'}`}>
+                        {row.interpretation}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -720,7 +832,57 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
             </div>
 
             {isOpen && coAnalytics.length > 0 && studentCount > 0 && (
-              <OverviewChart data={coAnalytics} studentCount={studentCount} />
+              <>
+                <OverviewChart data={coAnalytics} studentCount={studentCount} />
+
+                <div className="flex gap-6 mt-6">
+                  <div className="w-1/2 h-96 pt-1 pb-2 px-2 flex flex-col items-center">
+                    <h4 className="text-sm font-medium mb-1 text-center">Passed Assessments</h4>
+                    {assessmentPieData.passed.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={320}>
+                        <PieChart>
+                            <Pie data={assessmentPieData.passed} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} label={false} labelLine={false}>
+                              {assessmentPieData.passed.map((entry, idx) => (
+                                <Cell key={`passed-cell-${idx}`} fill={entry.fill} stroke="none" />
+                              ))}
+                            </Pie>
+                          <Tooltip formatter={(value: any, _name: string) => {
+                            const num = Number(value ?? 0);
+                            const total = assessmentPieData.passed.reduce((s, d) => s + d.value, 0);
+                            const pct = total > 0 ? ((num / total) * 100).toFixed(2) : "0.00";
+                            return `${num} (${pct}%)`;
+                          }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <p className="text-sm text-gray-500">No assessments passed the threshold.</p>
+                    )}
+                  </div>
+
+                  <div className="w-1/2 h-96 pt-1 pb-2 px-2 flex flex-col items-center">
+                    <h4 className="text-sm font-medium mb-1 text-center">Failed Assessments</h4>
+                    {assessmentPieData.notPassed.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={320}>
+                        <PieChart>
+                          <Pie data={assessmentPieData.notPassed} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} label={false} labelLine={false}>
+                            {assessmentPieData.notPassed.map((entry, idx) => (
+                              <Cell key={`notpassed-cell-${idx}`} fill={entry.fill} stroke="none" />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value: any, _name: string) => {
+                            const num = Number(value ?? 0);
+                            const total = assessmentPieData.notPassed.reduce((s, d) => s + d.value, 0);
+                            const pct = total > 0 ? ((num / total) * 100).toFixed(2) : "0.00";
+                            return `${num} (${pct}%)`;
+                          }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <p className="text-sm text-gray-500">No assessments failed the threshold.</p>
+                    )}
+                  </div>
+                </div>
+              </>
             )}
           </div>
 
@@ -739,7 +901,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
               />
               <button
                 type="button"
-                className="absolute top-2 right-2 w-5 h-5 rounded-full border border-gray-400 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+                className="absolute top-3 right-2 w-5 h-5 rounded-full border border-gray-400 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
                 onClick={() => setShowNoteTooltip(!showNoteTooltip)}
                 onBlur={() => setTimeout(() => setShowNoteTooltip(false), 200)}
               >
