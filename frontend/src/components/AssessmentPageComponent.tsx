@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import type { AssessmentPageData } from "../types/assessmentPageTypes";
 import { getAssessmentPageData } from "../api/assessmentPageApi";
 import { exportAssessmentResultSheet } from "./utils/ExportAssessmentResultSheet";
@@ -18,63 +18,6 @@ const CHART_CONFIG = {
 } as const;
 
 const BLOOM_ORDER = ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"];
-
-const PIE_COLOR_PALETTE = [
-  '#1B3C53',
-  '#234C6A',
-  '#456882',
-  '#6D94C5',
-  '#9FB3DF',
-  '#C5D3E8',
-  '#D2E0FB',
-  '#EEF1FF',
-  '#F5EFE6',
-  '#F4E9D7',
-
-  '#E8DFCA',
-  '#DCCFC0',
-  '#C4A484',
-  '#D29F80',
-  '#B87C4C',
-  '#D97D55',
-  '#E97F4A',
-  '#E16A54',
-  '#E493B3',
-  '#A87676',
-
-  '#867070',
-  '#9E7676',
-  '#815B5B',
-  '#594545',
-  '#665A48',
-  '#97866A',
-  '#A59D84',
-  '#C1BAA1',
-  '#D7D3BF',
-  '#ECEBDE',
-
-  '#E7E8D8',
-  '#CADABF',
-  '#B5CFB7',
-  '#D2DCB6',
-  '#B6CEB4',
-  '#CAE8BD',
-  '#A1BC98',
-  '#B0DB9C',
-  '#C1CFA1',
-  '#A5B68D',
-
-  '#729762',
-  '#658147',
-  '#597445',
-  '#6F826A',
-  '#778873',
-  '#96A78D',
-  '#C5C7BC',
-  '#CBCBCB',
-  '#D1D3D4',
-  '#EEEEEE',
-];
 
 type OverviewChartDatum = { outcome: string; achievedCount: number; notAchievedCount: number };
 type ExpandedCW = { name: string; blooms: string; coIndex: number };
@@ -176,11 +119,20 @@ const OverviewChart = memo(({ data, studentCount }: { data: OverviewChartDatum[]
                   return `${num} (${pct}%)`;
                 }}
               />
-              <Legend verticalAlign="bottom" align="center" />
-              <Bar dataKey="achievedCount" fill="#B6E2A1" name="Achieved" barSize={50} />
-              <Bar dataKey="notAchievedCount" fill="#F7A4A4" name="Not Achieved" barSize={50} />
+              <Bar dataKey="achievedCount" fill="#BCE29E" name="Achieved" barSize={50} />
+              <Bar dataKey="notAchievedCount" fill="#DF6A6A" name="Not Achieved" barSize={50} />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+      <div className="mt-4 flex justify-center gap-6">
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-sm" style={{ background: '#BCE29E' }} />
+          <span className="text-gray-700 text-sm">Achieved</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-sm" style={{ background: '#DF6A6A' }} />
+          <span className="text-gray-700 text-sm">Not Achieved</span>
         </div>
       </div>
     </div>
@@ -509,37 +461,30 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
     });
   }, [layout, coTotalsMemo, studentCount, data]);
 
-  const assessmentPieData = useMemo(() => {
-    type PieDatum = { name: string; value: number; fill?: string };
-    const passedMap: Map<string, number> = new Map();
-    const notPassedMap: Map<string, number> = new Map();
+  const overallPerformanceSummary = useMemo(() => {
+    const yes: string[] = [];
+    const approaching: string[] = [];
+    const no: string[] = [];
 
-    for (const po of layout) {
-      for (const co of po.cos) {
-        const kpi70 = getKpiValue(co.name, "pass70");
-        for (let idx = 0; idx < co.classwork.length; idx++) {
-          const cw = co.classwork[idx];
-          const passThreshold = Math.round(((kpi70 ?? 70) / 100) * (cw.maxScore ?? 0));
-          const passedCount = (data?.students ?? []).filter(s => {
-            const raw = (s.scores[co.name] ?? [])[idx]?.raw ?? 0;
-            return raw >= passThreshold;
-          }).length;
-          const notPassedCount = studentCount - passedCount;
-          if (passedCount > 0) passedMap.set(cw.name, (passedMap.get(cw.name) ?? 0) + passedCount);
-          if (notPassedCount > 0) notPassedMap.set(cw.name, (notPassedMap.get(cw.name) ?? 0) + notPassedCount);
-        }
+    for (let i = 0; i < coAnalytics.length; i++) {
+      const row = coAnalytics[i];
+      const pass80Count = coTotalsMemo[i]?.pass80Count ?? 0;
+      const achieved = row.achievedCount;
+
+      if (pass80Count <= 0) {
+        if (achieved >= 1) yes.push(row.outcome);
+        else no.push(row.outcome);
+      } else if (achieved >= pass80Count) {
+        yes.push(row.outcome);
+      } else if (achieved >= Math.ceil(pass80Count * 0.8)) {
+        approaching.push(row.outcome);
+      } else {
+        no.push(row.outcome);
       }
     }
 
-    const passed: PieDatum[] = Array.from(passedMap.entries())
-      .map(([name, value], idx) => ({ name, value, fill: PIE_COLOR_PALETTE[idx % PIE_COLOR_PALETTE.length] }))
-      .sort((a, b) => b.value - a.value);
-    const notPassed: PieDatum[] = Array.from(notPassedMap.entries())
-      .map(([name, value], idx) => ({ name, value, fill: PIE_COLOR_PALETTE[idx % PIE_COLOR_PALETTE.length] }))
-      .sort((a, b) => b.value - a.value);
-
-    return { passed, notPassed };
-  }, [layout, data, studentCount, getKpiValue]);
+    return { yes, approaching, no };
+  }, [coAnalytics, coTotalsMemo]);
 
   if (loading) return <PageLoading />;
   if (error) return <div className="p-6 text-red-500">{error}</div>;
@@ -803,28 +748,20 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
           <div className="grow">
             <h3 className="text-md mb-3">Course Outcome Attainment</h3>
             <div className="overflow-x-auto border border-[#E9E6E6] rounded-lg">
-              <table className="table-auto w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Outcome</th>
-                    <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">No. of Students Achieved</th>
-                      <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">No. of Students Not Achieved</th>
-                      <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Overall KPIs Met</th>
-                      <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Interpretation</th>
-                  </tr>
-                </thead>
+                    <table className="table-auto w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Outcome</th>
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">No. of Students Achieved</th>
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">No. of Students Not Achieved</th>
+                        </tr>
+                      </thead>
                 <tbody>
-                  {coAnalytics.map((row, idx) => (
+                    {coAnalytics.map((row, idx) => (
                     <tr key={idx} className="hover:bg-gray-50">
                       <td className="px-2 py-2">{row.outcome}</td>
                       <td className="px-2 py-2">{row.achieved}</td>
                       <td className="px-2 py-2">{row.notAchieved}</td>
-                      <td className={`px-2 py-2 ${row.overallAchieved ? 'text-black' : 'text-coa-red'}`}>
-                        {row.overallAchieved ? 'Yes' : 'No'}
-                      </td>
-                      <td className={`px-2 py-2 ${row.overallAchieved ? 'font-medium text-black' : 'text-coa-red'}`}>
-                        {row.interpretation}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -835,51 +772,55 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
               <>
                 <OverviewChart data={coAnalytics} studentCount={studentCount} />
 
-                <div className="flex gap-6 mt-6">
-                  <div className="w-1/2 h-96 pt-1 pb-2 px-2 flex flex-col items-center">
-                    <h4 className="text-sm font-medium mb-1 text-center">Passed Assessments</h4>
-                    {assessmentPieData.passed.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={320}>
-                        <PieChart>
-                            <Pie data={assessmentPieData.passed} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} label={false} labelLine={false}>
-                              {assessmentPieData.passed.map((entry, idx) => (
-                                <Cell key={`passed-cell-${idx}`} fill={entry.fill} stroke="none" />
-                              ))}
-                            </Pie>
-                          <Tooltip formatter={(value: any, _name: string) => {
-                            const num = Number(value ?? 0);
-                            const total = assessmentPieData.passed.reduce((s, d) => s + d.value, 0);
-                            const pct = total > 0 ? ((num / total) * 100).toFixed(2) : "0.00";
-                            return `${num} (${pct}%)`;
-                          }} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <p className="text-sm text-gray-500">No assessments passed the threshold.</p>
-                    )}
-                  </div>
+                <div className="mt-8">
+                  <h4 className="text-md mb-3">Overall Performance Summary</h4>
+                  <div className="overflow-x-auto border border-[#E9E6E6] rounded-lg">
+                    <table className="table-auto w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Overall KPIs Met</th>
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Interpretation</th>
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Outcome</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="hover:bg-gray-50">
+                          <td className="px-2 py-2 font-medium">Yes</td>
+                          <td className="px-2 py-2">Outcomes Achieved.</td>
+                          <td className="px-2 py-2">
+                            {overallPerformanceSummary.yes.length ? (
+                              <div className="flex flex-wrap items-start">
+                                {overallPerformanceSummary.yes.map((o, i) => (
+                                  <span key={`yes-${o}-${i}`} className="inline-flex items-center mr-2 mb-2 px-2 py-0.5 rounded-full bg-green-50 text-green-800 text-xs">
+                                    {formatCOLabel(o, i + 1)}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">None</span>
+                            )}
+                          </td>
+                        </tr>
 
-                  <div className="w-1/2 h-96 pt-1 pb-2 px-2 flex flex-col items-center">
-                    <h4 className="text-sm font-medium mb-1 text-center">Failed Assessments</h4>
-                    {assessmentPieData.notPassed.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={320}>
-                        <PieChart>
-                          <Pie data={assessmentPieData.notPassed} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} label={false} labelLine={false}>
-                            {assessmentPieData.notPassed.map((entry, idx) => (
-                              <Cell key={`notpassed-cell-${idx}`} fill={entry.fill} stroke="none" />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value: any, _name: string) => {
-                            const num = Number(value ?? 0);
-                            const total = assessmentPieData.notPassed.reduce((s, d) => s + d.value, 0);
-                            const pct = total > 0 ? ((num / total) * 100).toFixed(2) : "0.00";
-                            return `${num} (${pct}%)`;
-                          }} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <p className="text-sm text-gray-500">No assessments failed the threshold.</p>
-                    )}
+                        <tr className="hover:bg-gray-50">
+                          <td className="px-2 py-2 font-medium">No</td>
+                          <td className="px-2 py-2">Outcomes Not Achieved; Requires Intervention.</td>
+                          <td className="px-2 py-2">
+                            {overallPerformanceSummary.no.length ? (
+                              <div className="flex flex-wrap items-start">
+                                {overallPerformanceSummary.no.map((o, i) => (
+                                  <span key={`no-${o}-${i}`} className="inline-flex items-center mr-2 mb-2 px-2 py-0.5 rounded-full bg-red-50 text-red-800 text-xs">
+                                    {formatCOLabel(o, i + 1)}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">None</span>
+                            )}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </>
@@ -920,7 +861,6 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
         </div>
       </SidePanelComponent>
 
-      {/* KPI Editor Popup */}
       {editingKpiCo && (
         <div
           className="fixed inset-0 flex items-center justify-center z-5000"
@@ -980,7 +920,6 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
         </div>
       )}
 
-      {/* Remarks Editor Popup */}
       {editingRemarks && (
         <div
           className="fixed inset-0 flex items-center justify-center z-6000"
@@ -1021,7 +960,6 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
         </div>
       )}
 
-      {/* Remarks Viewing Popup (Read-Only) */}
       {viewingRemarks && (
         <div
           className="fixed inset-0 flex items-center justify-center z-50"
