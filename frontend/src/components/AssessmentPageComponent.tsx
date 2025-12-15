@@ -778,15 +778,15 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
                     <table className="table-auto w-full border-collapse">
                       <thead>
                         <tr className="bg-gray-50">
-                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Overall KPIs Met</th>
-                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Interpretation</th>
-                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6]">Outcome</th>
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6] text-sm">Overall KPIs</th>
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6] text-sm">Interpretation</th>
+                          <th className="px-2 py-2 text-left font-medium border-b border-[#E9E6E6] text-sm">Outcome</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr className="hover:bg-gray-50">
-                          <td className="px-2 py-2 font-medium">Yes</td>
-                          <td className="px-2 py-2">Outcomes Achieved.</td>
+                          <td className="px-2 py-2 font-medium text-sm">Met</td>
+                          <td className="px-2 py-2 text-sm">Outcomes Achieved.</td>
                           <td className="px-2 py-2">
                             {overallPerformanceSummary.yes.length ? (
                               <div className="flex flex-wrap items-start">
@@ -797,14 +797,14 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
                                 ))}
                               </div>
                             ) : (
-                              <span className="text-gray-400">None</span>
+                              <span className="text-gray-400 text-sm">None.</span>
                             )}
                           </td>
                         </tr>
 
                         <tr className="hover:bg-gray-50">
-                          <td className="px-2 py-2 font-medium">No</td>
-                          <td className="px-2 py-2">Outcomes Not Achieved; Requires Intervention.</td>
+                          <td className="px-2 py-2 font-medium text-sm">Not Met</td>
+                          <td className="px-2 py-2 text-sm">Outcomes Not Achieved; Requires Intervention.</td>
                           <td className="px-2 py-2">
                             {overallPerformanceSummary.no.length ? (
                               <div className="flex flex-wrap items-start">
@@ -815,7 +815,7 @@ export default function AssessmentPageComponent({ sectionId }: { sectionId: numb
                                 ))}
                               </div>
                             ) : (
-                              <span className="text-gray-400">None</span>
+                              <span className="text-gray-400 text-sm">None.</span>
                             )}
                           </td>
                         </tr>
